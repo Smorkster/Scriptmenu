@@ -1,0 +1,117 @@
+<Window
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="TopList OSInstallations"
+        Height="500" MinWidth="1200"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+        SizeToContent="Width">
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Margin" Value="5"/>
+        </Style>
+        <Style TargetType="DatePicker">
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        </Style>
+        <Style TargetType="{x:Type GridViewColumnHeader}">
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        </Style>
+        <Style TargetType="ListViewItem">
+            <Style.Triggers>
+                <Trigger Property="ItemsControl.AlternationIndex" Value="0">
+                    <Setter Property="Background" Value="White" />
+                </Trigger>
+                <Trigger Property="ItemsControl.AlternationIndex" Value="1">
+                    <Setter Property="Background" Value="#FDF0F0F0" />
+                </Trigger>
+                <DataTrigger Binding="{Binding Type}" Value="Dator hittas inte i AD">
+                    <Setter Property="FontStyle" Value="Italic"/>
+                    <Setter Property="Foreground" Value="LightGray"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Type}" Value="Annan datortyp">
+                    <Setter Property="FontStyle" Value="Italic"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding WrongType}" Value="1">
+                </DataTrigger>
+            </Style.Triggers>
+            <Setter Property="TextBlock.TextWrapping" Value="Wrap"/>
+            <Setter Property="TextBlock.VerticalAlignment" Value="Center"/>
+        </Style>
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="1*"/>
+            <RowDefinition Height="40"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="320"/>
+                <ColumnDefinition Width="1*" />
+            </Grid.ColumnDefinitions>
+            <ListView Name="UserView" Grid.Column="0" AlternationCount="2">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn DisplayMemberBinding="{Binding User}">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader Name="UserHeader" Width="200">User</GridViewColumnHeader>
+                            </GridViewColumn.Header>
+                        </GridViewColumn>
+                        <GridViewColumn DisplayMemberBinding="{Binding Installations}">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader Name="InstallationsHeader" Width="70" >Installations</GridViewColumnHeader>
+                            </GridViewColumn.Header>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+            <ListView Name="DescriptionView" Grid.Column="1" AlternationCount="2">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn DisplayMemberBinding="{Binding Computer}" Width="115">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader>Computer</GridViewColumnHeader>
+                            </GridViewColumn.Header>
+                        </GridViewColumn>
+                        <GridViewColumn DisplayMemberBinding="{Binding Date}" Width="140">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader>Date</GridViewColumnHeader>
+                            </GridViewColumn.Header>
+                        </GridViewColumn>
+                        <GridViewColumn DisplayMemberBinding="{Binding Type}" Width="190">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader>PC-Roll</GridViewColumnHeader>
+                            </GridViewColumn.Header>
+                        </GridViewColumn>
+                        <GridViewColumn DisplayMemberBinding="{Binding Description}" Width="400">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader>Description</GridViewColumnHeader>
+                            </GridViewColumn.Header>
+                        </GridViewColumn>
+                        <GridViewColumn DisplayMemberBinding="{Binding WrongType}" Width="0">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader>WT</GridViewColumnHeader>
+                            </GridViewColumn.Header>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+        </Grid>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="130"/>
+                <ColumnDefinition Width="130"/>
+                <ColumnDefinition Width="70"/>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="100"/>
+            </Grid.ColumnDefinitions>
+            <Button Name="btnStartDate" Content="Start date" Grid.Column="0"/>
+            <DatePicker Grid.Column="0" Name="DatePickerStart" Visibility="Collapsed"/>
+            <Button Name="btnEndDate" Content="End date" Grid.Column="1"/>
+            <DatePicker Grid.Column="1" Name="DatePickerEnd" Visibility="Collapsed"/>
+            <Button Name="btnStart" Content="Go fetch" Grid.Column="2" IsEnabled="False"/>
+            <Button Name="btnExport" Content="Export to CSV" IsEnabled="False" Grid.Column="4"/>
+        </Grid>
+    </Grid>
+</Window>

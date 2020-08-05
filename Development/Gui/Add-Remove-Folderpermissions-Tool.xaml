@@ -1,0 +1,99 @@
+<Window
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Ta bort/lägg till mappbehörigheter"
+        Height="640" MinHeight="640"
+        Width="1040" MinWidth="1040"
+        Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+        WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <Style TargetType="ListBoxItem">
+            <Setter Property="Margin" Value="0,0,0,2"/>
+        </Style>
+        <Style TargetType="Label">
+            <Setter Property="Height" Value="25"/>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Height" Value="25"/>
+        </Style>
+    </Window.Resources>
+    <Grid Grid.IsSharedSizeScope="True" IsEnabled="False" Name="MainGrid">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="5"/>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="5"/>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="5"/>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="5"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="5"/>
+            <RowDefinition/>
+            <RowDefinition Height="5"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Column="1" Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="26" SharedSizeGroup="Label"/>
+                <RowDefinition Height="3"/>
+                <RowDefinition SharedSizeGroup="Label"/>
+                <RowDefinition Height="3"/>
+                <RowDefinition SharedSizeGroup="Label"/>
+                <RowDefinition Height="3"/>
+                <RowDefinition SharedSizeGroup="Label"/>
+                <RowDefinition Height="3"/>
+                <RowDefinition SharedSizeGroup="Label"/>
+                <RowDefinition Height="3"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="3"/>
+                <RowDefinition SharedSizeGroup="Label"/>
+                <RowDefinition Height="3"/>
+                <RowDefinition Height="120"/>
+            </Grid.RowDefinitions>
+            <Label Grid.Row="0" Name="lblDisk" Content="Välj disk"/>
+            <ComboBox Grid.Row="2" Name="cbDisk"/>
+            <Label Grid.Row="4" Name="lblFolderSearch" Content="Sök (hela eller del av namnet)"/>
+            <TextBox Grid.Row="6" Name="txtFolderSearch"/>
+            <Label Grid.Row="8" Name="lblFolderList" Content="Välj mapp genom dubbeklick"/>
+            <ListBox Grid.Row="10" Name="lbFolderList"/>
+            <Label Grid.Row="12" Name="lblFoldersChosen" Content="Valda mappar"/>
+            <ListBox Grid.Row="14" Name="lbFoldersChosen"/>
+        </Grid>
+        <Grid Grid.Column="3" Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition SharedSizeGroup="Label"/>
+                <RowDefinition Height="3"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="3"/>
+                <RowDefinition SharedSizeGroup="Label" Name="ReadLabel"/>
+                <RowDefinition Height="3" Name="ReadDist"/>
+                <RowDefinition Height="*" Name="ReadTxtb"/>
+                <RowDefinition Height="3"/>
+                <RowDefinition SharedSizeGroup="Label"/>
+                <RowDefinition Height="3"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="3"/>
+                <RowDefinition Height="65" />
+            </Grid.RowDefinitions>
+            <Label Grid.Row="0" Name="lblUsersForWritePermission" Content="Skriv / läs behörighet"/>
+            <TextBox Grid.Row="2" AcceptsReturn="True" Name="txtUsersForWritePermission"/>
+            <Label Grid.Row="4" Name="lblUsersForReadPermission" Content="Läs behörighet"/>
+            <TextBox Grid.Row="6" AcceptsReturn="True" Name="txtUsersForReadPermission"/>
+            <Label Grid.Row="8" Name="lblUsersForRemovePermission" Content="Ta bort behörighet"/>
+            <TextBox Grid.Row="10" AcceptsReturn="True" Name="txtUsersForRemovePermission"/>
+            <StackPanel Grid.Row="12">
+                <Button Margin="0,10,0,5" IsEnabled="False" Name="btnPerform" Content="Utför"/>
+                <Button Name="btnUndo" Content="Avbryt"/>
+            </StackPanel>
+        </Grid>
+        <Grid Grid.Column="5" Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition SharedSizeGroup="Label"/>
+                <RowDefinition Height="3"/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Label Grid.Row="0" Name="lblLog" Content="Log"/>
+            <ListBox Grid.Row="2" Name="lbLog"/>
+        </Grid>
+    </Grid>
+</Window>

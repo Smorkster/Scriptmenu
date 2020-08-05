@@ -1,0 +1,49 @@
+<Window
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Scoreboard scriptusage"
+    Height="500" MinHeight="500"
+    Width="800" MinWidth="800" MaxHeight="1000"
+    Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+    WindowStartupLocation="CenterScreen"
+    SizeToContent="WidthAndHeight">
+    <Window.Resources>
+        <Style TargetType="RadioButton">
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="10,0,0,0"/>
+        </Style>
+    </Window.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal">
+            <Label Content="List per..."/>
+            <RadioButton Name="rbScript" Content="script" GroupName="sortBy" IsEnabled="False"/>
+            <RadioButton Name="rbUsers" Content="user" GroupName="sortBy" IsEnabled="False"/>
+        </StackPanel>
+        <ListView Grid.Column="0" Grid.Row="1" Name="TopList" AlternationCount="2">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn DisplayMemberBinding="{Binding Name}">
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Name="NameHeader" Width="220">Name</GridViewColumnHeader>
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
+                    <GridViewColumn DisplayMemberBinding="{Binding Count}">
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Name="CountHeader" Width="70">Amount</GridViewColumnHeader>
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+        <Label Grid.Column="1" Grid.Row="0" Name="ListTitle"/>
+        <StackPanel Grid.Column="1" Grid.Row="1" Orientation="Vertical" Name="SubjectList"/>
+    </Grid>
+</Window>

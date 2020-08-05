@@ -1,0 +1,40 @@
+<Window
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Update scripts"
+        MaxHeight="900"
+        SizeToContent="WidthAndHeight"
+        Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+        WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Margin" Value="8"/>
+            <Setter Property="Padding" Value="5"/>
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="ToolTipService.InitialShowDelay" Value="0"/>
+            <Style.Triggers>
+                <Trigger Property="CheckBox.IsMouseOver" Value="True">
+                    <Setter Property="Foreground" Value="LightBlue"/>
+                </Trigger>
+                <Trigger Property="CheckBox.IsMouseOver" Value="False">
+                    <Setter Property="Foreground" Value="Black"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+    <Grid>
+        <StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <Button Name="btnCheckForUpdates" Content="Check for updates"/>
+                <Button Name="btnUpdateScripts" Content="Update marked scripts" IsEnabled="False"/>
+                <Label Name="lblUpdateInfo" VerticalContentAlignment="Center"/>
+            </StackPanel>
+            <Label Name="lblInfo" Height="25" Foreground="Red"/>
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="5">
+                <StackPanel Name="spUpdateList"/>
+            </ScrollViewer>
+        </StackPanel>
+    </Grid>
+</Window>

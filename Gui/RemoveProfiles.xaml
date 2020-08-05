@@ -1,0 +1,29 @@
+<Window
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Remove one or more profiles from "
+        Height="500" Width="800"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+        ResizeMode="NoResize">
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Width" Value="150"/>
+        </Style>
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="5"/>
+            <RowDefinition Height="1*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" Grid.Row="0">
+            <Button Name="btnLogOutAll" Content="Log out all users"/>
+            <Label Name="lblId" Content="User account-id" VerticalAlignment="Center" IsEnabled="False"/>
+            <TextBox Name="tbID" Width="100" Height="30" Margin="10,0,10,0" VerticalContentAlignment="Center" IsEnabled="False"/>
+            <Button Name="btnOne" Content="Remove one profile" Visibility="Collapsed" IsEnabled="False"/>
+            <Button Name="btnAll" Content="Remove all profiles" IsEnabled="False"/>
+        </StackPanel>
+        <TextBox Name="tbOutputBox" Height="Auto" Grid.Row="2" IsReadOnly="True"/>
+    </Grid>
+</Window>
