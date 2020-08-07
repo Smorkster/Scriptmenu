@@ -68,6 +68,31 @@ function ListByUser
 	$Window.Title = "Toplist users"
 }
 
+########################################
+# List scripts that have never been used
+function NeverUsedScripts
+{
+	if ( $btnNeverUsed.Content -eq "Never used" )
+	{
+		$Toplist.Items.Clear()
+		$scripts = Get-ChildItem "$Root\Script" -Filter "*ps1" -Exclude "SDGUI.ps1" -Recurse -File | select -ExpandProperty name | foreach { $_ -replace ".ps1" } | sort
+		$logs = Get-ChildItem "$Root\Logs" -Filter "*txt" -Recurse -File | select -ExpandProperty name | foreach { $_ -replace " - log.txt" }
+		foreach ( $script in $scripts )
+		{
+			if ( $logs -notcontains $script )
+			{
+				$TopList.Items.Add( [pscustomobject]@{ Name = $script; Count = 0 } )
+			}
+		}
+		$btnNeverUsed.Content = "Toplist"
+	}
+	else
+	{
+		CollectData
+		$btnNeverUsed.Content = "Never used"
+	}
+}
+
 #####################################################
 # Item in list is selected, show data for that object
 function TopList_SelectionChanged
@@ -113,6 +138,8 @@ $vars | foreach { Set-Variable -Name $_ -Value $Window.FindName( $_ ) -Scope scr
 $Script:WindowTitle = "Toplist delux"
 $Script:users = New-Object System.Collections.Hashtable
 $Script:scriptList = @()
+$Script:Root = $args[0]
+$btnNeverUsed.Add_Click( { NeverUsedScripts } )
 $rbScript.Add_Checked( { ListByScript } )
 $rbUsers.Add_Checked( { ListByUser } )
 $TopList.Add_SelectionChanged( { TopList_SelectionChanged } )
