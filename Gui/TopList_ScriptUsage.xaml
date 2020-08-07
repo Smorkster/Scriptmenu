@@ -23,6 +23,7 @@
             <RowDefinition/>
         </Grid.RowDefinitions>
         <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal">
+            <Button Name="btnNeverUsed" Content="Aldrig använda" Padding="10,0,10,0" Margin="0,0,10,0"/>
             <Label Content="List per..."/>
             <RadioButton Name="rbScript" Content="script" GroupName="sortBy" IsEnabled="False"/>
             <RadioButton Name="rbUsers" Content="user" GroupName="sortBy" IsEnabled="False"/>
