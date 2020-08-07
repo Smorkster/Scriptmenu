@@ -198,7 +198,7 @@ function LoadUserData
 		$loopCount = 0
 		foreach ( $entry in $UserData )
 		{
-			$entry.LoggedBy = ( Get-ADUser ( $entry.loggedBy.Substring( 11, 4 ) ) ).Name
+			$entry.LoggedBy = ( Get-ADUser ( $entry.loggedBy -split "admin" ) ).Name
 			$exists = $false
 			if ( $installations.Count -gt 0 )
 			{
@@ -262,23 +262,47 @@ function LoadUserData
 # Get installation information from SysMan API
 function Get-SysManLogs
 {
-	$logs = @()
+	$logs = New-Object System.Collections.ArrayList
+	$jobs = New-Object System.Collections.ArrayList
 	$processingDate = $DatePickerStart.SelectedDate
 	$processingMax = ( $DatePickerEnd.SelectedDate - $DatePickerStart.SelectedDate ).Days + 1
 
+	$SessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
+	$RunspacePool = [runspacefactory]::CreateRunspacePool(
+		1, #Min Runspaces
+		10 #Max Runspaces
+	)
+	$RunspacePool.Open()
+
+	$Window.Title = "Setting up for SysMan-logs"
 	do
 	{
-		$processingEnd = $processingDate.AddDays( 1 ).AddSeconds( -1 )
-		$entries = ( Invoke-RestMethod -uri "http://sysman.domain.com/SysMan//api/Log?name=osinst&take=10000&skip=0&startDate=$processingDate&endDate=$processingEnd" -Method Get -UseDefaultCredentials -ContentType "application/json" ).result | where { $_.LoggedBy -like "*admin*" }
-		$entries | foreach { $logs += $_ }
-
-		$CurrentProgress = [math]::Floor( ( ( ( $processingDate - $DatePickerStart.SelectedDate ).TotalDays ) / $processingMax ) * 100 )
-		$Window.Title = "Getting SysMan Logs - $( $CurrentProgress )%"
-
+		$Runspace = [powershell]::Create()
+		$Runspace.RunspacePool = $RunspacePool
+		[void]$Runspace.AddScript( {
+			param ( $processingDate )
+			$processingEnd = $processingDate.AddDays( 1 ).AddSeconds( -1 )
+			$entries = ( Invoke-RestMethod -Uri "http://sysman.domain.com/SysMan//api/Log?name=osinst&take=10000&skip=0&startDate=$processingDate&endDate=$processingEnd" -Method Get -UseDefaultCredentials -ContentType "application/json" ).result | where { $_.LoggedBy -like "*admin*" }
+			$entries
+		} )
+		[void]$Runspace.AddArgument( $processingDate )
+		
+		[void]$jobs.Add( @{ RS = $Runspace; H = $Runspace.BeginInvoke() } )
 		$processingDate = $processingDate.AddDays( 1 )
 	}
 	until ( $processingDate -gt $DatePickerEnd.SelectedDate )
 
+	$ticker = 0
+	foreach ( $j in $jobs )
+	{
+		$j.RS.EndInvoke( $j.H ) | foreach { [void]$logs.Add( $_ ) }
+		$CurrentProgress = [math]::Floor( ( $ticker / $jobs.Count ) * 100 )
+		$Window.Title = "Getting SysMan Logs - $( $CurrentProgress )%"
+		$ticker++
+	}
+
+	$jobs | foreach { $_.RS.Dispose() }
+	$RunspacePool.Close()
 	$Window.Title = $Script:WindowTitle
 	return $logs
 }
