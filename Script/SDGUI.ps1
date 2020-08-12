@@ -30,11 +30,12 @@ function GetFolderItems
 		$tabcontrol = New-Object System.Windows.Controls.TabControl
 		$tabcontrol.Name = "tc"+( $dirPath.Name -replace " ")
 		Set-Variable -Name ( "tc" + $( $dirPath.Name ) ) -Value $tabcontrol -Scope script
+		$tiList = @()
 		foreach ( $dir in $dirs )
 		{
-			$tI = CreateTabItem $dir
-			$tabcontrol.AddChild( $tI )
+			$tiList += ( CreateTabItem $dir )
 		}
+		$tiList | sort $_.Header | foreach { $tabcontrol.AddChild( $_ ) }
 		$spFolder.AddChild( $tabcontrol )
 	}
 	return $spFolder
