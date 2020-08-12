@@ -338,7 +338,9 @@ function CreateTabItem
 	)
 
 	$tabitem = New-Object System.Windows.Controls.TabItem
-	$tabitem.Header = $dirPath.Name
+	$tT = ""
+	foreach ( $c in ( $dirPath.Name ).GetEnumerator() ) { if ( $c -cmatch "\b[A-Z]") { $tT += " $c" } else { $tT += $c } }
+	$tabitem.Header = $tT.Trim()
 	$tabitem.Name = "ti" + $( $dirPath.Name )
 	Set-Variable -Name ( "ti" + $( $dirPath.Name ) ) -Value $tabitem -Scope Script
 	$g = New-Object System.Windows.Controls.Grid
