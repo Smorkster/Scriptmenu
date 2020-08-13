@@ -12,8 +12,9 @@ function CheckForUpdates
 	$updatedFiles.Clear()
 	$spUpdateList.Children.Clear()
 
-	$devFiles = Get-ChildItem $devRoot -Directory -Exclude $dirExclusion | Get-ChildItem -File -Recurse -Exclude $fileExclusion
+	$devFiles = Get-ChildItem $devRoot -Exclude $dirExclusion | Get-ChildItem -File -Recurse -Exclude $fileExclusion
 	$prodFiles = Get-ChildItem $prodRoot -Directory -Exclude $( $dirExclusion += "Development"; $dirExclusion ) | Get-ChildItem -File -Recurse
+	$prodFiles += Get-ChildItem $prodRoot -File
 	$MD5 = New-Object -TypeName System.Security.Cryptography.MD5CryptoServiceProvider
 
 	foreach ( $devFile in $devFiles )
