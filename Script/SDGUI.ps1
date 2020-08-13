@@ -76,6 +76,7 @@ function StartWinRMOnRemoteComputer
 	{
 		SetTitle -Add -Text " ... Failed"
 		ShowMessageBox "No contact with computer, or name does not exist. Try again."
+		$tbComputerName.Focus()
 	}
 }
 
