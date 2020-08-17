@@ -372,8 +372,7 @@ function UndoInput
 {
 	$txtUsersAddPermission.Text = ""
 	$txtUsersRemovePermission.Text = ""
-	$lbGroupsChosen.Items.Clear()
-	UpdateAppList
+	UpdateAppGroupList
 }
 
 ###############################
