@@ -7,19 +7,30 @@
 function RunCycle
 {
 	param( $ComputerName, $CykelName )
-	Invoke-Command -ComputerName $ComputerName -ScriptBlock `
+	try
 	{
-		param ( $Name )
-		ipmo PSScheduledJob
-		$z = ( Get-Date ).AddMinutes( 10 ).ToString( "HH:mm:ss" )
-		$T = New-JobTrigger -Once -At $z
-		Register-ScheduledJob -Name $Name -Trigger $T -ScriptBlock `
+		Invoke-Command -ComputerName $ComputerName -ScriptBlock `
 		{
-			Invoke-WmiMethod -Namespace root\ccm -Class SMS_CLIENT -Name TriggerSchedule "{00000000-0000-0000-0000-000000000113}"
-			Unregister-ScheduledJob Test-OpenIE
-		}
-	} -ArgumentList $CycleName
-	Write-Host "In 10 minutes the computer will check for updates." 
+			param ( $Name )
+			ipmo PSScheduledJob
+			$z = ( Get-Date ).AddMinutes( 10 ).ToString( "HH:mm:ss" )
+			$T = New-JobTrigger -Once -At $z
+			Register-ScheduledJob -Name $Name -Trigger $T -ScriptBlock `
+			{
+				Invoke-WmiMethod -Namespace root\ccm -Class SMS_CLIENT -Name TriggerSchedule "{00000000-0000-0000-0000-000000000113}"
+				Unregister-ScheduledJob Test-OpenIE
+			}
+		} -ArgumentList $CycleName
+		Write-Host "In 10 minutes the computer will check for updates." 
+	}
+	catch [System.Management.Automation.Remoting.PSRemotingTransportException]
+	{
+		Write-Host "Could not reach computer."
+	}
+	catch
+	{
+		Write-Host "Error upon trying to reach computer:`n$( $_.CategoryInfo.Reason )`n$( $_.Exception )"
+	}
 }
 
 $nudate = Get-Date -Format "yyyy-MM-dd HH:mm"
