@@ -60,7 +60,7 @@ function CollectUsers
 
 	switch ( $PermissionType )
 	{
-		"Add" { $Script:WriteUsers = @() }
+		"Add" { $Script:AddUsers = @() }
 		"Remove" { $Script:RemoveUsers = @() }
 	}
 
