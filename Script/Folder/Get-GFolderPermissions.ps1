@@ -1,4 +1,8 @@
-#Description = List permissions and owner for one or more folders
+<#
+.Synopsis List permissions and owner for one or more folders
+.Description For given shared folders, list its owner and users with permission for it.
+#>
+
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $CaseNr = Read-Host "Related casenumber (if any) "
@@ -54,7 +58,7 @@ foreach ( $Folder in $Folders )
 	}
 	$FolderName = $Folder.Substring( 7 )
 	$output += "`r`n************************`r`n$Folder`r`n"
-	$Owner = Get-ADGroup ( ( $GroupPrefix + $FolderName + "_User_C" ) -replace "å", "a" -replace "ä", "a" -replace "ö", "o" -replace " ", "_" -replace "é", "e" ) -Properties ManagedBy | select -ExpandProperty Managedby
+	$Owner = Get-ADGroup ( ( $GroupPrefix + $FolderName + "_User_C" ) -replace "Ã¥", "a" -replace "Ã¤", "a" -replace "Ã¶", "o" -replace " ", "_" -replace "Ã©", "e" ) -Properties ManagedBy | select -ExpandProperty Managedby
 
 	if ( $Owner -ne $null )
 	{
@@ -67,7 +71,7 @@ foreach ( $Folder in $Folders )
 
 	$output += "`r`nRead-permission: "
 
-	$RGroups = Get-ADGroupMember ( ( $GroupPrefix + $FolderName + "_User_R" ) -replace "å", "a" -replace "ä", "a" -replace "ö", "o" -replace " ", "_" -replace "é", "e" ) | select -ExpandProperty Name
+	$RGroups = Get-ADGroupMember ( ( $GroupPrefix + $FolderName + "_User_R" ) -replace "Ã¥", "a" -replace "Ã¤", "a" -replace "Ã¶", "o" -replace " ", "_" -replace "Ã©", "e" ) | select -ExpandProperty Name
 	$ROrgGroups = $RGroups | where { $_ -like ( $Customer + "_org_*" ) }
 	$RGroups = $RGroups | where { $_ -notlike ( $Customer + "_org_*" ) }
 
@@ -101,7 +105,7 @@ foreach ( $Folder in $Folders )
 
 	$output += "`r`nWrite permission: "
 
-	$CGroups = Get-ADGroupMember ( ( $GroupPrefix + $FolderName + "_User_C" ) -replace "å", "a" -replace "ä", "a" -replace "ö", "o" -replace " ", "_" -replace "é", "e" ) | select -ExpandProperty Name
+	$CGroups = Get-ADGroupMember ( ( $GroupPrefix + $FolderName + "_User_C" ) -replace "Ã¥", "a" -replace "Ã¤", "a" -replace "Ã¶", "o" -replace " ", "_" -replace "Ã©", "e" ) | select -ExpandProperty Name
 	$COrgGroups = $CGroups | where { $_ -like ( $Customer + "_org_*" ) }
 	$CGroups = $CGroups | where { $_ -notlike ( $Customer + "_org_*" ) }
 
