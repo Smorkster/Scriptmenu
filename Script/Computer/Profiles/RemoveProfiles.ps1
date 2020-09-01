@@ -3,8 +3,6 @@
 .Description Remove one or more profiles on remote computer.
 #>
 
-#Description = Remove one or more profiles on remote computer
-
 ##########################
 # Remove multiple profiles
 function MultipleProfiles
