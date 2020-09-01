@@ -1,4 +1,8 @@
-#Description = Open webpage for computer servicetag
+<#
+.Synopsis Open webpage for computer servicetag
+.Description Gets the manufacturer and the computers servicetag, then opens the appropriate webpage. Use this to show the computers remaining warranty.
+#>
+
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $ComputerName = $args[1]
