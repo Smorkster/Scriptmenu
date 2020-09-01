@@ -10,7 +10,15 @@ function AddFile
 	param ( $File )
 
 	$item = New-Object System.Windows.Controls.Label
-	$item.Content = $File.Path
+
+	if ( $File.Path -match ".lnk$")
+	{
+		$item.Content = "$( $File.Path )`n`tTarget: $( $ScriptVar.CreateShortCut( $File.Path ).TargetPath )"
+	}
+	else
+	{
+		$item.Content = $File.Path
+	}
 	$item.ToolTip = $File.Path
 
 	if ( $File.FileMatch )
@@ -35,6 +43,9 @@ function CheckFiles
 
 	$ticker = 1
 	$filelist = Get-ChildItem2 $Folder -File -Recurse
+	if ( $cbLatest.IsChecked )
+	{ $filelist = $filelist | where { $_.LastWriteTime -gt ( ( Get-Date ).Date.AddDays( -14 ) ) } }
+
 	$nameMatches = @()
 
 	foreach ( $file in $filelist )
