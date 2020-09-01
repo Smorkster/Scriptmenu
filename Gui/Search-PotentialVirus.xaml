@@ -4,22 +4,23 @@
     WindowState="Maximized"
     Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
     <Window.Resources>
-        <Style TargetType="TextBox">
-            <Setter Property="Width" Value="100"/>
-            <Setter Property="Margin" Value="5,0,5,0"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-        </Style>
-        <Style TargetType="TabControl">
-            <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"/>
-        </Style>
         <Style TargetType="CheckBox">
-            <Setter Property="Margin" Value="5"/>
-        </Style>
-        <Style TargetType="StackPanel">
             <Setter Property="Margin" Value="5"/>
         </Style>
         <Style TargetType="ScrollViewer">
             <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
+        </Style>
+        <Style TargetType="StackPanel">
+            <Setter Property="Margin" Value="5"/>
+        </Style>
+        <Style TargetType="TabControl">
+            <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"/>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Width" Value="100"/>
+            <Setter Property="Margin" Value="5,0,5,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
     </Window.Resources>
     <Grid>
@@ -32,6 +33,7 @@
             <StackPanel Orientation="Horizontal">
                 <Label Content="Casenumber" Width="160"/>
                 <TextBox Name="tbCaseNr"/>
+                <CheckBox Name="cbLatest" Content="Endast senaste två veckor" VerticalContentAlignment="Center"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal">
                 <Label Content="Account-id of user" Width="160"/>
