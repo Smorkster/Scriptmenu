@@ -1,4 +1,8 @@
-#Description = List printerqueues based on printername (Ex: Pr_F4_00)
+<#
+.Synopsis List printerqueues based on printername (Ex: Pr_F4_00)
+.Description List all printerqueues which has a name matching searchword.
+#>
+
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $CaseNr = Read-Host "Related casenumber (if any) "
@@ -21,5 +25,4 @@ else
 }
 
 WriteLog -LogText "$CaseNr $logText"
-
 EndScript
