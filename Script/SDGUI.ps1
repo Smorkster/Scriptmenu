@@ -12,7 +12,12 @@ function GetFolderItems
 
 	Set-Variable -Name ( "wp" + $( $dirPath.Name ) ) -Value $spFolder -Scope script
 
-	if ( $files = Get-ChildItem -File -Filter "*ps1" -Path $dirPath.FullName | where { $_.Name -ne ( Get-Item $PSCommandPath ).Name } | select -Property @{ Name = "Name"; Expression = { $_.Name } }, @{ Name = "Path"; Expression = { $_.FullName } }, @{ Name = "Description"; Expression = { ( Select-String -InputObject $_ -Pattern "#Description" -Encoding Default ).Line.TrimStart( "#Description = " ) } } | sort Description )
+	if ( $files = Get-ChildItem -File -Filter "*ps1" -Path $dirPath.FullName | where { $_.Name -ne ( Get-Item $PSCommandPath ).Name } | `
+		select -Property @{ Name = "Name"; Expression = { $_.Name } }, `
+			@{ Name = "Path"; Expression = { $_.FullName } }, `
+			@{ Name = "Synopsis"; Expression = { ( Select-String -InputObject $_ -Pattern "^.Synopsis" -Encoding Default ).Line.TrimStart( ".Synopsis " ) } }, `
+			@{ Name = "Description"; Expression = { ( Select-String -InputObject $_ -Pattern "^.Description" -Encoding Default ).Line.TrimStart( ".Description " ) } } | `
+			sort Synopsis )
 	{
 		if ( $dirPath.FullName -match "(Computer\\)" ) { $wpScriptGroup = CreateScriptGroup $files }
 		else { $wpScriptGroup = CreateScriptGroup $files }
@@ -276,20 +281,21 @@ function CreateScriptGroup
 
 		$button.Content = "Run >"
 		$button.ToolTip = $file.Path
-		$label.Content = $file.Description
+		$label.Content = $file.Synopsis
+		$label.ToolTip = [string]$file.Description.Replace( ". ", ".`n" )
 
-		if ( $label.Content -match "under development" )
+		if ( $file.Synopsis -match "under development" )
 		{
 			$label.Background = "Red"
 			if ( $adminList -notcontains $env:USERNAME ) { $button.IsEnabled = $false }
 		}
-		elseif ( $label.Content -match "under testing" )
+		elseif ( $file.Synopsis -match "under testing" )
 		{
 			$label.Background = "LightBlue"
 			$label.Content += "`nOnly use if you're told to."
 		}
 
-		if ( $label.Content.Contains( "[BO]" ) )
+		if ( $file.Synopsis -match "[BO]" )
 		{
 			if ( ( Get-ADUser $env:USERNAME -Properties MemberOf | select -ExpandProperty MemberOf ) -match "Role_Backoffice" )
 			{
@@ -341,7 +347,7 @@ function CreateTabItem
 
 	$tabitem = New-Object System.Windows.Controls.TabItem
 	$tT = ""
-	foreach ( $c in ( $dirPath.Name ).GetEnumerator() ) { if ( $c -cmatch "\b[A-Z]") { $tT += " $c" } else { $tT += $c } }
+	( $dirPath.Name ).GetEnumerator() | foreach { if ( $_ -cmatch "\b[A-Z]") { $tT += " $_" } else { $tT += $_ } }
 	$tabitem.Header = $tT.Trim()
 	$tabitem.Name = "ti" + $( $dirPath.Name )
 	Set-Variable -Name ( "ti" + $( $dirPath.Name ) ) -Value $tabitem -Scope Script
@@ -361,9 +367,13 @@ function CheckForAdmin
 		$Admins.Visibility = [System.Windows.Visibility]::Visible
 		$btnCheckForUpdates.Add_Click( {
 			$ProgramRunspace = [System.Management.Automation.PowerShell]::Create() # Create new runspace
-			$args = @( "\\dfs\gem$\Scriptmenu\Development\Update-Scripts.ps1", ( Get-Item $PSScriptRoot ).Parent.FullName )
+			if ( ( Get-Item $PSScriptRoot ).Parent.Name -eq "Development" )
+			{ $script = "Update-Scripts.ps1" }
+			else
+			{ $script = "Development\Update-Scripts.ps1" }
+			$args = @( "$( ( Get-Item $PSScriptRoot ).Parent.FullName )\$script", ( Get-Item $PSScriptRoot ).Parent.FullName )
 			[void]$ProgramRunspace.AddScript( { param( $arg ); start powershell -WindowStyle Hidden -ArgumentList $arg } ).AddArgument( $args )
-			$run = $ProgramRunspace.BeginInvoke() # Start runspace
+			$run = $ProgramRunspace.BeginInvoke() # Run runspace
 			do { Start-Sleep -Milliseconds 50 } until ( $run.IsCompleted )
 			$ProgramRunspace.Dispose()
 		} )
@@ -454,7 +464,7 @@ function FulHack
 	$tiDator.Add_LostFocus( { SetTitle -Remove } )
 }
 
-############################## Scriptstart
+############################## Script start
 Import-Module "$( ( Get-Item $PSCommandPath ).Directory.Parent.FullName )\Modules\FileOps.psm1" -Force
 
 $Window, $vars = CreateWindow
