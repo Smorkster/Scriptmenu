@@ -1,4 +1,8 @@
-#Description = List folders for wich a user is listed as owner
+<#
+.Synopsis List folders for wich a user is listed as owner
+.Description List folders for wich a user is listed as owner.
+#>
+
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $Folders = @()
