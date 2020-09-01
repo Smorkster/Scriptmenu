@@ -1,4 +1,8 @@
-#Description = Show Internet Explorer version on remote computer.
+<#
+.Synopsis Show Internet Explorer version on remote computer
+.Description Show Internet Explorer version on remote computer.
+#>
+
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $ComputerName = $args[1]
