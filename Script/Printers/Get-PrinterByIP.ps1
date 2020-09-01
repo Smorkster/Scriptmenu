@@ -1,4 +1,8 @@
-#Description = Find printerqueue by IP-address
+<#
+.Synopsis Find printerqueue by IP-address
+.Description Search for IP-address and list the printerqueue connected to it.
+#>
+
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $CaseNr = Read-Host "Related casenumber (if any) "
@@ -16,5 +20,4 @@ else
 }
 
 WriteLog -LogText "$CaseNr $logText"
-
 EndScript
