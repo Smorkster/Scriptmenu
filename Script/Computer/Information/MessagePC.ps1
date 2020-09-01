@@ -1,4 +1,8 @@
-#Description = Send message to remote computer
+<#
+.Synopsis Send message to remote computer
+.Description Sends a message to the given computer.
+#>
+
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $ComputerName = $args[1]
@@ -14,5 +18,4 @@ Invoke-Command -ComputerName $ComputerName -Args $Message -ScriptBlock `
 }
 
 WriteLog -LogText "$CaseNr $ComputerName > '$Message'"
-
 EndScript
