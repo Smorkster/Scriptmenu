@@ -1,4 +1,8 @@
-#Description = Show installed applications on remote computer
+<#
+.Synopsis Show installed applications on remote computer
+.Description Lists all installed applications on given computer. The list if fetched from the computer, and can thus contain applications installed manually.
+#>
+
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $ComputerName = $args[1]
