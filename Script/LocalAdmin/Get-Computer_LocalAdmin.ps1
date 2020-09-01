@@ -1,4 +1,8 @@
-#Description = Get local admin registered on remote computer
+<#
+.Synopsis Get local admin registered on remote computer
+.Description Get local admin registered on remote computer.
+#>
+
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $CaseNr = Read-Host "Related casenumber (if any) "
@@ -22,5 +26,4 @@ else
 }
 
 WriteLog -LogText "$CaseNr $( $Computer.Name ) > $logText"
-
 EndScript
