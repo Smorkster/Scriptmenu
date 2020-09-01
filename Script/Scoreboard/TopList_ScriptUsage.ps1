@@ -1,4 +1,7 @@
-#Description = Scoreboard for scriptusage
+<#
+.Synopsis Scoreboard for scriptusage
+.Description Lists which scripts have been used the most, and by whom. Or which users have used the scripts the most, and what scripts they used.
+#>
 
 ###############################
 # Collect scripts and usagedata
