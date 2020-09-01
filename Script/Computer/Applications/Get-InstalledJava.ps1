@@ -1,4 +1,8 @@
-#Description = Check is Java is installed, and what version
+<#
+.Synopsis Check if Java is installed, and what version
+.Description Checks if Java is installed and with what version. Asks if all computers at same department, having Java installed, is to be listed.
+#>
+
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $ComputerName = $args[1]
@@ -27,7 +31,7 @@ if ( ( Read-Host "Show computers at same department with Java installed? (Y/N)" 
 
 		$output = @()
 		$sameLocation | foreach { $output += "$( $_.Name ) $( $_.Java )`r`n" }
-		$outputFile = WriteOutput -Output "Computers at department '$( $Computer.sllEkKost )' with Java installed:`r`n$output"
+		$outputFile = WriteOutput -Output "Computers at department '$( $Computer.depId )' with Java installed:`r`n$output"
 		$logText += $outputFile
 	}
 	else
