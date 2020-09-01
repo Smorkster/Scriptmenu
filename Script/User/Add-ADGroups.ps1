@@ -1,8 +1,13 @@
-#Description = Add AD-groups, pasted in console [BO]
+<#
+.Synopsis Add AD-groups, pasted in console [BO]
+.Description Creates permissions for multiple given AD-groups.
+#>
+
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $CaseNr = Read-Host "Casenumber (if any) "
 $User = Read-Host "UserId for the user to get the grouppermissions "
+
 if ( dsquery user -samid $User )
 {
 	Write-Host "Paste a list of groupnames to which the users should get permissions. The press Enter two times to continue."
@@ -54,5 +59,4 @@ if ( $noPermission.Count -gt 0 )
 }
 
 WriteLog -LogText "$CaseNr $User $( @( $added ).Count ) grupper"
-
 EndScript
