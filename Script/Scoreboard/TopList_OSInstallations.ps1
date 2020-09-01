@@ -1,4 +1,7 @@
-#Description = List number of reinstallations per month per user
+<#
+.Synopsis List number of reinstallations
+.Description Lists who has performed reinstallations between given dates. Information is gathered from SysMan.
+#>
 
 ############################
 # Show calendar for end date
