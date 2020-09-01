@@ -1,4 +1,8 @@
-#Description = List groups a user is member of
+<#
+.Synopsis List groups a user is member of
+.Description List groups a user is member of.
+#>
+
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $CopyToClipBoard = @()
@@ -50,5 +54,4 @@ if ( $output )
 }
 
 WriteLog -LogText "$CaseNr $Input`r`n`tOutput: $outputFile"
-
 EndScript
