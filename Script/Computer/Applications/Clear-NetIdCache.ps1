@@ -1,11 +1,8 @@
 <#
-.Synopsis
-	Clear NETID Cache on remote computer
-.DESCRIPTION
-	Clear NETID Cache on remote computer
+.Synopsis Clear NetID-cache one remote computer
+.Description Removes alla cache-files for NetID on given computer.
 #>
 
-#Description = Clear NetID-cache one remote computer
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 $ComputerName = $args[1]
 
