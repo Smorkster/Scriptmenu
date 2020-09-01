@@ -1,4 +1,8 @@
-#Description = Get AD-group for department by its Id
+<#
+.Synopsis Get AD-group for department by its Id
+.Description Get AD-group for department by its Id.
+#>
+
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $CaseNr = Read-Host "Related casenumber (if any) "
@@ -25,5 +29,4 @@ else
 }
 
 WriteLog -LogText "$CaseNr $UserInput"
-
 EndScript
