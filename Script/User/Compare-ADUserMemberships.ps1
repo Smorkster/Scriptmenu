@@ -1,4 +1,8 @@
-#Description = Compare groupmembership for two or more users
+<#
+.Synopsis Compare groupmembership for two or more users
+.Description By given users id's, compare each users AD-groupmemberships. List is written to a CSV-file.
+#>
+
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $CaseNr = Read-Host "Related casenumber (if any) "
@@ -107,5 +111,4 @@ else
 }
 
 WriteLog -LogText $logText
-
 EndScript
