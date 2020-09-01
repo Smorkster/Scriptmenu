@@ -1,4 +1,8 @@
-#Description = List ALL folderpermissions for one or more users
+<#
+.Synopsis List ALL folderpermissions for one or more users
+.Description List ALL folderpermissions for one or more users.
+#>
+
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 # Set global TimeOut for session to one hour
@@ -103,7 +107,7 @@ foreach( $User in $UsersIn )
 	$outputInfo += "`r`n`r`n$User have unknown permission for these folders:`r`n"
 	$outputInfo += $Other
 
-	# Exportera behörigheter till en textfil
+	# Exportera behÃ¶righeter till en textfil
 	Write-Host $outputInfo
 
 	$outputFile = WriteOutput -FileNameAddition $User -Output $outputInfo
