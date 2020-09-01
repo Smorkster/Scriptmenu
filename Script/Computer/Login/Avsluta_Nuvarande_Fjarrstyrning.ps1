@@ -1,4 +1,8 @@
-﻿#Description = End remote connection
+<#
+.Synopsis End active remote connection
+.Description Ends an active remote connection on given computer.
+#>
+
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $CaseNr = Read-Host "Related casenumber (if any) "
