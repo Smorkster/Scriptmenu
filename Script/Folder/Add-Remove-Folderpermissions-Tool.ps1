@@ -1,4 +1,7 @@
-#Description = Add and remove folderpermissions, with GUI
+<#
+.Synopsis Add and remove folderpermissions, with GUI
+.Description Add/remove permissions for shared folders.
+#>
 
 ####################  Operational functions  ####################
 
@@ -212,7 +215,7 @@ function CollectADGroupsS
 		$FolderName = $cbDisk.SelectedValue.ToString() + "\" + $entry
 		try
 		{
-			$WriteGroup = Get-ADGroup "$( ( $FolderName -split "\\" )[1] )_File_AD$( $Customer )01_Gem_$( ( $FolderName -split "\\" )[2] )_$( ( ( $FolderName -split "\\" )[3] ) -replace " ","_" -replace "å","a" -replace "ä","a" -replace "ö","o" -replace "è","e" )_Ext_C" | select -ExpandProperty SamAccountName
+			$WriteGroup = Get-ADGroup "$( ( $FolderName -split "\\" )[1] )_File_AD$( $Customer )01_Gem_$( ( $FolderName -split "\\" )[2] )_$( ( ( $FolderName -split "\\" )[3] ) -replace " ","_" -replace "Ã¥","a" -replace "Ã¤","a" -replace "Ã¶","o" -replace "Ã¨","e" )_Ext_C" | select -ExpandProperty SamAccountName
 		}
 		catch
 		{
@@ -226,7 +229,7 @@ function CollectADGroupsS
 
 		try
 		{
-			$ReadGroup = Get-ADGroup "$( ( $FolderName -split "\\" )[1] )_File_AD$( $Customer )01_Gem_$( ( $FolderName -split "\\" )[2] )_$( ( ( $FolderName -split "\\" )[3] ) -replace " ","_" -replace "å","a" -replace "ä","a" -replace "ö","o" -replace "è","e" )_Ext_R" | select -ExpandProperty SamAccountName
+			$ReadGroup = Get-ADGroup "$( ( $FolderName -split "\\" )[1] )_File_AD$( $Customer )01_Gem_$( ( $FolderName -split "\\" )[2] )_$( ( ( $FolderName -split "\\" )[3] ) -replace " ","_" -replace "Ã¥","a" -replace "Ã¤","a" -replace "Ã¶","o" -replace "Ã¨","e" )_Ext_R" | select -ExpandProperty SamAccountName
 		}
 		catch
 		{
@@ -776,7 +779,7 @@ $lbFoldersChosen.Add_MouseDoubleClick( { FolderDeselected } )
 $txtUsersForWritePermission.Add_TextChanged( { CheckReady } )
 $txtUsersForReadPermission.Add_TextChanged( { CheckReady } )
 $txtUsersForRemovePermission.Add_TextChanged( { CheckReady } )
-$Window.Add_ContentRendered( { $Window.Title = "Förbereder..."; $Window.Top = 20; $Window.Activate(); SetUserSettings; UpdateDiskList; $Window.Title = $Script:Title; $MainGrid.IsEnabled = $true } )
+$Window.Add_ContentRendered( { $Window.Title = "FÃ¶rbereder..."; $Window.Top = 20; $Window.Activate(); SetUserSettings; UpdateDiskList; $Window.Title = $Script:Title; $MainGrid.IsEnabled = $true } )
 ####################  End Control event functions  ####################
 
 ####################  Initialization  ####################
