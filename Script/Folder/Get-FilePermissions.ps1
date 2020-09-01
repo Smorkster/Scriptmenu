@@ -1,4 +1,8 @@
-#Description = List who, and at what level, users have permissions for a file
+<#
+.Synopsis List users that have permissions for a file
+.Description For given file, list all users with permission for it. The list sorts the users by permissionlevel.
+#>
+
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 function GetMember
