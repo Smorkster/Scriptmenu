@@ -1,4 +1,7 @@
-#Description = Search for potential virus [BO] (under testing)
+<#
+.Synopsis Search for potential virus [BO] (under testing)
+.Description List all files in given users homedirectory and shared folders the user have permission for. Files are listed by where it is located. Some files are listed by set filterrules.
+#>
 
 #####################################
 # Add label with filename to filelist
