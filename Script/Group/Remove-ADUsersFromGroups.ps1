@@ -1,4 +1,8 @@
-#Description = Remove multiple users from one or more AD-groups
+<#
+.Synopsis Remove multiple users from one or more AD-groups
+.Description Remove multiple users from one or more AD-groups.
+#>
+
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 Import-Module ActiveDirectory
 
@@ -56,5 +60,4 @@ $outputFile = WriteOutput -Output $output.Trim()
 Write-Host "Output written to file '$outputFile'"
 
 WriteLog -LogText "$CaseNr $( $AllUsers.Count ) users, $( $Groups.Count )`r`n`t$outputFile"
-
 EndScript
