@@ -1,8 +1,11 @@
-#Description = Run all tasks in CM-agent on remote computer
+<#
+.Synopsis Run all tasks in CM-agent on remote computer
+.Description Run all tasks in CM-agent on given computer.
+#>
+
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $ComputerName = $args[1]
-
 $CaseNr = Read-Host "Related casenumber (if any) "
 
 Invoke-WmiMethod -ComputerName $ComputerName -Namespace root\ccm -Class sms_client -Name TriggerSchedule '{00000000-0000-0000-0000-000000000001}'
@@ -30,5 +33,4 @@ Invoke-WmiMethod -ComputerName $ComputerName -Namespace root\ccm -Class sms_clie
 Invoke-WmiMethod -ComputerName $ComputerName -Namespace root\ccm -Class sms_client -Name TriggerSchedule '{00000000-0000-0000-0000-000000000131}'
 
 WriteLog -LogText "$CaseNr $( $ComputerName.ToUpper() )"
-
 EndScript
