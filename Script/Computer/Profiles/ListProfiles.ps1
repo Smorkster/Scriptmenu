@@ -1,9 +1,13 @@
-#Description = List profiles on remote computer
+<#
+.Synopsis List profiles on remote computer
+.Description List profiles on remote computer.
+#>
+
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $ComputerName = $args[1]
-
 $CaseNr = Read-Host "Related casenumber (if any) "
+
 $profileName = Invoke-Command -ComputerName $ComputerName -Scriptblock `
 {
 	#Creates a variable to hold the path for profiles in the registry
@@ -21,6 +25,6 @@ $profileName = Invoke-Command -ComputerName $ComputerName -Scriptblock `
 Write-Host $profileName
 
 $outputFile = WriteOutput -Output $profileName
-WriteLog -LogText "$CaseNr $ComputerName > $( $profileName.Count )`r`n`t$outputFile"
 
+WriteLog -LogText "$CaseNr $ComputerName > $( $profileName.Count )`r`n`t$outputFile"
 EndScript
