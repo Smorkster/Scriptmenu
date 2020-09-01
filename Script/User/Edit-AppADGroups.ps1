@@ -1,4 +1,8 @@
-#Description = Edit AD-Groups for applications
+<#
+.Synopsis Edit AD-Groups for applications
+.Description Add/remove permissions for applications. These applications are governed by AD-groups. When the permissions are set, a message with summary is copied to the clipboard.
+#>
+
 Import-Module "$( $args[0] )\Modules\FileOps.psm1"
 
 ##########################################
