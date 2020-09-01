@@ -1,4 +1,8 @@
-#Description = Show installed printers on remote computer
+<#
+.Synopsis Show installed printers on remote computer
+.Description Show installed printers on remote computer.
+#>
+
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $ComputerName = $args[1]
