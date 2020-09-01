@@ -1,9 +1,13 @@
-#Description = Force logout for all users on remote computer
+<#
+.Synopsis Force logout for all users on remote computer
+.Description Forces logout of all users on given computer.
+#>
+
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $ComputerName = $args[1]
-
 $CaseNr = Read-Host "Related casenumber (if any) "
+
 try
 {
 	$ErrorActionPreference = "Stop"
@@ -36,6 +40,5 @@ catch [System.Management.Automation.RemoteException]
 Write-Host $Info
 $outputFile = WriteOutput -Output $Info
 
-WriteLog -LogText "$CaseNr $ComputerName > $( $Info.Count ) anv‰ndare`r`n`t$outputFile"
-
+WriteLog -LogText "$CaseNr $ComputerName > $( $Info.Count ) anv√§ndare`r`n`t$outputFile"
 EndScript
