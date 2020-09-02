@@ -256,6 +256,7 @@ function LoadUserData
 		[void] $UserView.Items.Add( $row )
 	}
 
+	WriteLog -LogText "$( $DatePickerStart.SelectedDate.ToShortDateString() ) - $( $DatePickerEnd.SelectedDate.ToShortDateString() ) = $( $UserData.Count ) installationer"
 	$UserData = $null
 	$Window.Title = $WindowTitle
 	$DatePickerStart.IsEnabled = $DatePickerEnd.IsEnabled = $true
