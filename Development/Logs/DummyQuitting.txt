@@ -1,3 +1,0 @@
-l
-2020-06-12 08:09 gaisys6g1w Compare-ADUserMemberships - exit
-2020-06-23 11:58 gaisys6g1w Get-FkontoInfo - .\Skript\Funktionskonto\Get-FkontoInfo.ps1 $usc
