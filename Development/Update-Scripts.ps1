@@ -5,14 +5,19 @@ function CheckForUpdates
 {
 	$btnUpdateScripts.IsEnabled = $false
 	$dirExclusion = @( "ErrorLogs",
+	
 						"Input",
 						"Logs",
 						"Output" )
 	$fileExclusion = @( ( Get-Item $PSCommandPath ).Name )
+	
+	
+	
+	
 	$updatedFiles.Clear()
 	$spUpdateList.Children.Clear()
 
-	$devFiles = Get-ChildItem $devRoot -Exclude $dirExclusion | Get-ChildItem -File -Recurse -Exclude $fileExclusion
+	$devFiles = Get-ChildItem $devRoot -Directory -Exclude $dirExclusion | Get-ChildItem -File -Recurse -Exclude $fileExclusion
 	$prodFiles = Get-ChildItem $prodRoot -Directory -Exclude $( $dirExclusion += "Development"; $dirExclusion ) | Get-ChildItem -File -Recurse
 	$prodFiles += Get-ChildItem $prodRoot -File
 	$MD5 = New-Object -TypeName System.Security.Cryptography.MD5CryptoServiceProvider
@@ -20,11 +25,21 @@ function CheckForUpdates
 	foreach ( $devFile in $devFiles )
 	{
 		$prodFile = $prodFiles | where { $_.Name -eq $devFile.Name }
-		if ( ( $prodFile -eq $null ) -or `
-			( [System.BitConverter]::ToString( $MD5.ComputeHash( [System.IO.File]::ReadAllBytes( $devFile.FullName ) ) ) -ne `
-			[System.BitConverter]::ToString( $MD5.ComputeHash( [System.IO.File]::ReadAllBytes( $prodFile.FullName ) ) ) ) )
+		if ( $prodFile -eq $null )
 		{
-			$updatedFiles.Add( @( $devFile, $prodFile ) )
+			$updatedFiles.Add( @( $devFile, "" ) )
+		}
+		elseif ( [System.BitConverter]::ToString( $MD5.ComputeHash( [System.IO.File]::ReadAllBytes( $devFile.FullName ) ) ) -ne `
+			[System.BitConverter]::ToString( $MD5.ComputeHash( [System.IO.File]::ReadAllBytes( $prodFile.FullName ) ) ) )
+		{
+			if ( $prodFile.LastWriteTime -gt $devFile.LastWriteTime )
+			{
+				$filesUpdatedInProd.Add( @( $devFile, $prodFile ) )
+			}
+			else
+			{
+				$updatedFiles.Add( @( $devFile, $prodFile ) )
+			}
 		}
 		$prodFile = $null
 	}
@@ -37,6 +52,11 @@ function CheckForUpdates
 	{
 		$btnUpdateScripts.IsEnabled = $false
 		$lblUpdateInfo.Content = "No updated files"
+	}
+
+	if ( $filesUpdatedInProd.Count -gt 0 )
+	{
+		AddControlsForUpdatedProdFiles
 	}
 }
 
@@ -66,15 +86,15 @@ function AddControlsForUpdatedFiles
 	{
 		$cbUpdate = New-Object System.Windows.Controls.CheckBox
 		$cbUpdate.Add_MouseRightButtonDown( { $this.Tag.Split( "`n" ) | foreach { & 'C:\Program Files (x86)\Notepad++\notepad++.exe' $_ } } )
-		$cbUpdate.Name = ( $update[0].Name.Split( "\." ) )[0] -replace "-"
+		$cbUpdate.Name = ( $update[0].Name.Split( "\." ) )[0] -replace "-" -replace " "
 		$cbUpdate.Tag = "$( $update[0].FullName )`n$( $update[1].FullName )"
 		$devUpdated = Get-Date $update[0].LastWriteTime -Format 'yyyy-MM-dd HH:mm:ss'
-		if ( $update[1] -eq $null ) { $prodUpdated = "New script" }
+		if ( $update[1] -eq "" ) { $prodUpdated = "New script" }
 		else { $prodUpdated = Get-Date $update[1].LastWriteTime -Format 'yyyy-MM-dd HH:mm:ss' }
 		$cbUpdate.ToolTip = "dev updated:`t$devUpdated`nprod updated:`t$prodUpdated"
 		$cbUpdate.Content = "$( ( $( $update[0] ).FullName -split "development" )[1] )"
 
-		if ( ( Get-Content $update[0] | select-string "Description = " ) -match "under development" )
+		if ( ( Get-Content $update[0].FullName | Select-String "^.Synopsis " ) -match "under development" )
 		{
 			$cbUpdate.FontWeight = "Bold"
 			$cbUpdate.Foreground = "Red"
@@ -90,6 +110,23 @@ function AddControlsForUpdatedFiles
 	if ( ( $spUpdateList.Children | where { -not ( $_.IsEnabled ) -and ( $_.Tag -ne $null ) } ).Count -gt 0 )
 	{
 		$lblUpdateInfo.Content += "`n$( ( $spUpdateList.Children | where { -not ( $_.IsEnabled ) -and ( $_.Tag -ne $null ) } ).Count ) under development"
+	}
+}
+
+############################################################################
+# Lists all files that were updated in production but not updating it in dev
+function AddControlsForUpdatedProdFiles
+{
+	$l = New-Object System.Windows.Controls.Label
+	$l.Content = "Dessa har uppdaterats i produktion, men inte i dev."
+	$spOtherUpdates.AddChild( $l )
+	foreach ( $file in $filesUpdatedInProd )
+	{
+		$l = New-Object System.Windows.Controls.Label
+		$l.Content = "$( $file[1].Name )`n`t$( $file[1].LastWriteTime.ToString() ) in prod.`n`t$( $file[0].LastWriteTime.ToString() ) in dev."
+		$l.Tag = $file
+		$l.Add_MouseRightButtonDown( { $this.Tag | foreach { & 'C:\Program Files (x86)\Notepad++\notepad++.exe' $_.FullName } } )
+		$spOtherUpdates.AddChild( $l )
 	}
 }
 
@@ -144,6 +181,8 @@ function UpdateScripts
 	else
 	{ $cbMarkAll.IsChecked = $false }
 	$lblUpdateInfo.Content = ""
+	$spOtherUpdates.Children.Clear()
+	$Script:filesUpdatedInProd.Clear()
 	$Script:updatedFiles.Clear()
 	$Window.Title = ""
 }
@@ -157,6 +196,7 @@ $vars | foreach { Set-Variable -Name $_ -Value $Window.FindName( $_ ) }
 $Script:devRoot = ( Get-Item $PSCommandPath ).Directory.FullName
 $Script:prodRoot = ( Get-Item $PSCommandPath ).Directory.Parent.FullName
 $Script:updatedFiles = New-Object System.Collections.ArrayList
+$Script:filesUpdatedInProd = New-Object System.Collections.ArrayList
 $btnCheckForUpdates.Add_Click( { CheckForUpdates } )
 $btnUpdateScripts.Add_Click( { UpdateScripts } )
 $Window.Add_ContentRendered( { $Window.Top = 80; $Window.Activate() } )
