@@ -170,6 +170,11 @@ function UpdateScripts
 	$ofs = ", "
 	$nudate = Get-Date -Format "yyyy-MM-dd HH:mm"
 	$LogText = "Updating $( [string]( $fileCheckboxes.Content ) )"
+	if ( @( $Script.filesUpdatedInProd ).Count -gt 0 )
+	{
+		$LogText += "`n`tFiles updated in prod, but not in dev: "
+		$LogText += [string]( $Script:filesUpdatedInProd | foreach { ( $_[0].FullName -split "development" )[1] } )
+	}
 	$LogFilePath = "$( ( Get-Item $PSCommandPath ).Directory.Parent.FullName )\Logs\$( [datetime]::Now.Year )\$( [datetime]::Now.Month )\Update-Scripts - log.txt"
 	if ( -not ( Test-Path $LogFilePath ) ) { New-Item -Path $LogFilePath -ItemType File -Force | Out-Null } # If logfile does not exist, create it
 	Add-Content -Path $LogFilePath -Value ( $nudate + " " + $env:USERNAME + " [" + $env:USERDOMAIN + "] => " + $LogText )
