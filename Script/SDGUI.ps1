@@ -15,7 +15,7 @@ function GetFolderItems
 	if ( $files = Get-ChildItem -File -Filter "*ps1" -Path $dirPath.FullName | where { $_.Name -ne ( Get-Item $PSCommandPath ).Name } | `
 		select -Property @{ Name = "Name"; Expression = { $_.Name } }, `
 			@{ Name = "Path"; Expression = { $_.FullName } }, `
-			@{ Name = "Synopsis"; Expression = { ( Select-String -InputObject $_ -Pattern "^.Synopsis" -Encoding Default ).Line.TrimStart( ".Synopsis " ) } }, `
+			@{ Name = "Synopsis"; Expression = { ( Select-String -InputObject $_ -Pattern "^.Synopsis" -Encoding Default ).Line.Replace( ".Synopsis ", "" ) } }, `
 			@{ Name = "Description"; Expression = { ( Select-String -InputObject $_ -Pattern "^.Description" -Encoding Default ).Line.TrimStart( ".Description " ) } } | `
 			sort Synopsis )
 	{
