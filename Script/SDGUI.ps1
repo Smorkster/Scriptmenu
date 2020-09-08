@@ -51,7 +51,7 @@ function ConnectToComputer
 	StartWinRMOnRemoteComputer
 }
 
-function DisonnectComputer
+function DisconnectComputer
 {
 	$Script:ComputerObj = $null
 	$tcDator.Items.RemoveAt( 0 )
@@ -85,42 +85,48 @@ function StartWinRMOnRemoteComputer
 	}
 }
 
+#####################################
+# Get WMI information for given class
+function FetchPCInfo
+{
+	param ( $Class, $Filter = $null )
+	return Get-CimInstance -ComputerName $ComputerObj.ComputerName -ClassName $Class -Filter $Filter
+}
+
 ######################################
 # Get information from remote computer
 function GetPCInfo
 {
-	Get-WmiObject -Class Win32_NetworkAdapterConfiguration -ComputerName $ComputerObj.ComputerName -Filter "IPEnabled='True'" | select -Property MACAddress, Description, IPAddress | foreach `
-	{
-		$t = @{
-			MAC = $_.MACAddress
-			NetDesc = $_.Description
-			IP = $_.IPAddress[0]
-		}
-		$ComputerObj.NetAdapters += $t
-	}
-	$ComputerObj.Model = ( Get-WmiObject -ComputerName $ComputerObj.ComputerName -Class win32_computersystem ).Model
-	$ComputerObj.Serienummer = ( Get-WmiObject -ComputerName $ComputerObj.ComputerName -Class win32_bios ).SerialNumber
-	$ComputerObj.LastBoot = ( Get-CimInstance -ComputerName $ComputerObj.ComputerName -ClassName win32_operatingsystem ).LastBootUpTime
-	$ComputerObj.InstallDate = ( Get-CimInstance -ComputerName $ComputerObj.ComputerName -ClassName win32_operatingsystem ).InstallDate
+	$c = FetchPCInfo -Class Win32_NetworkAdapterConfiguration -Filter "IPEnabled='True'"
+	$c | foreach { $ComputerObj.NetAdapters += @{ MAC = $_.MACAddress; NetDesc = $_.Description; IP = $_.IPAddress[0] } }
+
+	$ComputerObj.Model = ( FetchPCInfo -Class win32_computersystem ).Model
+	$ComputerObj.Serialnumber = ( FetchPCInfo -Class win32_bios ).SerialNumber
+
+	$c = FetchPCInfo -Class win32_operatingsystem
+	$ComputerObj.LastBoot = $c.LastBootUpTime
+	$duration = ( Get-Date ) - $c.LastBootUpTime
+	$ComputerObj.TimeSinceLastBoot = "$( $duration.Days ) days $( $duration.Hours ) hours $( $duration.Minutes ) minutes"
+	$ComputerObj.InstallDate = $c.InstallDate
 }
 
 ###############################
 # Get PCRole of remote computer
 function GetPCRole
 {
-	$ComputerObj.Roll = $null
-	$PCRoll = Get-ADComputer $ComputerObj.ComputerName -Properties Memberof | select -ExpandProperty MemberOf | where { $_ -match "_Wrk_" }
+	$ComputerObj.Role = $null
+	$PCRole = Get-ADComputer $ComputerObj.ComputerName -Properties Memberof | select -ExpandProperty MemberOf | where { $_ -match "_Wrk_" }
 	$types = @( "Role1", "Role2" )
 
-	switch ( ( $types | where { $PCRoll -match $_ } ) )
+	switch ( ( $types | where { $PCRole -match $_ } ) )
 	{
 		"Role1" { $r = "Role1-PC" }
 		"Role2" { $r = "Role2-PC" }
 	}
 	if ( $r -eq $null ) { $r = "Unknown-PC" }
-	$ComputerObj.Roll = $r
+	$ComputerObj.Role = $r
 
-	if ( ( @( "Role1-PC" ) -contains $ComputerObj.Roll ) -or ( @( "Org1*", "Org2*" ) -contains $ComputerObj.ComputerName.Substring( 0, 3 ) ) )
+	if ( ( @( "Role1-PC" ) -contains $ComputerObj.Role ) -or ( @( "Org1*", "Org2*" ) -contains $ComputerObj.ComputerName.Substring( 0, 3 ) ) )
 	{
 		Add-Member -InputObject $ComputerObj -MemberType NoteProperty -Name DontInstall -Value "Do NOT reinstall: $r"
 	}
@@ -187,7 +193,7 @@ function CreateComputerInfo
 	{
 		if ( $_.name -eq "NetAdapters" )
 		{
-			for ($i = 1; $i -le $ComputerObj.NetAdapters.Count; $i++)
+			for ( $i = 1; $i -le $ComputerObj.NetAdapters.Count; $i++ )
 			{
 				$ComputerObj.NetAdapters[$i-1].Keys | foreach `
 				{
@@ -197,7 +203,7 @@ function CreateComputerInfo
 		}
 		else
 		{
-			$datagrid.AddChild( [pscustomobject]@{ "Name" = $_.Name; "Info" = $_.Definition.Split("=")[1] } )
+			$datagrid.AddChild( [pscustomobject]@{ "Name" = $_.Name; "Info" = $_.Definition.Split( "=" )[1] } )
 		}
 	}
 
@@ -216,7 +222,7 @@ function CreateComputerObject
 		$Name
 	)
 
-	$Script:ComputerObj = [PSCustomObject]@{ "InstallDate" = ""; "LastBoot" = ""; "Serienummer" = ""; "Model" = ""; "NetAdapters" = @(); "Roll" = ""; "ComputerName" = $Name }
+	$Script:ComputerObj = [PSCustomObject]@{ "InstallDate" = ""; "LastBoot" = ""; "TimeSinceLastBoot" = ""; "Serialnumber" = ""; "Model" = ""; "NetAdapters" = @(); "Role" = ""; "ComputerName" = $Name }
 }
 
 #########################################################
@@ -247,7 +253,7 @@ function CreateComputerInput
 	Set-Variable -Name "btnConnect" -Value $b -Scope script
 
 	$b2 = New-Object System.Windows.Controls.Button
-	$b2.Add_Click( { DisonnectComputer } )
+	$b2.Add_Click( { DisconnectComputer } )
 	$b2.Content = "Disconnect"
 	$b2.Name = "btnDisconnect"
 	$b2.Visibility = [System.Windows.Visibility]::Collapsed
@@ -295,7 +301,7 @@ function CreateScriptGroup
 			$label.Content += "`nOnly use if you're told to."
 		}
 
-		if ( $file.Synopsis -match "[BO]" )
+		if ( $file.Synopsis -match "\[BO\]" )
 		{
 			if ( ( Get-ADUser $env:USERNAME -Properties MemberOf | select -ExpandProperty MemberOf ) -match "Role_Backoffice" )
 			{
@@ -360,6 +366,8 @@ function CreateTabItem
 	return $tabitem
 }
 
+####################################################
+# Check if user is part of admingroup for Scriptmenu
 function CheckForAdmin
 {
 	if ( $adminList -contains $env:USERNAME )
@@ -378,9 +386,10 @@ function CheckForAdmin
 			$ProgramRunspace.Dispose()
 		} )
 	}
-	if ( $PSCommandPath -match "Development" ) { SetTitle -Add " - Developer edition" }
 }
 
+################################################
+# Add controls to send report or suggestion mail
 function AddReportTool
 {
 	$ti = New-Object System.Windows.Controls.TabItem
@@ -468,6 +477,7 @@ function FulHack
 Import-Module "$( ( Get-Item $PSCommandPath ).Directory.Parent.FullName )\Modules\FileOps.psm1" -Force
 
 $Window, $vars = CreateWindow
+if ( $PSCommandPath -match "Development" ) { SetTitle -Add " - Developer edition" }
 $vars | foreach { Set-Variable -Name $_ -Value $Window.FindName( $_ ) }
 $adminList = @( "admin1", "admin2", "admin3" )
 
