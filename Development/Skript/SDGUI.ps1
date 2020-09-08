@@ -12,7 +12,12 @@ function GetFolderItems
 
 	Set-Variable -Name ( "wp" + $( $dirPath.Name ) ) -Value $spFolder -Scope script
 
-	if ( $files = Get-ChildItem -File -Filter "*ps1" -Path $dirPath.FullName | where { $_.Name -ne ( Get-Item $PSCommandPath ).Name } | select -Property @{ Name = "Name"; Expression = { $_.Name } }, @{ Name = "Path"; Expression = { $_.FullName } }, @{ Name = "Description"; Expression = { ( Select-String -InputObject $_ -Pattern "#Description" -Encoding Default ).Line.TrimStart( "#Description = " ) } } | sort Description )
+	if ( $files = Get-ChildItem -File -Filter "*ps1" -Path $dirPath.FullName | where { $_.Name -ne ( Get-Item $PSCommandPath ).Name } | `
+		select -Property @{ Name = "Name"; Expression = { $_.Name } }, `
+			@{ Name = "Path"; Expression = { $_.FullName } }, `
+			@{ Name = "Synopsis"; Expression = { ( Select-String -InputObject $_ -Pattern "^.Synopsis" -Encoding Default ).Line.Replace( ".Synopsis ", "" ) } }, `
+			@{ Name = "Description"; Expression = { ( Select-String -InputObject $_ -Pattern "^.Description" -Encoding Default ).Line.TrimStart( ".Description " ) } } | `
+			sort Synopsis )
 	{
 		if ( $dirPath.FullName -match "(Computer\\)" ) { $wpScriptGroup = CreateScriptGroup $files }
 		else { $wpScriptGroup = CreateScriptGroup $files }
@@ -30,11 +35,12 @@ function GetFolderItems
 		$tabcontrol = New-Object System.Windows.Controls.TabControl
 		$tabcontrol.Name = "tc"+( $dirPath.Name -replace " ")
 		Set-Variable -Name ( "tc" + $( $dirPath.Name ) ) -Value $tabcontrol -Scope script
+		$tiList = @()
 		foreach ( $dir in $dirs )
 		{
-			$tI = CreateTabItem $dir
-			$tabcontrol.AddChild( $tI )
+			$tiList += ( CreateTabItem $dir )
 		}
+		$tiList | sort $_.Header | foreach { $tabcontrol.AddChild( $_ ) }
 		$spFolder.AddChild( $tabcontrol )
 	}
 	return $spFolder
@@ -45,7 +51,7 @@ function ConnectToComputer
 	StartWinRMOnRemoteComputer
 }
 
-function DisonnectComputer
+function DisconnectComputer
 {
 	$Script:ComputerObj = $null
 	$tcDator.Items.RemoveAt( 0 )
@@ -62,7 +68,7 @@ function StartWinRMOnRemoteComputer
 {
 	try
 	{
-		SetTitle -Replace -Text ( "Verify that '" + $tbComputerName.Text + "' is reachable" )
+		SetTitle -Replace -Text ( "Verifies that '" + $tbComputerName.Text + "' is reachable" )
 		Test-WSMan $tbComputerName.Text -ErrorAction Stop
 
 		$btnConnect.IsEnabled = $false
@@ -75,51 +81,58 @@ function StartWinRMOnRemoteComputer
 	{
 		SetTitle -Add -Text " ... Failed"
 		ShowMessageBox "No contact with computer, or name does not exist. Try again."
+		$tbComputerName.Focus()
 	}
+}
+
+#####################################
+# Get WMI information for given class
+function FetchPCInfo
+{
+	param ( $Class, $Filter = $null )
+	return Get-CimInstance -ComputerName $ComputerObj.ComputerName -ClassName $Class -Filter $Filter
 }
 
 ######################################
 # Get information from remote computer
 function GetPCInfo
 {
-	Get-WmiObject -Class Win32_NetworkAdapterConfiguration -ComputerName $ComputerObj.ComputerName -Filter "IPEnabled='True'" | select -Property MACAddress, Description, IPAddress | foreach `
-	{
-		$t = @{
-			MAC = $_.MACAddress
-			NetDesc = $_.Description
-			IP = $_.IPAddress[0]
-		}
-		$ComputerObj.NetAdapters += $t
-	}
-	$ComputerObj.Model = ( Get-WmiObject -ComputerName $ComputerObj.ComputerName -Class win32_computersystem ).Model
-	$ComputerObj.Serienummer = ( Get-WmiObject -ComputerName $ComputerObj.ComputerName -Class win32_bios ).SerialNumber
-	$ComputerObj.LastBoot = ( Get-CimInstance -ComputerName $ComputerObj.ComputerName -ClassName win32_operatingsystem ).LastBootUpTime
-	$ComputerObj.InstallDate = ( Get-CimInstance -ComputerName $ComputerObj.ComputerName -ClassName win32_operatingsystem ).InstallDate
+	$c = FetchPCInfo -Class Win32_NetworkAdapterConfiguration -Filter "IPEnabled='True'"
+	$c | foreach { $ComputerObj.NetAdapters += @{ MAC = $_.MACAddress; NetDesc = $_.Description; IP = $_.IPAddress[0] } }
+
+	$ComputerObj.Model = ( FetchPCInfo -Class win32_computersystem ).Model
+	$ComputerObj.Serialnumber = ( FetchPCInfo -Class win32_bios ).SerialNumber
+
+	$c = FetchPCInfo -Class win32_operatingsystem
+	$ComputerObj.LastBoot = $c.LastBootUpTime
+	$duration = ( Get-Date ) - $c.LastBootUpTime
+	$ComputerObj.TimeSinceLastBoot = "$( $duration.Days ) days $( $duration.Hours ) hours $( $duration.Minutes ) minutes"
+	$ComputerObj.InstallDate = $c.InstallDate
 }
 
 ###############################
 # Get PCRole of remote computer
 function GetPCRole
 {
-	$ComputerObj.Roll = $null
-	$PCRoll = Get-ADComputer $ComputerObj.ComputerName -Properties Memberof | select -ExpandProperty MemberOf | where { $_ -match "_Wrk_" }
+	$ComputerObj.Role = $null
+	$PCRole = Get-ADComputer $ComputerObj.ComputerName -Properties Memberof | select -ExpandProperty MemberOf | where { $_ -match "_Wrk_" }
 	$types = @( "Role1", "Role2" )
 
-	switch ( ( $types | where { $PCRoll -match $_ } ) )
+	switch ( ( $types | where { $PCRole -match $_ } ) )
 	{
 		"Role1" { $r = "Role1-PC" }
 		"Role2" { $r = "Role2-PC" }
 	}
 	if ( $r -eq $null ) { $r = "Unknown-PC" }
-	$ComputerObj.Roll = $r
+	$ComputerObj.Role = $r
 
-	if ( ( @( "Role1-PC" ) -contains $ComputerObj.Roll ) -or ( @( "Org1*", "Org2*") -contains $ComputerObj.ComputerName.Substring( 0, 3 ) ) )
+	if ( ( @( "Role1-PC" ) -contains $ComputerObj.Role ) -or ( @( "Org1*", "Org2*" ) -contains $ComputerObj.ComputerName.Substring( 0, 3 ) ) )
 	{
-		Add-Member -InputObject $ComputerObj -MemberType NoteProperty -Name DontInstall -Value "Do NOT reinstall computer: $r"
+		Add-Member -InputObject $ComputerObj -MemberType NoteProperty -Name DontInstall -Value "Do NOT reinstall: $r"
 	}
-	elseif ( ( @( "SpecComputer1", "SpecComputer2" ) | foreach { $_ -like "$( $ComputerObj.ComputerName )*" } ) -eq $true )
+	elseif ( ( @( "Computer1", "Computer2" ) | foreach { $_ -like "$( $ComputerObj.ComputerName )*" } ) -eq $true )
 	{
-		Add-Member -InputObject $ComputerObj -MemberType NoteProperty -Name DontInstall -Value "AAA-dator Do NOT reinstall"
+		Add-Member -InputObject $ComputerObj -MemberType NoteProperty -Name DontInstall -Value "AAA-computer Do NOT reinstall"
 	}
 }
 
@@ -180,7 +193,7 @@ function CreateComputerInfo
 	{
 		if ( $_.name -eq "NetAdapters" )
 		{
-			for ($i = 1; $i -le $ComputerObj.NetAdapters.Count; $i++)
+			for ( $i = 1; $i -le $ComputerObj.NetAdapters.Count; $i++ )
 			{
 				$ComputerObj.NetAdapters[$i-1].Keys | foreach `
 				{
@@ -190,12 +203,12 @@ function CreateComputerInfo
 		}
 		else
 		{
-			$datagrid.AddChild( [pscustomobject]@{ "Name" = $_.Name; "Info" = $_.Definition.Split("=")[1] } )
+			$datagrid.AddChild( [pscustomobject]@{ "Name" = $_.Name; "Info" = $_.Definition.Split( "=" )[1] } )
 		}
 	}
 
-	$datagrid.Columns.Add($colName)
-	$datagrid.Columns.Add($colInfo)
+	$datagrid.Columns.Add( $colName )
+	$datagrid.Columns.Add( $colInfo )
 	$tI.AddChild( $datagrid )
 	$tcDator.Items.Insert( 0, $tI )
 	$tcDator.SelectedIndex = 0
@@ -209,7 +222,7 @@ function CreateComputerObject
 		$Name
 	)
 
-	$Script:ComputerObj = [PSCustomObject]@{ "InstallDate" = ""; "LastBoot" = ""; "Serienummer" = ""; "Model" = ""; "NetAdapters" = @(); "Roll" = ""; "ComputerName" = $Name }
+	$Script:ComputerObj = [PSCustomObject]@{ "InstallDate" = ""; "LastBoot" = ""; "TimeSinceLastBoot" = ""; "Serialnumber" = ""; "Model" = ""; "NetAdapters" = @(); "Role" = ""; "ComputerName" = $Name }
 }
 
 #########################################################
@@ -221,7 +234,7 @@ function CreateComputerInput
 	$sp.Margin = "0,15,0,10"
 
 	$l = New-Object System.Windows.Controls.Label
-	$l.Content = "Computername:"
+	$l.Content = "Ange datornamn"
 
 	$tb = New-Object System.Windows.Controls.TextBox
 	$tb.Name = "tbComputerName"
@@ -240,7 +253,7 @@ function CreateComputerInput
 	Set-Variable -Name "btnConnect" -Value $b -Scope script
 
 	$b2 = New-Object System.Windows.Controls.Button
-	$b2.Add_Click( { DisonnectComputer } )
+	$b2.Add_Click( { DisconnectComputer } )
 	$b2.Content = "Disconnect"
 	$b2.Name = "btnDisconnect"
 	$b2.Visibility = [System.Windows.Visibility]::Collapsed
@@ -274,20 +287,21 @@ function CreateScriptGroup
 
 		$button.Content = "Run >"
 		$button.ToolTip = $file.Path
-		$label.Content = $file.Description
+		$label.Content = $file.Synopsis
+		$label.ToolTip = [string]$file.Description.Replace( ". ", ".`n" )
 
-		if ( $label.Content -match "under development" )
+		if ( $file.Synopsis -match "under development" )
 		{
 			$label.Background = "Red"
 			if ( $adminList -notcontains $env:USERNAME ) { $button.IsEnabled = $false }
 		}
-		elseif ( $label.Content -match "under testing" )
+		elseif ( $file.Synopsis -match "under testing" )
 		{
 			$label.Background = "LightBlue"
-			$label.Content += "`nOnly use if told to."
+			$label.Content += "`nOnly use if you're told to."
 		}
 
-		if ( $label.Content.Contains( "[BO]" ) )
+		if ( $file.Synopsis -match "\[BO\]" )
 		{
 			if ( ( Get-ADUser $env:USERNAME -Properties MemberOf | select -ExpandProperty MemberOf ) -match "Role_Backoffice" )
 			{
@@ -296,7 +310,7 @@ function CreateScriptGroup
 			else
 			{
 				$button.IsEnabled = $false
-				$button.ToolTip = "This script is only to be used by backoffice"
+				$button.ToolTip = "This script should only be used by backoffice"
 			}
 		}
 
@@ -312,9 +326,9 @@ function CreateScriptGroup
 			[void]$ProgramRunspace.AddScript( {
 				param( $arg, $hidden )
 				if ( $hidden )
-				{ start powershell -WindowStyle Hidden -ArgumentList $arg } # Starts script, using gui, without consolewindow
+				{ start powershell -WindowStyle Hidden -ArgumentList $arg } # Starts script, with gui, without consolewindow
 				else
-				{ start powershell -ArgumentList $arg } # Starts script, without gui, in new consolewindow
+				{ start powershell -ArgumentList $arg } # Starts script, without gui, with consolewindow
 			} ).AddArgument( $args ).AddArgument( $hidden )
 
 			$run = $ProgramRunspace.BeginInvoke() # Start runspace
@@ -338,7 +352,9 @@ function CreateTabItem
 	)
 
 	$tabitem = New-Object System.Windows.Controls.TabItem
-	$tabitem.Header = $dirPath.Name
+	$tT = ""
+	( $dirPath.Name ).GetEnumerator() | foreach { if ( $_ -cmatch "\b[A-Z]") { $tT += " $_" } else { $tT += $_ } }
+	$tabitem.Header = $tT.Trim()
 	$tabitem.Name = "ti" + $( $dirPath.Name )
 	Set-Variable -Name ( "ti" + $( $dirPath.Name ) ) -Value $tabitem -Scope Script
 	$g = New-Object System.Windows.Controls.Grid
@@ -350,7 +366,8 @@ function CreateTabItem
 	return $tabitem
 }
 
-# Check if logged on user is part of admingroup
+####################################################
+# Check if user is part of admingroup for Scriptmenu
 function CheckForAdmin
 {
 	if ( $adminList -contains $env:USERNAME )
@@ -358,17 +375,21 @@ function CheckForAdmin
 		$Admins.Visibility = [System.Windows.Visibility]::Visible
 		$btnCheckForUpdates.Add_Click( {
 			$ProgramRunspace = [System.Management.Automation.PowerShell]::Create() # Create new runspace
-			$args = @( "\\dfs\gem$\Scriptmenu\Development\Update-Scripts.ps1", ( Get-Item $PSScriptRoot ).Parent.FullName )
+			if ( ( Get-Item $PSScriptRoot ).Parent.Name -eq "Development" )
+			{ $script = "Update-Scripts.ps1" }
+			else
+			{ $script = "Development\Update-Scripts.ps1" }
+			$args = @( "$( ( Get-Item $PSScriptRoot ).Parent.FullName )\$script", ( Get-Item $PSScriptRoot ).Parent.FullName )
 			[void]$ProgramRunspace.AddScript( { param( $arg ); start powershell -WindowStyle Hidden -ArgumentList $arg } ).AddArgument( $args )
-			$run = $ProgramRunspace.BeginInvoke() # Start runspace
+			$run = $ProgramRunspace.BeginInvoke() # Run runspace
 			do { Start-Sleep -Milliseconds 50 } until ( $run.IsCompleted )
 			$ProgramRunspace.Dispose()
 		} )
 	}
-	if ( $PSCommandPath -match "Development" ) { SetTitle -Add " - Developer edition" }
 }
 
-# Add a tabitem to send error report or suggestions
+################################################
+# Add controls to send report or suggestion mail
 function AddReportTool
 {
 	$ti = New-Object System.Windows.Controls.TabItem
@@ -383,7 +404,7 @@ function AddReportTool
 	$rbR = New-Object System.Windows.Controls.RadioButton
 	$rbS = New-Object System.Windows.Controls.RadioButton
 
-	$ti.Header = "Errorreporting / Suggestions"
+	$ti.Header = "Report error / Suggestions"
 	$ti.Background = "#FFFF9C9C"
 
 	$spScript.Orientation = $spSubject.Orientation = "Horizontal"
@@ -398,7 +419,7 @@ function AddReportTool
 	$cb.Height = "25"
 	( Get-ChildItem $PSCommandPath.Directory -Filter "*ps1" -File -Recurse ).Name | sort | foreach { [void] $cb.Items.Add( $_ ) }
 
-	$btnAdd.Content = "Add name to be reported"
+	$btnAdd.Content = "Add name of script to be reported"
 	$btnAdd.Margin = "0,5,10,5"
 	$btnSend.Content = "Send report"
 
@@ -406,7 +427,7 @@ function AddReportTool
 	$rbR.Content = "Error report"
 	$rbR.GroupName = "Subject"
 	$rbR.IsChecked = $true
-	$rbS.Content = "Suggestions"
+	$rbS.Content = "Suggestion"
 	$rbS.GroupName = "Subject"
 
 	$btnAdd.Add_Click( {
@@ -414,19 +435,19 @@ function AddReportTool
 		$this.Parent.Children[1].SelectedIndex = -1
 	} )
 	$btnSend.Add_Click( {
-		if ( $this.Parent.Children[1].Children[1].IsChecked ) { $subject = "Error reporting" }
-		elseif ( $this.Parent.Children[1].Children[2].IsChecked ) { $subject = "Suggestions" }
+		if ( $this.Parent.Children[1].Children[1].IsChecked ) { $subject = "Error report" }
+		elseif ( $this.Parent.Children[1].Children[2].IsChecked ) { $subject = "Suggestion" }
 		Send-MailMessage -From ( ( Get-ADUser ( Get-ADUser $env:USERNAME ).SamAccountName.Replace( "admin", "" ) -Properties EmailAddress ).EmailAddress ) `
 			-To backoffice@test.com `
-			-SmtpServer smtprelay `
+			-SmtpServer smtprelay.test.com `
 			-Subject "$subject Scriptmenu" `
 			-Body "$( $this.Parent.Children[2].Text )`n`nFrom:`n$( ( Get-ADUser $env:USERNAME ).Name )" `
 			-Encoding Default
 		$this.Parent.Children[2].Text = ""
 	} )
-	$rbR.Add_Checked( { $this.Parent.Parent.Children[1].Children[0].Content = "Add name of script to be reported"
+	$rbR.Add_Checked( { $this.Parent.Parent.Children[1].Children[0].Content = "Add scriptname to be reported"
 		$this.Parent.Parent.Children[3].Content = "Send report" } )
-	$rbS.Add_Checked( { $this.Parent.Parent.Children[1].Children[0].Content = "Add name of script for suggestions"
+	$rbS.Add_Checked( { $this.Parent.Parent.Children[1].Children[0].Content = "Add scriptname to suggestion"
 		$this.Parent.Parent.Children[3].Content = "Send suggestion" } )
 
 	[void] $spSubject.AddChild( $lblSubject )
@@ -456,8 +477,9 @@ function FulHack
 Import-Module "$( ( Get-Item $PSCommandPath ).Directory.Parent.FullName )\Modules\FileOps.psm1" -Force
 
 $Window, $vars = CreateWindow
+if ( $PSCommandPath -match "Development" ) { SetTitle -Add " - Developer edition" }
 $vars | foreach { Set-Variable -Name $_ -Value $Window.FindName( $_ ) }
-$adminList = @( "admin1", "admin2" )
+$adminList = @( "admin1", "admin2", "admin3" )
 
 Push-Location ( Get-Item $PSCommandPath ).Directory.FullName
 $MainContent.AddChild( ( GetFolderItems "" ) )
