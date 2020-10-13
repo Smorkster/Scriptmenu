@@ -33,12 +33,12 @@
                 <GridView>
                     <GridViewColumn DisplayMemberBinding="{Binding Name}">
                         <GridViewColumn.Header>
-                            <GridViewColumnHeader Name="NameHeader" Width="220">Name</GridViewColumnHeader>
+                            <GridViewColumnHeader Name="NameHeader" Width="230">Name</GridViewColumnHeader>
                         </GridViewColumn.Header>
                     </GridViewColumn>
                     <GridViewColumn DisplayMemberBinding="{Binding Count}">
                         <GridViewColumn.Header>
-                            <GridViewColumnHeader Name="CountHeader" Width="70">Amount</GridViewColumnHeader>
+                            <GridViewColumnHeader Name="CountHeader" Width="80">Amount</GridViewColumnHeader>
                         </GridViewColumn.Header>
                     </GridViewColumn>
                 </GridView>
