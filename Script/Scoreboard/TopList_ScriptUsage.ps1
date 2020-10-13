@@ -7,36 +7,38 @@
 # Collect scripts and usagedata
 function CollectData
 {
+	$Window.Title = "Reading logs..."
 	$rbUsers.IsEnabled = $rbScript.IsEnabled = $true
 	$logs = Get-ChildItem "$( ( Get-Item $PSCommandPath ).Directory.Parent.Parent.FullName )\Logs" -Exclude "DummyQuitting.txt" -File -Recurse
 
 	foreach ( $log in $logs )
 	{
 		$logName = $log.BaseName -replace " - log"
-		if ( $Script:scriptList -notcontains $logName )
+		if ( $Script:ScriptList -notcontains $logName )
 		{
-			$Script:scriptList += $logName
+			$Script:ScriptList += $logName
 		}
 		Get-Content $log | foreach `
 		{
 			if ( $_ -match "^\d{4}-\d{2}-\d{2}" )
 			{
-				$user = ( $_ -split " " )[2]
-				if ( $Script:users.$user )
+				$user = ( $_ -split " " )[2].ToLower()
+
+				if ( $Users.Keys -match $user )
 				{
-					if ( $Script:users.$user.scripts.$logName )
+					if ( $Users.$user.Scripts.$logName )
 					{
-						$Script:users.$user.scripts.$logName++
+						$Users.$user.Scripts.$logName++
 					}
 					else
 					{
-						$Script:users.$user.scripts | Add-Member -MemberType NoteProperty -Name $logName -Value 1
+						Add-Member -InputObject $Users.$user.Scripts -MemberType NoteProperty -Name $logName -Value 1
 					}
-					$Script:users.$user.usecount++
+					$Users.$user.TotalUseCount++
 				}
 				else
 				{
-					$Script:users.Add( $user, @{ usecount = 1; scripts = [pscustomobject]@{ $logName = 1 } } )
+					$Users.Add( $user , @{ TotalUseCount = 1; Scripts = [pscustomobject]@{ $logName = 1 }; Name = ( Get-ADUser $user ).Name } )
 				}
 			}
 		}
@@ -49,12 +51,12 @@ function ListByScript
 {
 	$TopList.Items.Clear()
 	$list = @()
-	foreach ( $script in $Script:scriptList )
+	foreach ( $script in $ScriptList )
 	{
-		$scriptUseCount = 0
+		$scriptTotalUseCount = 0
 
-		$Script:users.Keys | where { ( $Script:users.$_.scripts | Get-Member -Name $script ).Count -gt 0 } | foreach { $scriptUseCount += ( $Script:users.$_.scripts.$script ) }
-		$list += ,[pscustomobject]@{ Name = $script; Count = $scriptUseCount }
+		$Users.Keys | where { ( $Users.$_.Scripts | Get-Member -Name $script ).Count -gt 0 } | foreach { $scriptTotalUseCount += ( $Users.$_.Scripts.$script ) }
+		$list += ,[pscustomobject]@{ Name = $script; Count = $scriptTotalUseCount }
 	}
 	$list | sort -Descending Count | foreach { $TopList.Items.Add( $_ ) }
 	$Window.Title = "Most used scripts"
@@ -66,7 +68,7 @@ function ListByUser
 {
 	$TopList.Items.Clear()
 	$list = @()
-	$Script:users.Keys | foreach { $list += ,[pscustomobject]@{ Name = ( ( Get-ADUser $_ ).Name ); Count = $Script:users.$_.usecount } }
+	$Users.GetEnumerator() | foreach { $list += ,[pscustomobject]@{ Name = ( $_.Value.Name ); Count = $_.Value.TotalUseCount } }
 	$list | sort -Descending Count | foreach { $TopList.Items.Add( $_ ) }
 	$Window.Title = "Toplist users"
 }
@@ -77,21 +79,26 @@ function NeverUsedScripts
 {
 	if ( $btnNeverUsed.Content -eq "Never used" )
 	{
+		$CountHeader.Content = "Created"
+		$rbScript.IsChecked = $false
+		$rbUsers.IsChecked = $false
 		$Toplist.Items.Clear()
-		$scripts = Get-ChildItem "$Root\Script" -Filter "*ps1" -Exclude "SDGUI.ps1" -Recurse -File | select -ExpandProperty name | foreach { $_ -replace ".ps1" } | sort
+		$scripts = Get-ChildItem "$Root\Script" -Filter "*ps1" -Exclude "SDGUI.ps1" -Recurse -File | sort Name
 		$logs = Get-ChildItem "$Root\Logs" -Filter "*txt" -Recurse -File | select -ExpandProperty name | foreach { $_ -replace " - log.txt" }
 		foreach ( $script in $scripts )
 		{
-			if ( $logs -notcontains $script )
+			if ( $logs -notcontains $script.Name )
 			{
-				$TopList.Items.Add( [pscustomobject]@{ Name = $script; Count = 0 } )
+				$TopList.Items.Add( [pscustomobject]@{ Name = ( $script.Name -replace ".ps1" ); Count = ( $script.CreationTime.ToShortDateString() ) } )
 			}
 		}
 		$btnNeverUsed.Content = "Toplist"
+		WriteLog -LogText "Check for never used"
 	}
 	else
 	{
-		CollectData
+		$rbScript.IsChecked = $true
+		$CountHeader.Content = "Number"
 		$btnNeverUsed.Content = "Never used"
 	}
 }
@@ -100,35 +107,38 @@ function NeverUsedScripts
 # Item in list is selected, show data for that object
 function TopList_SelectionChanged
 {
-	$SubjectList.Children.Clear()
-	if ( $toplist.selecteditems[0] -ne $null )
+	if ( $btnNeverUsed.Content -eq "Never used" )
 	{
-		$itemClicked = $TopList.SelectedItems[0]
-		$list = @()
-
-		if ( $rbScript.IsChecked )
+		$SubjectList.Children.Clear()
+		if ( $toplist.SelectedItems[0] -ne $null )
 		{
-			$users.Keys | where { ( $users.$_.scripts | Get-Member -Name $itemClicked.Name ).Count -gt 0 } | foreach { $list += ,[pscustomobject]@{ Name = ( Get-ADUser $_ ).Name; Count = $users.$_.scripts.$( $itemClicked.Name ) } }
-			$t = "Most frequent user of $( $itemClicked.Name )"
+			$itemClicked = $TopList.SelectedItems[0]
+			$list = @()
+
+			if ( $rbScript.IsChecked )
+			{
+				$users.Keys | where { ( $users.$_.Scripts | Get-Member -Name $itemClicked.Name ).Count -gt 0 } | foreach { $list += ,[pscustomobject]@{ Name = ( Get-ADUser $_ ).Name; Count = $users.$_.Scripts.$( $itemClicked.Name ) } }
+				$t = "Most frequent user of $( $itemClicked.Name )"
+			}
+			else
+			{
+				$Users.$( $itemClicked.Name.Split("(")[1].Trim(")") ).Scripts | Get-Member -MemberType NoteProperty | foreach { $list += ,[pscustomobject]@{ Name = $_.Name; Count = [int]( ( $_.Definition -split "=" )[1] ) } }
+				$t = "Most used scripts by $( $itemClicked.Name )"
+			}
+
+			$ListTitle.Content = $t
+			$list | sort -Descending Count | foreach `
+			{
+				$l = New-Object System.Windows.Controls.Label
+				$l.Content = "($( $_.Count ))`t$( $_.Name )"
+				$l.Margin = "20,0,20,0"
+				$SubjectList.AddChild( $l )
+			}
 		}
 		else
 		{
-			$users.$( $itemClicked.Name.Split("(")[1].Trim(")") ).scripts | Get-Member -MemberType NoteProperty | foreach { $list += ,[pscustomobject]@{ Name = $_.Name; Count = [int]( ( $_.Definition -split "=" )[1] ) } }
-			$t = "Most used scripts by $( $itemClicked.Name )"
+			$ListTitle.Content = "Toplist scriptusage"
 		}
-
-		$ListTitle.Content = $t
-		$list | sort -Descending Count | foreach `
-		{
-			$l = New-Object System.Windows.Controls.Label
-			$l.Content = "($( $_.Count ))`t$( $_.Name )"
-			$l.Margin = "20,0,20,0"
-			$SubjectList.AddChild( $l )
-		}
-	}
-	else
-	{
-		$ListTitle.Content = "Toplist scriptusage"
 	}
 }
 
@@ -138,9 +148,8 @@ Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 $Window, $vars = CreateWindow
 $vars | foreach { Set-Variable -Name $_ -Value $Window.FindName( $_ ) -Scope script }
 
-$Script:WindowTitle = "Toplist delux"
-$Script:users = New-Object System.Collections.Hashtable
-$Script:scriptList = @()
+$Script:Users = New-Object System.Collections.Hashtable
+$Script:ScriptList = @()
 $Script:Root = $args[0]
 $btnNeverUsed.Add_Click( { NeverUsedScripts } )
 $rbScript.Add_Checked( { ListByScript } )
