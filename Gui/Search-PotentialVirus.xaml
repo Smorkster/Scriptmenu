@@ -1,26 +1,87 @@
 <Window
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:sys="clr-namespace:System;assembly=mscorlib"
     WindowState="Maximized"
-    Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
+    Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}" Width="992">
     <Window.Resources>
-        <Style TargetType="CheckBox">
+        <sys:Boolean x:Key="Enable">true</sys:Boolean>
+        <sys:Double x:Key="CW">130</sys:Double>
+        <sys:Double x:Key="MCW">1000</sys:Double>
+        <Visibility x:Key="V">Hidden</Visibility>
+        <GroupStyle x:Key="gs">
+            <GroupStyle.ContainerStyle>
+                <Style TargetType="{x:Type GroupItem}">
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate>
+                                <Border BorderBrush="Gray" BorderThickness="1">
+                                    <Expander IsExpanded="True">
+                                        <Expander.Header>
+                                            <TextBlock Text="{Binding Name}" Foreground="Gray" FontSize="14"/>
+                                        </Expander.Header>
+                                        <ItemsPresenter/>
+                                    </Expander>
+                                </Border>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </GroupStyle.ContainerStyle>
+        </GroupStyle>
+        <ContextMenu x:Key="cm">
+            <MenuItem Name="menuOpenfolder" Header="Open folder"/>
+            <MenuItem Name="menuSearchExtension" Header="Search extension"/>
+            <MenuItem Name="menuSearchFileName" Header="Search filename"/>
+        </ContextMenu>
+        <Style TargetType="{x:Type Button}">
+            <Setter Property="IsEnabled" Value="{DynamicResource Enable}"/>
+            <Setter Property="Padding" Value="5"/>
+        </Style>
+        <Style TargetType="{x:Type CheckBox}">
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="IsEnabled" Value="{DynamicResource Enable}"/>
+        </Style>
+        <Style TargetType="{x:Type ListView}">
+            <Setter Property="IsEnabled" Value="{DynamicResource Enable}"/>
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="{x:Type ListViewItem}">
+                        <Setter Property="ToolTip" Value="{Binding TT}"/>
+                        <Setter Property="ContextMenu" Value="{DynamicResource cm}"/>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="ListView.View" Value="{DynamicResource View}"/>
+            <Setter Property="SelectionMode" Value="Single"/>
+            <Style.Triggers>
+                <Trigger Property="HasItems" Value="False">
+                    <Setter Property="IsEnabled" Value="False"/>
+                </Trigger>
+                <Trigger Property="HasItems" Value="True">
+                    <Setter Property="IsEnabled" Value="True"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="{x:Type ProgressBar}">
+            <Setter Property="Height" Value="15"/>
+            <Setter Property="Visibility" Value="Hidden"/>
+        </Style>
+        <Style TargetType="{x:Type StackPanel}">
             <Setter Property="Margin" Value="5"/>
         </Style>
-        <Style TargetType="ScrollViewer">
-            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
-            <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
-        </Style>
-        <Style TargetType="StackPanel">
-            <Setter Property="Margin" Value="5"/>
-        </Style>
-        <Style TargetType="TabControl">
+        <Style TargetType="{x:Type TabControl}">
             <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"/>
         </Style>
-        <Style TargetType="TextBox">
+        <Style TargetType="{x:Type TextBox}">
             <Setter Property="Width" Value="100"/>
             <Setter Property="Margin" Value="5,0,5,0"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="IsEnabled" Value="{DynamicResource Enable}"/>
+        </Style>
+        <Style TargetType="{x:Type ToolTip}">
+            <Setter Property="ToolTipService.InitialShowDelay" Value="0"/>
+            <Setter Property="ToolTipService.BetweenShowDelay" Value="0"/>
         </Style>
     </Window.Resources>
     <Grid>
@@ -28,51 +89,140 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="1*"/>
         </Grid.RowDefinitions>
-        <StackPanel Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2">
-            <Label Content="All values must be given:"/>
-            <StackPanel Orientation="Horizontal">
-                <Label Content="Casenumber" Width="160"/>
-                <TextBox Name="tbCaseNr"/>
-                <CheckBox Name="cbLatest" Content="Endast senaste två veckor" VerticalContentAlignment="Center"/>
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <StackPanel Grid.Column="0" Grid.Row="0">
+                <Label Content="Both values are required:"/>
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="Casenumber" Width="160"/>
+                    <TextBox x:Name="tbCaseNr"/>
+                    <CheckBox x:Name="cbLatest" Content="Search only for updates in the last two weeks" VerticalContentAlignment="Center" IsChecked="True" ToolTip="Fetching the files updated in the last two weeks.`n`nWhen getting all files (ie when this is unchecked), search will be sequential and take longer time."/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="UserId of user" Width="160"/>
+                    <TextBox x:Name="tbID"/>
+                    <Button x:Name="btnSearch" Content="Search"/>
+                </StackPanel>
             </StackPanel>
-            <StackPanel Orientation="Horizontal">
-                <Label Content="Account-id of user" Width="160"/>
-                <TextBox Name="tbID"/>
-                <Button Name="btnSearch" Content="Search" Padding="5"/>
+            <StackPanel Grid.Column="1" Grid.Row="0" x:Name="spInfo">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0">
+                        <Label Content="User: "/>
+                        <Label x:Name="lblUser"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0">
+                        <Label Content="Total number of files:"/>
+                        <Label x:Name="lblFileCount"/>
+                    </StackPanel>
+                    <StackPanel x:Name="spSummary" Visibility="Hidden" Margin="0">
+                        <Label Content="Summary is written to file:" Margin="0"/>
+                        <Label x:Name="lblSummary"/>
+                        <Button x:Name="btnOpenSummary" Content="Open file"/>
+                    </StackPanel>
+                </StackPanel>
             </StackPanel>
-        </StackPanel>
+            <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" x:Name="TotalProgress"/>
+        </Grid>
         <TabControl Grid.Row="1">
-            <TabItem Header="Filtered files" Name="tiFiltered">
-                <StackPanel>
-                    <Label Name="lblFilters" Content="Listing files filtered by these words (check box/boxes to only show certain filters):"/>
-                    <StackPanel Name="spFilters" Orientation="Horizontal"/>
-                    <ScrollViewer Name="svFiltered">
-                        <StackPanel Name="spFiltered"/>
-                    </ScrollViewer>
-                </StackPanel>
+            <TabItem Header="Alla filer" x:Name="tiFiles">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Label Grid.Row="0" x:Name="lblFiles"/>
+                    <ListView Grid.Row="1" x:Name="lvAllFiles">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn DisplayMemberBinding="{Binding Name}" Width="{StaticResource ResourceKey=MCW}">
+                                    <GridViewColumnHeader Name="lvAN" Content="Name"/>
+                                </GridViewColumn>
+                                <GridViewColumn DisplayMemberBinding="{Binding Created}" Width="{StaticResource ResourceKey=CW}">
+                                    <GridViewColumnHeader Name="lvAC" Content="Created"/>
+                                </GridViewColumn>
+                                <GridViewColumn DisplayMemberBinding="{Binding Updated}" Width="{StaticResource ResourceKey=CW}">
+                                    <GridViewColumnHeader Name="lvAU" Content="Updated"/>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                        <ListView.GroupStyle>
+                            <StaticResource ResourceKey="gs"/>
+                        </ListView.GroupStyle>
+                    </ListView>
+                </Grid>
             </TabItem>
-            <TabItem Header="Multiple fileextentions in homefolder:" Name="tiMDH">
-                <StackPanel>
-                    <Label Name="lblMDH" Content="Files with multiple dots in filename (potentialy multiple fileextentions)"/>
-                    <ScrollViewer Name="svMultiDotH">
-                        <StackPanel Name="spMultiDotH"/>
-                    </ScrollViewer>
-                </StackPanel>
+            <TabItem Header="Multipla filändelser på H:" x:Name="tiMDH">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="30"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Label Grid.Row="0" x:Name="lblMDH" Content="Files in homefolder with multiple dots in filename (potentially multiple file extensions)"/>
+                    <ListView Grid.Row="1" x:Name="lvMultiDotsH">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn DisplayMemberBinding="{Binding Name}" Width="{StaticResource ResourceKey=MCW}">
+                                    <GridViewColumnHeader Name="lvHN" Content="Name"/>
+                                </GridViewColumn>
+                                <GridViewColumn DisplayMemberBinding="{Binding Created}" Width="{StaticResource ResourceKey=CW}">
+                                    <GridViewColumnHeader Name="lvHC" Content="Created"/>
+                                </GridViewColumn>
+                                <GridViewColumn DisplayMemberBinding="{Binding Updated}" Width="{StaticResource ResourceKey=CW}">
+                                    <GridViewColumnHeader Name="lvHU" Content="Updated"/>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                        <ListView.GroupStyle>
+                            <StaticResource ResourceKey="gs"/>
+                        </ListView.GroupStyle>
+                    </ListView>
+                </Grid>
             </TabItem>
-            <TabItem Header="Multiple fileextentions in shared folders:" Name="tiMDG">
-                <StackPanel>
-                    <Label Name="lblMDG" Content="Files with multiple dots in filename (potentialy multiple fileextentions)"/>
-                    <ScrollViewer Name="svMultiDotG">
-                        <StackPanel Name="spMultiDotG"/>
-                    </ScrollViewer>
-                </StackPanel>
+            <TabItem Header="Multiple file extensions in common folders:" x:Name="tiMDG">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="30"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Label Grid.Row="0" x:Name="lblMDG" Content="Files with multiple points in the file name (potentially multiple file extensions)"/>
+                    <ListView Grid.Row="1" x:Name="lvMultiDotsG">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn DisplayMemberBinding="{Binding Name}" Width="{StaticResource ResourceKey=MCW}">
+                                    <GridViewColumnHeader Name="lvGN" Content="Name"/>
+                                </GridViewColumn>
+                                <GridViewColumn DisplayMemberBinding="{Binding Created}" Width="{StaticResource ResourceKey=CW}">
+                                    <GridViewColumnHeader Name="lvGC" Content="Created"/>
+                                </GridViewColumn>
+                                <GridViewColumn DisplayMemberBinding="{Binding Updated}" Width="{StaticResource ResourceKey=CW}">
+                                    <GridViewColumnHeader Name="lvGU" Content="Updated"/>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                        <ListView.GroupStyle>
+                            <StaticResource ResourceKey="gs"/>
+                        </ListView.GroupStyle>
+                    </ListView>
+                </Grid>
             </TabItem>
-            <TabItem Header="Folders with other permissions" Name="tiO">
-                <StackPanel>
-                    <Label Name="lblO" Content="Folders you don't have permission for, escalate case to third line"/>
-                    <Button Name="btnCreateQuestion" Content="Copy question to third line"/>
-                    <TextBox Name="txtQuestion" Width="Auto" VerticalContentAlignment="Top" AcceptsReturn="True"/>
-                </StackPanel>
+            <TabItem Header="Folders with other permissions" x:Name="tiO" Visibility="Visible">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="30"/>
+                        <RowDefinition Height="30"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Label Grid.Row="0" x:Name="lblO" Content="Folders you do not have access to, escalate case to 3:rd line"/>
+                    <Button Grid.Row="1" x:Name="btnCreateQuestion" Content="Copy question of help to 3:rd line"/>
+                    <TextBox Grid.Row="2" x:Name="txtQuestion" Width="Auto" VerticalContentAlignment="Top" AcceptsReturn="True"/>
+                </Grid>
             </TabItem>
         </TabControl>
     </Grid>
