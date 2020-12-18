@@ -3,7 +3,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="SDGUI"
         MinWidth="550"
-        MaxHeight="600"
         SizeToContent="WidthAndHeight"
         Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
         WindowStartupLocation="CenterScreen"
@@ -13,25 +12,60 @@
             <Setter Property="Padding" Value="5"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
+        <Style TargetType="DataGridRow">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Name}" Value="Dont Install">
+                    <Setter Property="Background" Value="Red"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Name}" Value="Free Space (Low)">
+                    <Setter Property="Background" Value="Red"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="GroupBox">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="GroupBox">
+                        <Grid Margin="5">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Border Grid.Row="0" BorderThickness="1,1,0,0" CornerRadius="0">
+                                <Border.BorderBrush>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <LinearGradientBrush.GradientStops>
+                                            <GradientStopCollection>
+                                                <GradientStop Color="#FF000000" Offset="0.0" />
+                                                <GradientStop Color="#00F0F0F0" Offset="1.1" />
+                                            </GradientStopCollection>
+                                        </LinearGradientBrush.GradientStops>
+                                    </LinearGradientBrush>
+                                </Border.BorderBrush>
+                                <ContentPresenter Margin="5" ContentSource="Header"/>
+                            </Border>
+                            <Border Grid.Row="1" BorderThickness="0" CornerRadius="0">
+                                <ContentPresenter Margin="25,0,0,0"/>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="Label">
+            <Setter Property="ToolTipService.ShowDuration" Value="10000"/>
+        </Style>
+        <Style TargetType="RadioButton">
+            <Setter Property="Margin" Value="5"/>
+        </Style>
+        <Style TargetType="ScrollViewer">
+			<Setter Property="MaxHeight" Value="800"/>
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+        </Style>
         <Style TargetType="TabControl">
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Margin" Value="5"/>
             <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"/>
-        </Style>
-        <Style TargetType="ScrollViewer">
-            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
-            <Setter Property="MaxHeight" Value="520"/>
-        </Style>
-        <Style TargetType="DataGridRow">
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding Name}" Value="DontInstall">
-                    <Setter Property="Background" Value="Red"/>
-                    <Setter Property="Foreground" Value="White"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-        <Style TargetType="RadioButton">
-            <Setter Property="Margin" Value="5"/>
         </Style>
     </Window.Resources>
     <StackPanel>
