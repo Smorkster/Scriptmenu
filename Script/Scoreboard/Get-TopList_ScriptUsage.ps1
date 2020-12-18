@@ -18,7 +18,7 @@ function CollectData
 		{
 			$Script:ScriptList += $logName
 		}
-		Get-Content $log | foreach `
+		Get-Content $log | ForEach-Object `
 		{
 			if ( $_ -match "^\d{4}-\d{2}-\d{2}" )
 			{
@@ -55,10 +55,10 @@ function ListByScript
 	{
 		$scriptTotalUseCount = 0
 
-		$Users.Keys | where { ( $Users.$_.Scripts | Get-Member -Name $script ).Count -gt 0 } | foreach { $scriptTotalUseCount += ( $Users.$_.Scripts.$script ) }
+		$Users.Keys | Where-Object { ( $Users.$_.Scripts | Get-Member -Name $script ).Count -gt 0 } | ForEach-Object { $scriptTotalUseCount += ( $Users.$_.Scripts.$script ) }
 		$list += ,[pscustomobject]@{ Name = $script; Count = $scriptTotalUseCount }
 	}
-	$list | sort -Descending Count | foreach { $TopList.Items.Add( $_ ) }
+	$list | Sort-Object -Descending Count | ForEach-Object { $TopList.Items.Add( $_ ) }
 	$Window.Title = "Most used scripts"
 }
 
@@ -68,8 +68,8 @@ function ListByUser
 {
 	$TopList.Items.Clear()
 	$list = @()
-	$Users.GetEnumerator() | foreach { $list += ,[pscustomobject]@{ Name = ( $_.Value.Name ); Count = $_.Value.TotalUseCount } }
-	$list | sort -Descending Count | foreach { $TopList.Items.Add( $_ ) }
+	$Users.GetEnumerator() | ForEach-Object { $list += ,[pscustomobject]@{ Name = ( $_.Value.Name ); Count = $_.Value.TotalUseCount } }
+	$list | Sort-Object -Descending Count | ForEach-Object { $TopList.Items.Add( $_ ) }
 	$Window.Title = "Toplist users"
 }
 
@@ -83,8 +83,8 @@ function NeverUsedScripts
 		$rbScript.IsChecked = $false
 		$rbUsers.IsChecked = $false
 		$Toplist.Items.Clear()
-		$scripts = Get-ChildItem "$Root\Script" -Filter "*ps1" -Exclude "SDGUI.ps1" -Recurse -File | sort Name
-		$logs = Get-ChildItem "$Root\Logs" -Filter "*txt" -Recurse -File | select -ExpandProperty name | foreach { $_ -replace " - log.txt" }
+		$scripts = Get-ChildItem "$Root\Script" -Filter "*ps1" -Exclude "SDGUI.ps1" -Recurse -File | Sort-Object Name
+		$logs = Get-ChildItem "$Root\Logs" -Filter "*txt" -Recurse -File | Select-Object -ExpandProperty name | ForEach-Object { $_ -replace " - log.txt" }
 		foreach ( $script in $scripts )
 		{
 			if ( $logs -notcontains $script.Name )
@@ -110,24 +110,24 @@ function TopList_SelectionChanged
 	if ( $btnNeverUsed.Content -eq "Never used" )
 	{
 		$SubjectList.Children.Clear()
-		if ( $toplist.SelectedItems[0] -ne $null )
+		if ( $null -ne $toplist.SelectedItems[0] )
 		{
 			$itemClicked = $TopList.SelectedItems[0]
 			$list = @()
 
 			if ( $rbScript.IsChecked )
 			{
-				$users.Keys | where { ( $users.$_.Scripts | Get-Member -Name $itemClicked.Name ).Count -gt 0 } | foreach { $list += ,[pscustomobject]@{ Name = ( Get-ADUser $_ ).Name; Count = $users.$_.Scripts.$( $itemClicked.Name ) } }
+				$users.Keys | Where-Object { ( $users.$_.Scripts | Get-Member -Name $itemClicked.Name ).Count -gt 0 } | ForEach-Object { $list += ,[pscustomobject]@{ Name = ( Get-ADUser $_ ).Name; Count = $users.$_.Scripts.$( $itemClicked.Name ) } }
 				$t = "Most frequent user of $( $itemClicked.Name )"
 			}
 			else
 			{
-				$Users.$( $itemClicked.Name.Split("(")[1].Trim(")") ).Scripts | Get-Member -MemberType NoteProperty | foreach { $list += ,[pscustomobject]@{ Name = $_.Name; Count = [int]( ( $_.Definition -split "=" )[1] ) } }
+				$Users.$( $itemClicked.Name.Split("(")[1].Trim(")") ).Scripts | Get-Member -MemberType NoteProperty | ForEach-Object { $list += ,[pscustomobject]@{ Name = $_.Name; Count = [int]( ( $_.Definition -split "=" )[1] ) } }
 				$t = "Most used scripts by $( $itemClicked.Name )"
 			}
 
 			$ListTitle.Content = $t
-			$list | sort -Descending Count | foreach `
+			$list | Sort-Object -Descending Count | ForEach-Object `
 			{
 				$l = New-Object System.Windows.Controls.Label
 				$l.Content = "($( $_.Count ))`t$( $_.Name )"
@@ -146,7 +146,7 @@ function TopList_SelectionChanged
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $Window, $vars = CreateWindow
-$vars | foreach { Set-Variable -Name $_ -Value $Window.FindName( $_ ) -Scope script }
+$vars | ForEach-Object { Set-Variable -Name $_ -Value $Window.FindName( $_ ) -Scope script }
 
 $Script:Users = New-Object System.Collections.Hashtable
 $Script:ScriptList = @()

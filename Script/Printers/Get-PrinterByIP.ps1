@@ -10,7 +10,7 @@ $UserInput = Read-Host "Write IP-address"
 
 if ( $Printers = Get-ADObject -LDAPFilter "(&(objectClass=printQueue)(portName=$UserInput*))" -Properties * )
 {
-	$Printers | select Name, portName, driverName, location
+	$Printers | Select-Object Name, portName, driverName, location
 	$logText = "$UserInput > $( $Printers.Name )"
 }
 else

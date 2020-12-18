@@ -20,7 +20,7 @@ foreach ( $GroupId in $Groups )
 {
 	# Get group and its members
 	$Group = Get-ADGroup $GroupId
-	$GroupMembers = $Group | Get-ADGroupMember | select -ExpandProperty SamAccountName
+	$GroupMembers = $Group | Get-ADGroupMember | Select-Object -ExpandProperty SamAccountName
 	Write-Host "Fetching members for $Group `n" -ForegroundColor Cyan
 	# Array for removal
 	$UserRemoval = @()
@@ -32,7 +32,7 @@ foreach ( $GroupId in $Groups )
 	{
 		$AllUsers += $UserId
 		# If user exists in the group, add it to array
-		if ( ( $GroupMembers -contains $UserId ) )
+		if ( $GroupMembers -contains $UserId )
 		{
 			$UserRemoval += Get-ADUser $UserId
 		}
@@ -47,7 +47,7 @@ foreach ( $GroupId in $Groups )
 		Write-Host "$User " -ForegroundColor Green -NoNewline
 		$Row += "$User, "
 	}
-	$AllUsers | foreach { if ( $UserRemoval.SamAccountName -notcontains $_ ) ) { $nRow += "$nRow " } }
+	$AllUsers | ForEach-Object { if ( $UserRemoval.SamAccountName -notcontains $_ ) { $nRow += "$nRow " } }
 	if ( $nRow -ne "" )
 	{
 		Write-Host "These were not members and were not removed:`n$nRow"

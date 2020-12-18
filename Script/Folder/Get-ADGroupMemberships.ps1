@@ -24,7 +24,7 @@ foreach( $User in $UsersIn )
 
 	Write-Host "`n`n*****************************`nFetching all groups for $User. This might take a while."
 	$dn = ( Get-ADUser $User ).DistinguishedName
-	$Groups1 = Get-ADGroup -LDAPFilter ( "(member:1.2.840.113556.1.4.1941:={0})" -f $dn )  | select -ExpandProperty Name | sort Name
+	$Groups1 = Get-ADGroup -LDAPFilter ( "(member:1.2.840.113556.1.4.1941:={0})" -f $dn )  | Select-Object -ExpandProperty Name | Sort-Object Name
 
 	# Sort and create list only containing File-groups without "_User_". (I.e. those ending with _F, _C eller _R)
 	$Groups2 = $Groups1 -like "*_File_*"
@@ -88,14 +88,14 @@ foreach( $User in $UsersIn )
 	}
 
 	# Remove pathways created due to groups giving readpermission on DFS-links
-	$Read = $Read | where { $_ -Notlike "*\R" } | where { $_ -Notlike "*\Ext" }
-	$Other = $Other | where { $_ -Notlike "*\R" } | where { $_ -Notlike "*\Ext" }
+	$Read = $Read | Where-Object { $_ -Notlike "*\R" } | Where-Object { $_ -Notlike "*\Ext" }
+	$Other = $Other | Where-Object { $_ -Notlike "*\R" } | Where-Object { $_ -Notlike "*\Ext" }
 
 	# Sort and remove any douplets from each array
-	$Read = $Read | sort | select -Unique
-	$Change = $Change | sort | select -Unique
-	$Full = $Full | sort | select -Unique
-	$Other = $Other | sort | where { $Read -notcontains $_ } | where { $Change -notcontains $_ } | where { $Full -notcontains $_ } | select -Unique
+	$Read = $Read | Sort-Object | Select-Object -Unique
+	$Change = $Change | Sort-Object | Select-Object -Unique
+	$Full = $Full | Sort-Object | Select-Object -Unique
+	$Other = $Other | Sort-Object | Where-Object { $Read -notcontains $_ } | Where-Object { $Change -notcontains $_ } | Where-Object { $Full -notcontains $_ } | Select-Object -Unique
 
 	$outputInfo = "OBS!!!`r`nThere might be some errors in these lists. '_' can be spaces in actual pathway.`r`nFoldernames for permissions outside G, R and S can be wrong or don't exist.`r`nSome shares can be old and don't exist anymore."
 	$outputInfo += "`r`n`r`n$User have Read permission for these folders:`r`n"

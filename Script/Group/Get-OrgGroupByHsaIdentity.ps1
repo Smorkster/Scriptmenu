@@ -17,9 +17,9 @@ else
 	$Filter = "(Name=$UserInput)"
 }
 
-$Group = Get-ADGroup -LDAPFilter $Filter -Properties hsaIdentity | select @{ Name = "Org-group name"; Expression = { $_.Name } }, @{ Name = "Department Id"; Expression = { $_.orgIdentity } }
+$Group = Get-ADGroup -LDAPFilter $Filter -Properties hsaIdentity | Select-Object @{ Name = "Org-group name"; Expression = { $_.Name } }, @{ Name = "Department Id"; Expression = { $_.orgIdentity } }
 
-if ( $Group -eq $null )
+if ( $null -eq $Group )
 {
 	Write-Host "No AD-group found by input '$UserInput'"
 }

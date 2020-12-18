@@ -85,13 +85,13 @@ function CollectADGroupsG
 		$FolderName = $cbDisk.SelectedValue.ToString() + "\" + $entry
 		try
 		{
-			$WriteGroup = Get-ADGroup "$( $Customer )_File_AD$( $Customer )$( if ( $Customer -eq "OrgA" ) { "02" } else { "01" } )_Grp_$entry_User_C" | select -ExpandProperty SamAccountName
+			$WriteGroup = Get-ADGroup "$( $Customer )_File_AD$( $Customer )$( if ( $Customer -eq "OrgA" ) { "02" } else { "01" } )_Grp_$entry_User_C" | Select-Object -ExpandProperty SamAccountName
 		}
 		catch
 		{
 			try
 			{
-				$WriteGroup = Get-ADGroup "$( ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | where { ( $_.FileSystemRights -eq "Modify, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | select -ExpandProperty IdentityReference ).Value -replace "AD\\" ).Substring( 0, ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | where { ( $_.FileSystemRights -eq "Modify, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | select -ExpandProperty IdentityReference ).Value -replace "AD\\" ).Length - 2 ) )_User_C" | select -ExpandProperty SamAccountName
+				$WriteGroup = Get-ADGroup "$( ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | Where-Object { ( $_.FileSystemRights -eq "Modify, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | Select-Object -ExpandProperty IdentityReference ).Value -replace "AD\\" ).Substring( 0, ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | Where-Object { ( $_.FileSystemRights -eq "Modify, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | Select-Object -ExpandProperty IdentityReference ).Value -replace "AD\\" ).Length - 2 ) )_User_C" | Select-Object -ExpandProperty SamAccountName
 			}
 			catch
 			{ $WriteGroup = $null }
@@ -99,13 +99,13 @@ function CollectADGroupsG
 
 		try
 		{
-			$ReadGroup = Get-ADGroup "$( $Customer )_File_AD$( $Customer )$( if ( $Customer -eq "OrgA" ) { "02" } else { "01" } )_Grp_$entry_User_R" | select -ExpandProperty SamAccountName
+			$ReadGroup = Get-ADGroup "$( $Customer )_File_AD$( $Customer )$( if ( $Customer -eq "OrgA" ) { "02" } else { "01" } )_Grp_$entry_User_R" | Select-Object -ExpandProperty SamAccountName
 		}
 		catch
 		{
 			try
 			{
-				$ReadGroup = Get-ADGroup "$( ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | where { ( $_.FileSystemRights -eq "ReadAndExecute, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | select -ExpandProperty IdentityReference ).Value -replace "AD\\" ).Substring( 0, ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | where { ( $_.FileSystemRights -eq "ReadAndExecute, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | select -ExpandProperty IdentityReference ).Value -replace "AD\\" ).Length - 2 ) )_User_R" | select -ExpandProperty SamAccountName
+				$ReadGroup = Get-ADGroup "$( ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | Where-Object { ( $_.FileSystemRights -eq "ReadAndExecute, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | Select-Object -ExpandProperty IdentityReference ).Value -replace "AD\\" ).Substring( 0, ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | Where-Object { ( $_.FileSystemRights -eq "ReadAndExecute, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | Select-Object -ExpandProperty IdentityReference ).Value -replace "AD\\" ).Length - 2 ) )_User_R" | Select-Object -ExpandProperty SamAccountName
 			}
 			catch
 			{ $ReadGroup = $null }
@@ -136,25 +136,25 @@ function CollectADGroupsR
 		$FolderName = $cbDisk.SelectedValue.ToString() + "\" + $entry
 		try
 		{
-			$WriteGroup = Get-ADGroup "$( $Customer )_File_$( if ( $Customer -in "OrgA","OrgB" ) { "adServ1" } else { "adServ2" } )_$( $entry )_C" | select -ExpandProperty SamAccountName
+			$WriteGroup = Get-ADGroup "$( $Customer )_File_$( if ( $Customer -in "OrgA","OrgB" ) { "adServ1" } else { "adServ2" } )_$( $entry )_C" | Select-Object -ExpandProperty SamAccountName
 		}
 		catch
 		{
 			try
 			{
-				$WriteGroup = Get-ADGroup "$( $Customer )_File_$( if ( $Customer -in "OrgA", "OrgB" ) { "adServ1" } else { "adServ2" } )_App_$( $entry )_C" | select -ExpandProperty SamAccountName
+				$WriteGroup = Get-ADGroup "$( $Customer )_File_$( if ( $Customer -in "OrgA", "OrgB" ) { "adServ1" } else { "adServ2" } )_App_$( $entry )_C" | Select-Object -ExpandProperty SamAccountName
 			}
 			catch
 			{
 				try
 				{
-					$WriteGroup = Get-ADGroup "$( $Customer )_File_AD$( $Customer )$( if ( $Customer -eq "OrgA" ) { "02" } else { "01" } )_App_$( $entry )_C" | select -ExpandProperty SamAccountName
+					$WriteGroup = Get-ADGroup "$( $Customer )_File_AD$( $Customer )$( if ( $Customer -eq "OrgA" ) { "02" } else { "01" } )_App_$( $entry )_C" | Select-Object -ExpandProperty SamAccountName
 				}
 				catch
 				{
 					try
 					{
-						$WriteGroup = Get-ADGroup ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | where { ( $_.FileSystemRights -eq "Modify, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | select -ExpandProperty IdentityReference ).Value -replace "AD\\" ) | select -ExpandProperty SamAccountName
+						$WriteGroup = Get-ADGroup ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | Where-Object { ( $_.FileSystemRights -eq "Modify, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | Select-Object -ExpandProperty IdentityReference ).Value -replace "AD\\" ) | Select-Object -ExpandProperty SamAccountName
 					}
 					catch
 					{ $WriteGroup = $null }
@@ -164,25 +164,25 @@ function CollectADGroupsR
 
 		try
 		{
-			$ReadGroup = Get-ADGroup "$( $Customer )_File_$( if ( $Customer -in "OrgA", "OrgB" ) { "adServ1" } else { "adServ2" } )_$( $entry )_R" | select -ExpandProperty SamAccountName
+			$ReadGroup = Get-ADGroup "$( $Customer )_File_$( if ( $Customer -in "OrgA", "OrgB" ) { "adServ1" } else { "adServ2" } )_$( $entry )_R" | Select-Object -ExpandProperty SamAccountName
 		}
 		catch
 		{
 			try
 			{
-				$ReadGroup = Get-ADGroup "$( $Customer )_File_$( if ( $Customer -in "OrgA", "OrgB" ) { "adServ1" } else { "adServ2" } )_App_$( $entry )_R" | select -ExpandProperty SamAccountName
+				$ReadGroup = Get-ADGroup "$( $Customer )_File_$( if ( $Customer -in "OrgA", "OrgB" ) { "adServ1" } else { "adServ2" } )_App_$( $entry )_R" | Select-Object -ExpandProperty SamAccountName
 			}
 			catch
 			{
 				try
 				{
-					$ReadGroup = Get-ADGroup "$( $Customer )_File_AD$( $Customer )$( if ( $Customer -eq "OrgA" ) { "02" } else { "01" } )_App_$( $entry )_R" | select -ExpandProperty SamAccountName
+					$ReadGroup = Get-ADGroup "$( $Customer )_File_AD$( $Customer )$( if ( $Customer -eq "OrgA" ) { "02" } else { "01" } )_App_$( $entry )_R" | Select-Object -ExpandProperty SamAccountName
 				}
 				catch
 				{
 					try
 					{
-						$ReadGroup = Get-ADGroup ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | where { ( $_.FileSystemRights -eq "Read, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | select -ExpandProperty IdentityReference ).Value -replace "AD\\" ) | select -ExpandProperty SamAccountName
+						$ReadGroup = Get-ADGroup ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | Where-Object { ( $_.FileSystemRights -eq "Read, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | Select-Object -ExpandProperty IdentityReference ).Value -replace "AD\\" ) | Select-Object -ExpandProperty SamAccountName
 					}
 					catch
 					{ $ReadGroup = $null }
@@ -215,13 +215,13 @@ function CollectADGroupsS
 		$FolderName = $cbDisk.SelectedValue.ToString() + "\" + $entry
 		try
 		{
-			$WriteGroup = Get-ADGroup "$( ( $FolderName -split "\\" )[1] )_File_AD$( $Customer )01_Gem_$( ( $FolderName -split "\\" )[2] )_$( ( ( $FolderName -split "\\" )[3] ) -replace " ","_" -replace "å","a" -replace "ä","a" -replace "ö","o" -replace "è","e" )_Ext_C" | select -ExpandProperty SamAccountName
+			$WriteGroup = Get-ADGroup "$( ( $FolderName -split "\\" )[1] )_File_AD$( $Customer )01_Gem_$( ( $FolderName -split "\\" )[2] )_$( ( ( $FolderName -split "\\" )[3] ) -replace " ","_" -replace "å","a" -replace "ä","a" -replace "ö","o" -replace "è","e" )_Ext_C" | Select-Object -ExpandProperty SamAccountName
 		}
 		catch
 		{
 			try
 			{
-				$WriteGroup = Get-ADGroup "$( ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | where { ( $_.FileSystemRights -eq "Modify, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | select -ExpandProperty IdentityReference ).Value -replace "AD\\" ).Substring( 0, ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | where { ( $_.FileSystemRights -eq "Modify, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | select -ExpandProperty IdentityReference ).Value -replace "AD\\" ).Length-2 ) )_Ext_C" | select -ExpandProperty SamAccountName
+				$WriteGroup = Get-ADGroup "$( ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | Where-Object { ( $_.FileSystemRights -eq "Modify, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | Select-Object -ExpandProperty IdentityReference ).Value -replace "AD\\" ).Substring( 0, ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | Where-Object { ( $_.FileSystemRights -eq "Modify, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | Select-Object -ExpandProperty IdentityReference ).Value -replace "AD\\" ).Length-2 ) )_Ext_C" | Select-Object -ExpandProperty SamAccountName
 			}
 			catch
 			{ $WriteGroup = $null }
@@ -229,13 +229,13 @@ function CollectADGroupsS
 
 		try
 		{
-			$ReadGroup = Get-ADGroup "$( ( $FolderName -split "\\" )[1] )_File_AD$( $Customer )01_Gem_$( ( $FolderName -split "\\" )[2] )_$( ( ( $FolderName -split "\\" )[3] ) -replace " ","_" -replace "å","a" -replace "ä","a" -replace "ö","o" -replace "è","e" )_Ext_R" | select -ExpandProperty SamAccountName
+			$ReadGroup = Get-ADGroup "$( ( $FolderName -split "\\" )[1] )_File_AD$( $Customer )01_Gem_$( ( $FolderName -split "\\" )[2] )_$( ( ( $FolderName -split "\\" )[3] ) -replace " ","_" -replace "å","a" -replace "ä","a" -replace "ö","o" -replace "è","e" )_Ext_R" | Select-Object -ExpandProperty SamAccountName
 		}
 		catch
 		{
 			try
 			{
-				$ReadGroup = Get-ADGroup "$( ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | where { ( $_.FileSystemRights -eq "ReadAndExecute, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | select -ExpandProperty IdentityReference ).Value -replace "AD\\" ).Substring( 0, ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | where { ( $_.FileSystemRights -eq "ReadAndExecute, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | select -ExpandProperty IdentityReference ).Value -replace "AD\\" ).Length - 2 ) )_Ext_R" | select -ExpandProperty SamAccountName
+				$ReadGroup = Get-ADGroup "$( ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | Where-Object { ( $_.FileSystemRights -eq "ReadAndExecute, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | Select-Object -ExpandProperty IdentityReference ).Value -replace "AD\\" ).Substring( 0, ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | Where-Object { ( $_.FileSystemRights -eq "ReadAndExecute, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | Select-Object -ExpandProperty IdentityReference ).Value -replace "AD\\" ).Length - 2 ) )_Ext_R" | Select-Object -ExpandProperty SamAccountName
 			}
 			catch
 			{ $ReadGroup = $null }
@@ -256,20 +256,20 @@ function CollectEntries
 	if ( ( $LineCount = $txtUsersForWritePermission.LineCount ) -gt 0 )
 	{
 		$lines = @()
-		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $txtUsersForWritePermission.GetLineText( $i ) ).Split( ";""," ) | foreach { $lines += ( $_ ).Trim() } }
-		CollectUsers -entries ( $lines | where { $_ -ne "" } ) -PermissionType "Write"
+		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $txtUsersForWritePermission.GetLineText( $i ) ).Split( ";""," ) | ForEach-Object { $lines += ( $_ ).Trim() } }
+		CollectUsers -entries ( $lines | Where-Object { $_ -ne "" } ) -PermissionType "Write"
 	}
 	if ( ( $LineCount = $txtUsersForReadPermission.LineCount ) -gt 0 )
 	{
 		$lines = @()
-		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $txtUsersForReadPermission.GetLineText( $i ) ).Split( ";""," ) | foreach { $lines += ( $_ ).Trim() } }
-		CollectUsers -entries ( $lines | where { $_ -ne "" } ) -PermissionType "Read"
+		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $txtUsersForReadPermission.GetLineText( $i ) ).Split( ";""," ) | ForEach-Object { $lines += ( $_ ).Trim() } }
+		CollectUsers -entries ( $lines | Where-Object { $_ -ne "" } ) -PermissionType "Read"
 	}
 	if ( ( $LineCount = $txtUsersForRemovePermission.LineCount ) -gt 0 )
 	{
 		$lines = @()
-		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $txtUsersForRemovePermission.GetLineText( $i ) ).Split( ";""," ) | foreach { $lines += ( $_ ).Trim() } }
-		CollectUsers -entries ( $lines | where { $_ -ne "" } ) -PermissionType "Remove"
+		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $txtUsersForRemovePermission.GetLineText( $i ) ).Split( ";""," ) | ForEach-Object { $lines += ( $_ ).Trim() } }
+		CollectUsers -entries ( $lines | Where-Object { $_ -ne "" } ) -PermissionType "Remove"
 	}
 }
 
@@ -317,9 +317,9 @@ function CollectUsers
 			foreach ( $u in $AD )
 			{
 				$o = @{ "Id" = $entry.ToString().ToUpper(); "AD" = $u; "Type" = $UserType -replace "OrgGroups", "OrgGroup" }
-				if ( ( $Script:WriteUsers | where { $_.Id -eq $o.Id } ) -or
-					( $Script:ReadUsers | where { $_.Id -eq $o.Id } ) -or
-					( $Script:RemoveUsers | where { $_.Id -eq $o.Id } ) )
+				if ( ( $Script:WriteUsers | Where-Object { $_.Id -eq $o.Id } ) -or
+					( $Script:ReadUsers | Where-Object { $_.Id -eq $o.Id } ) -or
+					( $Script:RemoveUsers | Where-Object { $_.Id -eq $o.Id } ) )
 				{
 					$Script:Duplicates += $o.Id
 				}
@@ -347,37 +347,37 @@ function CreateLogText
 {
 	$LogText = ""
 	$LogText += "$( Get-Date -Format "yyyy-MM-dd HH:mm:ss" )"
-	$Script:ADGroups.Id | foreach { $LogText += "`n$_" }
+	$Script:ADGroups.Id | ForEach-Object { $LogText += "`n$_" }
 	if ( $Script:WriteUsers )
 	{
 		if ( $cbDisk.SelectedItem.Substring( 1, 2 ) -eq ":\" )
 		{ $LogText += "`nRead-/write permission" }
 		else
 		{ $LogText += "`nNew permission" }
-		$Script:WriteUsers.AD | foreach { $LogText += "`n`t$( $_.Name )" }
+		$Script:WriteUsers.AD | ForEach-Object { $LogText += "`n`t$( $_.Name )" }
 	}
 
 	if ( $Script:ReadUsers )
 	{
 		$LogText += "`nRead permission"
-		$Script:ReadUsers.AD | foreach { $LogText += "`n`t$( $_.Name )" } }
+		$Script:ReadUsers.AD | ForEach-Object { $LogText += "`n`t$( $_.Name )" } }
 
 	if ( $Script:RemoveUsers )
 	{
 		$LogText += "`nRemove permission"
-		$Script:RemoveUsers.AD | foreach { $LogText += "`n`t$( $_.Name )" }
+		$Script:RemoveUsers.AD | ForEach-Object { $LogText += "`n`t$( $_.Name )" }
 	}
 
 	if ( $Script:ErrorUsers )
 	{
 		$LogText += "`nFound no account for:"
-		$Script:ErrorUsers.Id | foreach { $LogText += "`n`t$_" }
+		$Script:ErrorUsers.Id | ForEach-Object { $LogText += "`n`t$_" }
 	}
 
 	if ( $Script:ErrorGroups )
 	{
 		$LogText += "`nFound no AD-group for:"
-		$Script:ErrorGroups | foreach { $LogText += "`n`t$_" }
+		$Script:ErrorGroups | ForEach-Object { $LogText += "`n`t$_" }
 	}
 
 	$LogText += "`n------------------------------"
@@ -390,7 +390,7 @@ function CreateMessage
 {
 	$Message = @()
 	$Message += "Hello!`n`nFor these $Script:GroupType"
-	$Script:ADGroups.Id | foreach { $Message += "`t$_" }
+	$Script:ADGroups.Id | ForEach-Object { $Message += "`t$_" }
 	$Message += "following permission changes have been made"
 	if ( $Script:WriteUsers )
 	{
@@ -398,27 +398,27 @@ function CreateMessage
 		{ $Message += "`Created read/write permission for:" }
 		else
 		{ $Message += "`nCreated permission for:" }
-		$Script:WriteUsers.AD | foreach { $Message += "`t$( $_.Name )" }
+		$Script:WriteUsers.AD | ForEach-Object { $Message += "`t$( $_.Name )" }
 	}
 	if ( $Script:ReadUsers )
 	{
 		$Message += "`nCreated read permission for:"
-		$Script:ReadUsers.AD | foreach { $Message += "`t$( $_.Name )" }
+		$Script:ReadUsers.AD | ForEach-Object { $Message += "`t$( $_.Name )" }
 	}
 	if ( $Script:RemoveUsers )
 	{
 		$Message += "`nRemoved permission for:"
-		$Script:RemoveUsers.AD | foreach { $Message += "`t$( $_.Name )" }
+		$Script:RemoveUsers.AD | ForEach-Object { $Message += "`t$( $_.Name )" }
 	}
 	if ( $Script:ErrorUsers )
 	{
 		$Message += "`nFound no account for these given values:"
-		$Script:ErrorUsers.Id | foreach { $Message += "`t$_" }
+		$Script:ErrorUsers.Id | ForEach-Object { $Message += "`t$_" }
 	}
 	if ( $Script:ErrorGroups )
 	{
 		$Message += "`nFound no permissiongroups for these folders:"
-		$Script:ErrorGroups | foreach { $Message += "`t$_" }
+		$Script:ErrorGroups | ForEach-Object { $Message += "`t$_" }
 	}
 	$Message += $Script:Signatur
 	$OutputEncoding = ( New-Object System.Text.UnicodeEncoding $False, $False ).psobject.BaseObject
@@ -447,7 +447,7 @@ function PerformPermissions
 
 	if ( $Script:Duplicates )
 	{
-		ShowMessageBox -Text "There are values for more than one permission type.`nCorrect the listings and try again.`n$( $Script:Duplicates | select -Unique )" -Title "Duplicates" -Icon "Stop"
+		ShowMessageBox -Text "There are values for more than one permission type.`nCorrect the listings and try again.`n$( $Script:Duplicates | Select-Object -Unique )" -Title "Duplicates" -Icon "Stop"
 	}
 	else
 	{
@@ -547,9 +547,9 @@ function SetUserSettings
 # Fill combobox list with disk-folders
 function UpdateDiskList
 {
-	Get-ChildItem2 "G:\" -Directory | where { $_.FullName -in $Script:HandledFolders } | select -ExpandProperty FullName | foreach { [void] $cbDisk.Items.Add( $_ ) }
-	Get-ChildItem2 "S:\" -Directory | where { $_.FullName -in $Script:HandledFolders } | select -ExpandProperty FullName | foreach { [void] $cbDisk.Items.Add( $_ ) }
-	Get-ChildItem2 "R:\" -Directory | where { $_.FullName -in $Script:HandledFolders } | select -ExpandProperty FullName | foreach { [void] $cbDisk.Items.Add( $_ ) }
+	Get-ChildItem2 "G:\" -Directory | Where-Object { $_.FullName -in $Script:HandledFolders } | Select-Object -ExpandProperty FullName | ForEach-Object { [void] $cbDisk.Items.Add( $_ ) }
+	Get-ChildItem2 "S:\" -Directory | Where-Object { $_.FullName -in $Script:HandledFolders } | Select-Object -ExpandProperty FullName | ForEach-Object { [void] $cbDisk.Items.Add( $_ ) }
+	Get-ChildItem2 "R:\" -Directory | Where-Object { $_.FullName -in $Script:HandledFolders } | Select-Object -ExpandProperty FullName | ForEach-Object { [void] $cbDisk.Items.Add( $_ ) }
 
 	[void] $cbDisk.Items.Add( "App1" )
 	[void] $cbDisk.Items.Add( "App2" )
@@ -576,11 +576,11 @@ function UpdateFolderList
 
 		if ( $cbDisk.SelectedItem.Substring( 0, 1 ) -eq "S" )
 		{
-			$Script:Folders = Get-ChildItem $cbDisk.SelectedItem -Directory | select -ExpandProperty FullName | foreach { ( Get-ChildItem2 $_ -Directory | select -ExpandProperty FullName ) -replace ( [System.Text.RegularExpressions.Regex]::Escape( "$( $cbDisk.SelectedItem )\" ) ) | sort }
+			$Script:Folders = Get-ChildItem $cbDisk.SelectedItem -Directory | Select-Object -ExpandProperty FullName | ForEach-Object { ( Get-ChildItem2 $_ -Directory | Select-Object -ExpandProperty FullName ) -replace ( [System.Text.RegularExpressions.Regex]::Escape( "$( $cbDisk.SelectedItem )\" ) ) | Sort-Object }
 		}
 		else
 		{
-			$Script:Folders = Get-ChildItem $cbDisk.SelectedItem -Directory | where { $_.FullName -notin $ExceptionFolders } | select -ExpandProperty Name | sort
+			$Script:Folders = Get-ChildItem $cbDisk.SelectedItem -Directory | Where-Object { $_.FullName -notin $ExceptionFolders } | Select-Object -ExpandProperty Name | Sort-Object
 		}
 
 		$txtFolderSearch.Focus()
@@ -627,9 +627,9 @@ function UpdateFolderList
 			}
 		}
 		if ( $Exclude )
-		{ $Script:Folders = Get-ADGroup -LDAPFilter $AppFilter | where { $Exclude -notcontains $_.Name.Split( $split )[$index] } | select -ExpandProperty Name }
+		{ $Script:Folders = Get-ADGroup -LDAPFilter $AppFilter | Where-Object { $Exclude -notcontains $_.Name.Split( $split )[$index] } | Select-Object -ExpandProperty Name }
 		else
-		{ $Script:Folders = Get-ADGroup -LDAPFilter "$AppFilter" | select -ExpandProperty Name | sort }
+		{ $Script:Folders = Get-ADGroup -LDAPFilter "$AppFilter" | Select-Object -ExpandProperty Name | Sort-Object }
 	}
 
 	UpdateFolderListItems
@@ -641,7 +641,7 @@ function UpdateFolderList
 function UpdateFolderListItems
 {
 	$lbFolderList.Items.Clear()
-	foreach ( $Folder in ( $Script:Folders | where { $lbFoldersChosen.Items -notcontains $_ } ) )
+	foreach ( $Folder in ( $Script:Folders | Where-Object { $lbFoldersChosen.Items -notcontains $_ } ) )
 	{
 		[void] $lbFolderList.Items.Add( $Folder )
 	}
@@ -670,7 +670,7 @@ function WriteToLogFile
 			else { $LogText += "$( $u.Id ) > Remove '$( $group.Id )'" }
 		}
 	}
-	$LogText | foreach { WriteLog -LogText $_ }
+	$LogText | ForEach-Object { WriteLog -LogText $_ }
 }
 
 ####################  End Operational functions  ####################
@@ -719,14 +719,14 @@ function FolderSelected
 # Search for any of item containing searchword
 function SearchListboxItem
 {
-	$list = $Script:Folders | where { $lbFoldersChosen.Items -notcontains $_ }
+	$list = $Script:Folders | Where-Object { $lbFoldersChosen.Items -notcontains $_ }
 	if ( $txtFolderSearch.Text.Length -eq 0 )
 	{
 		$lbFolderList.SelectedIndex = -1
 	}
 	else
 	{
-		$list = $list | where { $_ -like "*$( $txtFolderSearch.Text.Replace( "\\", "\\\\" ) )*" }
+		$list = $list | Where-Object { $_ -like "*$( $txtFolderSearch.Text.Replace( "\\", "\\\\" ) )*" }
 	}
 	$lbFolderList.Items.Clear()
 	foreach ( $i in $list )
@@ -766,7 +766,7 @@ Import-Module "$( $args[0] )\Modules\FileOps.psm1"
 
 ####################  Create window  ####################
 $Window, $vars = CreateWindow
-$vars | foreach { Set-Variable -Name $_ -Value $Window.FindName( $_ ) -Scope script }
+$vars | ForEach-Object { Set-Variable -Name $_ -Value $Window.FindName( $_ ) -Scope script }
 ####################  End Create window  ####################
 
 ####################  Control event functions  ####################

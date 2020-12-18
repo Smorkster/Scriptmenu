@@ -9,7 +9,7 @@ $CaseNr = Read-Host "Related casenumber (if any) "
 $UserInput = Read-Host "User id"
 
 Write-Host "Searching logs..."
-$result = Get-ChildItem G:\LockedOut_Log -Filter '*LogLockedOut.txt' | Get-Content | where { ( $_ -split " " )[2] -eq $UserInput } | foreach { "$( ( $_ -split '\s+' )[0] ) $( ( $_ -split '\s+' )[1] ) $( ( $_ -split '\s+' )[3] ) " } | select -Unique | sort
+$result = Get-ChildItem G:\LockedOut_Log -Filter '*LogLockedOut.txt' | Get-Content | Where-Object { ( $_ -split " " )[2] -eq $UserInput } | ForEach-Object { "$( ( $_ -split '\s+' )[0] ) $( ( $_ -split '\s+' )[1] ) $( ( $_ -split '\s+' )[3] ) " } | Select-Object -Unique | Sort-Object
 
 if ( $result.Count -eq 0 )
 {

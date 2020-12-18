@@ -10,7 +10,7 @@ $ComputerName = $args[1]
 $CaseNr = Read-Host "Related casenumber (if any) "
 Write-Host "Fetching installed applications on $ComputerName"
 
-$applications = wmic /node:$ComputerName product get name | foreach { $_.Trim() } | where { $_ -ne "" -and $_ -ne "Name" } | sort
+$applications = wmic /node:$ComputerName product get name | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne "" -and $_ -ne "Name" } | Sort-Object
 
 $applications
 $outputFile = WriteOutput -Output $applications

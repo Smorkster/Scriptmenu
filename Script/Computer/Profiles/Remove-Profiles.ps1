@@ -27,7 +27,7 @@ function Connect
 				{
 					Test-WSMan $syncHash.Data.ComputerName -ErrorAction Stop
 					$syncHash.Window.Dispatcher.Invoke( [action] { $li.Content += "`n`tIs online" } )
-					$n = ( quser /server:$( $syncHash.data.ComputerName ) | select -Skip 1 ).Count
+					$n = ( quser /server:$( $syncHash.data.ComputerName ) | Select-Object -Skip 1 ).Count
 					if ( $n -gt 0 )
 					{
 						$syncHash.Window.Dispatcher.Invoke( [action] { $li.Content += "`n`t$( $n ) users have loginsessions.`n`tLog out all before you continue." } )
@@ -95,23 +95,23 @@ function DeleteProfiles
 				"C:\Users\$id",
 				"C:\Users\$id\AppData\Roaming\Microsoft\Office",
 				"C:\Users\$id\AppData\Roaming\Microsoft\Signatures",
-				"C:\Users\$id\AppData\Roaming\Microsoft\Sticky Notes" | foreach {
+				"C:\Users\$id\AppData\Roaming\Microsoft\Sticky Notes" | ForEach-Object {
 					Get-ChildItem $_ -Recurse | Copy-Item -Destination { $_.FullName -replace "$id", "Old\$id" }
 				}
 
 				#Files
 				"C:\Users\$id\AppData\Local\Google\Chrome\User Data\Default\Bookmarks",
-				"C:\Users\$id\AppData\Roaming\Microsoft\OneNote\16.0\Preferences.dat" | foreach {
-					New-Item -Path { ( $_ -replace "$id", "Old\$id" -split "\\" | select -SkipLast 1 ) -join "\" } `
-							-Name { $_ -split "\\" | select -Last 1 } `
+				"C:\Users\$id\AppData\Roaming\Microsoft\OneNote\16.0\Preferences.dat" | ForEach-Object {
+					New-Item -Path { ( $_ -replace "$id", "Old\$id" -split "\\" | Select-Object -SkipLast 1 ) -join "\" } `
+							-Name { $_ -split "\\" | Select-Object -Last 1 } `
 							-ItemType File `
 							-Force `
 							-Value ( Get-Content -Path $_ )
 				}
 
 				$zipDest = "C:\Users\Old\$Name Profilebackup, created $( ( Get-Date ).ToShortDateString() ).zip"
-				$earlierBackups = Get-ChildItem -Path "C:\Users\Old" | where { $_.Name -match $id }
-				$earlierBackups | where { $_.LastWriteTime -lt ( Get-Date ).AddDays( -30 ) } | Remove-Item
+				$earlierBackups = Get-ChildItem -Path "C:\Users\Old" | Where-Object { $_.Name -match $id }
+				$earlierBackups | Where-Object { $_.LastWriteTime -lt ( Get-Date ).AddDays( -30 ) } | Remove-Item
 
 				Compress-Archive -Path C:\Users\Old\$id -DestinationPath $zipDest -CompressionLevel Optimal
 				Remove-Item C:\Users\Old\$id -Recurse
@@ -122,11 +122,11 @@ function DeleteProfiles
 
 			# region RemoveProfile
 			$syncHash.Window.Dispatcher.Invoke( [action] { $li.Content += "`n`tDeletes profile and files ($( $user.ID ))... " } )
-			Get-CimInstance -ComputerName $syncHash.Data.ComputerName -Class Win32_UserProfile | where { $_.LocalPath.Split( '\' )[-1] -eq $user.ID } | Remove-CimInstance
+			Get-CimInstance -ComputerName $syncHash.Data.ComputerName -Class Win32_UserProfile | Where-Object { $_.LocalPath.Split( '\' )[-1] -eq $user.ID } | Remove-CimInstance
 			$syncHash.Window.Dispatcher.Invoke( [action] { $li.Content += "Klar" } )
 			# endregion RemoveProfile
 
-			$syncHash.DC.DClvProfileList[0] = $syncHash.DC.DClvProfileList[0] | where { $_.ID -ne $user.ID }
+			$syncHash.DC.DClvProfileList[0] = $syncHash.DC.DClvProfileList[0] | Where-Object { $_.ID -ne $user.ID }
 			$syncHash.Output += "`n`n$( $user.Name )`n`tProfile location: $( $out.Org )`n`tZIP-backup: $( $out.ZIP )"
 
 			$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.DCProgress[0] = [double] ( ( ( ( $syncHash.jobs.H.IsCompleted -eq $true ).Count + 1 ) / $syncHash.jobs.Count ) * 100 ) } )
@@ -141,7 +141,7 @@ function LogoffRemote
 {
 	if ( $syncHash.DC.DCbtnLogOutAll[1] -eq "Log out all users" )
 	{
-		$userlogins = quser /server:$( $syncHash.data.ComputerName ) | select -Skip 1 | foreach { 
+		$userlogins = quser /server:$( $syncHash.data.ComputerName ) | Select-Object -Skip 1 | ForEach-Object { 
 			[pscustomobject]@{
 				UserID = ( $_ -split " +" )[1]
 				SessionID = $( if ( ( $_ -split " +" ).Count -eq 8 ) { ( $_ -split " +" )[3] } else { ( $_ -split " +" )[2] } )
@@ -151,19 +151,19 @@ function LogoffRemote
 
 		$syncHash.Window.Dispatcher.Invoke( [action] {
 			$ofs = "`n`t"
-			$li.Content = "$( $userlogins.Count ) users logged out`n`t$( [string]( $userlogins.UserID | Get-ADUser | select -ExpandProperty Name | sort ) )"
+			$li.Content = "$( $userlogins.Count ) users logged out`n`t$( [string]( $userlogins.UserID | Get-ADUser | Select-Object -ExpandProperty Name | Sort-Object ) )"
 			$syncHash.DC.DClbOutput[0].Add( $li )
 		} )
 	}
 
-	Get-CimInstance -ComputerName $( $syncHash.Data.ComputerName ) -ClassName Win32_UserProfile | where { -not $_.Special -and $_.LocalPath -notmatch "default" -and -not [string]::IsNullOrEmpty( $_.LocalPath ) } | foreach {
+	Get-CimInstance -ComputerName $( $syncHash.Data.ComputerName ) -ClassName Win32_UserProfile | Where-Object { -not $_.Special -and $_.LocalPath -notmatch "default" -and -not [string]::IsNullOrEmpty( $_.LocalPath ) } | ForEach-Object {
 		[pscustomobject]@{
 			P = $_.LocalPath
 			ID = ( $_.LocalPath -split "\\" )[2].ToUpper()
 			Name = ( Get-ADUser ( $_.LocalPath -split "\\" )[2] ).Name
 			LastUsed = $_.LastUseTime.ToShortDateString()
 		}
-	} | sort Name | foreach { $syncHash.DC.DClvProfileList[0].Add( $_ ) }
+	} | Sort-Object Name | ForEach-Object { $syncHash.DC.DClvProfileList[0].Add( $_ ) }
 	if ( $syncHash.DC.DClvProfileList[0].Count -gt 0 )
 	{
 		$syncHash.DC.DCbtnMarkAll[0] = $true
@@ -179,12 +179,12 @@ function VerifyInput
 	$c1 = $true
 	if ( $syncHash.Data.ComputerName -match "(org1|org2)(d|l)s\d{7}" )
 	{
-		if ( $role = Get-ADComputer $syncHash.Data.ComputerName -Properties Memberof | select -ExpandProperty MemberOf | where { $_ -match "_Wrk_.+PC," } )
+		if ( $role = Get-ADComputer $syncHash.Data.ComputerName -Properties Memberof | Select-Object -ExpandProperty MemberOf | Where-Object { $_ -match "_Wrk_.+PC," } )
 		{
-			$role | foreach { if ( $_ -notmatch "(Exp|Admin)" ) { $c1 = $false } }
+			$role | ForEach-Object { if ( $_ -notmatch "(Exp|Admin)" ) { $c1 = $false } }
 			if ( -not $c1 )
 			{
-				$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.DClbOutput[0].Add( ( [System.Windows.Controls.ListBoxItem]@{ Content = "Computer does not have the correct role. One or more of these roles demands special handling by IT-Service.`nComputer have these roles:`n`t$( $ofs = "`n`t"; $role | foreach { ( ( $_ -split "=" )[1] -split "," )[0] } )"; Background = "#FFFF0000" } ) ) } )
+				$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.DClbOutput[0].Add( ( [System.Windows.Controls.ListBoxItem]@{ Content = "Computer does not have the correct role. One or more of these roles demands special handling by IT-Service.`nComputer have these roles:`n`t$( $ofs = "`n`t"; $role | ForEach-Object { ( ( $_ -split "=" )[1] -split "," )[0] } )"; Background = "#FFFF0000" } ) ) } )
 			}
 		}
 	}
@@ -212,7 +212,7 @@ $syncHash.DC = [hashtable]( @{} )
 $syncHash.Output = ""
 $syncHash.Vars = @()
 $syncHash.Window, $vars = CreateWindow
-$vars | foreach {
+$vars | ForEach-Object {
 	$syncHash.$_ = $syncHash.Window.FindName( $_ )
 	$syncHash.Vars += $_
 	$syncHash.Bindings."Bindings$_" = New-Object System.Collections.ObjectModel.ObservableCollection[object]
@@ -244,8 +244,8 @@ $syncHash.DC.DCbtnConnect.Add( "Connect to computer" ) # 0 Content
 
 foreach ( $v in $syncHash.Vars )
 {
-	0..( $syncHash.DC."DC$v".Count - 1 ) | foreach { [void] $syncHash.Bindings."Bindings$v".Add( ( New-Object System.Windows.Data.Binding -ArgumentList "[$_]" ) ) }
-	$syncHash.Bindings."Bindings$v" | foreach { $_.Mode = [System.Windows.Data.BindingMode]::TwoWay }
+	0..( $syncHash.DC."DC$v".Count - 1 ) | ForEach-Object { [void] $syncHash.Bindings."Bindings$v".Add( ( New-Object System.Windows.Data.Binding -ArgumentList "[$_]" ) ) }
+	$syncHash.Bindings."Bindings$v" | ForEach-Object { $_.Mode = [System.Windows.Data.BindingMode]::TwoWay }
 	$syncHash.$v.DataContext = $syncHash.DC."DC$v"
 }
 

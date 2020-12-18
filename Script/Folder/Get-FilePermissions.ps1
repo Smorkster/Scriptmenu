@@ -18,7 +18,7 @@ function GetMember
 		try
 		{
 			$groupMembers = Get-ADGroup $member -Properties members
-			$groupMembers.members | foreach { GetMember $_ }
+			$groupMembers.members | ForEach-Object { GetMember $_ }
 		}
 		catch { return $null }
 	}
@@ -29,8 +29,8 @@ $File = Read-Host "Pathway for file"
 
 $output = "Permissiongroups and its members for file:`n$File"
 $FileSystemRights = @{}
-$PermissionList = Get-Acl $File | select -ExpandProperty Access | select -Property @{ Name = "IdentityReference"; Expression = { ( [string]$_.IdentityReference -split "\\" )[1] } }, FileSystemRights
-$PermissionList | group FileSystemRights | foreach { $FileSystemRights += @{ $_.Name = New-Object System.Collections.ArrayList } }
+$PermissionList = Get-Acl $File | Select-Object -ExpandProperty Access | Select-Object -Property @{ Name = "IdentityReference"; Expression = { ( [string]$_.IdentityReference -split "\\" )[1] } }, FileSystemRights
+$PermissionList | Group-Object FileSystemRights | ForEach-Object { $FileSystemRights += @{ $_.Name = New-Object System.Collections.ArrayList } }
 
 foreach ( $rightsType in $FileSystemRights.Keys )
 {
@@ -40,10 +40,10 @@ foreach ( $rightsType in $FileSystemRights.Keys )
 	foreach ( $holder in $rightsHolder )
 	{
 		$member = GetMember $holder.IdentityReference
-		if ( $member -ne $null )
-		{ $member | where { $_ -match "\(" } | foreach { $toutput += $_ } }
+		if ( $null -ne $member )
+		{ $member | Where-Object { $_ -match "\(" } | ForEach-Object { $toutput += $_ } }
 	}
-	$toutput | select -Unique | sort | foreach { $output += "$_`n" }
+	$toutput | Select-Object -Unique | Sort-Object | ForEach-Object { $output += "$_`n" }
 }
 
 $outputfile = WriteOutput -Output $output

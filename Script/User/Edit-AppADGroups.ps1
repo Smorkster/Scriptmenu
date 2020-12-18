@@ -43,14 +43,14 @@ function CollectEntries
 	if ( ( $LineCount = $txtUsersAddPermission.LineCount ) -gt 0 )
 	{
 		$lines = @()
-		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $txtUsersAddPermission.GetLineText( $i ) ).Split( ";""," ) | foreach { $lines += ( $_ ).Trim() } }
-		CollectUsers -entries ( $lines | where { $_ -ne "" } ) -PermissionType "Add"
+		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $txtUsersAddPermission.GetLineText( $i ) ).Split( ";""," ) | ForEach-Object { $lines += ( $_ ).Trim() } }
+		CollectUsers -entries ( $lines | Where-Object { $_ -ne "" } ) -PermissionType "Add"
 	}
 	if ( ( $LineCount = $txtUsersRemovePermission.LineCount ) -gt 0 )
 	{
 		$lines = @()
-		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $txtUsersRemovePermission.GetLineText( $i ) ).Split( ";""," ) | foreach { $lines += ( $_ ).Trim() } }
-		CollectUsers -entries ( $lines | where { $_ -ne "" } ) -PermissionType "Remove"
+		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $txtUsersRemovePermission.GetLineText( $i ) ).Split( ";""," ) | ForEach-Object { $lines += ( $_ ).Trim() } }
+		CollectUsers -entries ( $lines | Where-Object { $_ -ne "" } ) -PermissionType "Remove"
 	}
 }
 
@@ -80,7 +80,7 @@ function CollectUsers
 		{
 			$object = $null
 			$object = @{ "Id" = $entry.ToString().ToUpper(); "AD" = ( Get-ADUser -Identity $entry -Properties otherMailbox ); "PW" = GeneratePassword }
-			if ( ( ( $Script:AddUsers | where { $_.Id -eq $object.Id } ).Count + ( $Script:RemoveUsers | where { $_.Id -eq $object.Id } ).Count ) -gt 1 )
+			if ( ( ( $Script:AddUsers | Where-Object { $_.Id -eq $object.Id } ).Count + ( $Script:RemoveUsers | Where-Object { $_.Id -eq $object.Id } ).Count ) -gt 1 )
 			{
 				$Script:Duplicates += $object.Id
 			}
@@ -105,23 +105,23 @@ function CreateLogText
 {
 	$LogText = ""
 	$LogText += "$( Get-Date -Format "yyyy-MM-dd HH:mm:ss" )"
-	$lbGroupsChosen.Items | foreach { $LogText += "`n$_" }
+	$lbGroupsChosen.Items | ForEach-Object { $LogText += "`n$_" }
 	if ( $Script:AddUsers )
 	{
 		$LogText += "`nNew permission"
-		$Script:AddUsers.AD | foreach { $LogText += "`n`t$( $_.Name )" }
+		$Script:AddUsers.AD | ForEach-Object { $LogText += "`n`t$( $_.Name )" }
 	}
 
 	if ( $Script:RemoveUsers )
 	{
 		$LogText += "`nRemove permission"
-		$Script:RemoveUsers.AD | foreach { $LogText += "`n`t$( $_.Name )" }
+		$Script:RemoveUsers.AD | ForEach-Object { $LogText += "`n`t$( $_.Name )" }
 	}
 
 	if ( $Script:ErrorUsers )
 	{
 		$LogText += "`nFound no account for:"
-		$Script:ErrorUsers.Id | foreach { $LogText += "`n`t$_" }
+		$Script:ErrorUsers.Id | ForEach-Object { $LogText += "`n`t$_" }
 	}
 
 	$LogText += "`n------------------------------"
@@ -134,22 +134,22 @@ function CreateMessage
 {
 	$Message = @()
 	$Message += "Hello!`n`nFor these $Script:GroupType"
-	$lbGroupsChosen.Items | foreach { $Message += "`t$_" }
+	$lbGroupsChosen.Items | ForEach-Object { $Message += "`t$_" }
 	$Message += "these permission changes have been made:"
 	if ( $Script:AddUsers )
 	{
 		$Message += "`nCreate permission for:"
-		$Script:AddUsers | foreach { $Message += "`t$( $_.AD.Name )$( if ( $_.AD.otherMailbox -match "org7" ) { "( new password: $( $_.PW ) )" } )" }
+		$Script:AddUsers | ForEach-Object { $Message += "`t$( $_.AD.Name )$( if ( $_.AD.otherMailbox -match "org7" ) { "( new password: $( $_.PW ) )" } )" }
 	}
 	if ( $Script:RemoveUsers )
 	{
 		$Message += "`nRemoved permission for:"
-		$Script:RemoveUsers.AD | foreach { $Message += "`t$( $_.Name )" }
+		$Script:RemoveUsers.AD | ForEach-Object { $Message += "`t$( $_.Name )" }
 	}
 	if ( $Script:ErrorUsers )
 	{
 		$Message += "`nFound no account for these input:"
-		$Script:ErrorUsers.Id | foreach { $Message += "`t$_" }
+		$Script:ErrorUsers.Id | ForEach-Object { $Message += "`t$_" }
 	}
 	$Message += $Script:Signatur
 	$OutputEncoding = ( New-Object System.Text.UnicodeEncoding $False, $False ).psobject.BaseObject
@@ -164,7 +164,7 @@ function GeneratePassword
 	$p += Get-RandomCharacters -length 1 -characters 'ABCDEFGHKLMNPRSTUVWXYZ'
 	$p += Get-RandomCharacters -length 1 -characters '123456789'
 	$p += Get-RandomCharacters -length 5 -characters 'abcdefghikmnprstuvwxyzABCDEFGHKLMNPRSTUVWXYZ123456789'
-	$p = Scramble-String $p
+	$p = ScrambleString $p
 	return $p
 }
 
@@ -173,14 +173,14 @@ function GeneratePassword
 function Get-RandomCharacters
 {
 	param ( $length, $characters )
-	$random = 1..$length | foreach { Get-Random -Maximum $characters.Length }
+	$random = 1..$length | ForEach-Object { Get-Random -Maximum $characters.Length }
 	$private:ofs = ""
 	return [string]$characters[$random]
 }
 
 ########################################
 # Randomize order of charaters in string
-function Scramble-String
+function ScrambleString
 {
 	param ( [string]$inputString )
 	$characterArray = $inputString.ToCharArray()
@@ -193,7 +193,7 @@ function Scramble-String
 # Remove from selected list, add to grouplist
 function GroupDeselected
 {
-	if ( $lbGroupsChosen.SelectedItem -ne $null )
+	if ( $null -ne $lbGroupsChosen.SelectedItem )
 	{
 		$lbAppGroupList.Items.Add( $lbGroupsChosen.SelectedItem )
 		$lbGroupsChosen.Items.Remove( $lbGroupsChosen.SelectedItem )
@@ -207,7 +207,7 @@ function GroupDeselected
 # Remove from grouplist, add to selected list
 function GroupSelected
 {
-	if ( $lbAppGroupList.SelectedItem -ne $null )
+	if ( $null -ne $lbAppGroupList.SelectedItem )
 	{
 		$lbGroupsChosen.Items.Add( $lbAppGroupList.SelectedItem )
 		$lbAppGroupList.Items.Remove( $lbAppGroupList.SelectedItem )
@@ -224,7 +224,7 @@ function PerformPermissions
 
 	if ( $Script:Duplicates )
 	{
-		ShowMessageBox -Text "There are doublet values in input.`nCorrect these and run again:`n$( $Script:Duplicates | select -Unique )" -Title "Doublets" -Icon "Stop"
+		ShowMessageBox -Text "There are doublet values in input.`nCorrect these and run again:`n$( $Script:Duplicates | Select-Object -Unique )" -Title "Doublets" -Icon "Stop"
 	}
 	else
 	{
@@ -246,7 +246,7 @@ function PerformPermissions
 				}
 				$loopCounter++
 			}
-			foreach ( $u in ( $Script:AddUsers | where { $_.AD.otherMailbox -match "org7" } ) )
+			foreach ( $u in ( $Script:AddUsers | Where-Object { $_.AD.otherMailbox -match "org7" } ) )
 			{
 				Set-ADAccountPassword -Identity $u.AD -Reset -NewPassword ( ConvertTo-SecureString -AsPlainText $u.PW -Force )
 				Set-ADUser -Identity $u.AD -ChangePasswordAtLogon $false -Confirm:$false
@@ -351,9 +351,9 @@ function UpdateAppGroupList
 		}
 	}
 	if ( $Exclude )
-	{ $Script:GroupList = Get-ADGroup -LDAPFilter $AppFilter | where { $Exclude -notcontains $_.Name.Split( $split )[$index] } | select -ExpandProperty Name }
+	{ $Script:GroupList = Get-ADGroup -LDAPFilter $AppFilter | Where-Object { $Exclude -notcontains $_.Name.Split( $split )[$index] } | Select-Object -ExpandProperty Name }
 	else
-	{ $Script:GroupList = Get-ADGroup -LDAPFilter "$AppFilter" | select -ExpandProperty Name | sort }
+	{ $Script:GroupList = Get-ADGroup -LDAPFilter "$AppFilter" | Select-Object -ExpandProperty Name | Sort-Object }
 
 	UpdateAppGroupListItems
 	$Window.Title = $Script:Title
@@ -364,7 +364,7 @@ function UpdateAppGroupList
 function UpdateAppGroupListItems
 {
 	$lbAppGroupList.Items.Clear()
-	foreach ( $item in ( $Script:GroupList | where { $lbGroupsChosen.Items -notcontains $_ } ) )
+	foreach ( $item in ( $Script:GroupList | Where-Object { $lbGroupsChosen.Items -notcontains $_ } ) )
 	{
 		[void] $lbAppGroupList.Items.Add( $item )
 	}
@@ -407,13 +407,13 @@ function WriteToLogFile
 			$LogText += "$( $u.Id ) > Remove '$( $group.Id )'"
 		}
 	}
-	$LogText | foreach { WriteLog -LogText $_ }
+	$LogText | ForEach-Object { WriteLog -LogText $_ }
 }
 
 ######################### Scriptet begins #########################
 SetUserSettings
 $Window, $vars = CreateWindow
-$vars | foreach { Set-Variable -Name $_ -Value $Window.FindName( $_ ) }
+$vars | ForEach-Object { Set-Variable -Name $_ -Value $Window.FindName( $_ ) }
 
 $btnPerform.Add_Click( { PerformPermissions } )
 $btnUndo.Add_Click( { UndoInput } )

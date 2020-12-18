@@ -8,34 +8,34 @@ Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 $CopyToClipBoard = @()
 
 $CaseNr = Read-Host "Related casenumber (if any) "
-$Input = Read-Host "User id "
+$UserID = Read-Host "User id "
 
-if ( !( dsquery User -samid $Input ) )
+if ( !( dsquery User -samid $UserID ) )
 {
-	Write-Host "`nNo user with id $Input was found!" -ForegroundColor Red
-	$outputFile = "$Input does not exist"
+	Write-Host "`nNo user with id $UserID was found!" -ForegroundColor Red
+	$outputFile = "$UserID does not exist"
 }
 else
 {
 	$output = @()
-	$User = Get-ADUser $Input -Properties *
-	if ( $GaiaGroups = Get-ADPrincipalGroupMembership $User | where { $_.SamAccountName -notlike "*_org_*" } | where { $_.SamAccountName -ne "Domain Users" } | select -ExpandProperty SamAccountName | sort )
+	$User = Get-ADUser $UserID -Properties *
+	if ( $GaiaGroups = Get-ADPrincipalGroupMembership $User | Where-Object { $_.SamAccountName -notlike "*_org_*" } | Where-Object { $_.SamAccountName -ne "Domain Users" } | Select-Object -ExpandProperty SamAccountName | Sort-Object )
 	{
 		$output += $User.Name + " have permission for these AD-groups:"
-		$GaiaGroups | sort | foreach { $output += "`t$( $_ )" }
+		$GaiaGroups | Sort-Object | ForEach-Object { $output += "`t$( $_ )" }
 	}
 	else
 	{
 		$output += $User.Name + " does not have any group-permissions in AD."
 	}
 
-	if ( $OrgGroups = Get-ADPrincipalGroupMembership $User | where { $_.SamAccountName -like "*_org_*" } | select -ExpandProperty SamAccountName | sort )
+	if ( $OrgGroups = Get-ADPrincipalGroupMembership $User | Where-Object { $_.SamAccountName -like "*_org_*" } | Select-Object -ExpandProperty SamAccountName | Sort-Object )
 	{
 		$output += "`r`nAnd permissions for these sync org-groups:"
 		foreach ( $g in $orggroups )
 		{
-			Get-ADGroup $g -Properties hsaidentity | foreach { $output += "$( $_.Name ) - $( $_.orgIdentity )" }
-			Get-ADPrincipalGroupMembership $g | sort | foreach { $output += "`t" + $_.Name }
+			Get-ADGroup $g -Properties hsaidentity | ForEach-Object { $output += "$( $_.Name ) - $( $_.orgIdentity )" }
+			Get-ADPrincipalGroupMembership $g | Sort-Object | ForEach-Object { $output += "`t" + $_.Name }
 		}
 	}
 	else
@@ -53,5 +53,5 @@ if ( $output )
 	Start-Process notepad $outputFile
 }
 
-WriteLog -LogText "$CaseNr $Input`r`n`tOutput: $outputFile"
+WriteLog -LogText "$CaseNr $UserID`r`n`tOutput: $outputFile"
 EndScript

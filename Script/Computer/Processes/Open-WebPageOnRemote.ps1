@@ -9,7 +9,7 @@ $ComputerName = $args[1]
 $CaseNr = Read-Host "Related casenumber (if any) "
 $Address = Read-Host "Write webaddress to be opened"
 
-Invoke-Command -ComputerName $ComputerName -Scriptblock ` { start $Using:Address }
+Invoke-Command -ComputerName $ComputerName -Scriptblock ` { Start-Process $Using:Address }
 
 WriteLog -LogText "$CaseNr $ComputerName > $Adress"
 EndScript

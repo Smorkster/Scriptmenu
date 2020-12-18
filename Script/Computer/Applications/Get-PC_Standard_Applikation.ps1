@@ -14,7 +14,7 @@ try
 	$AD = Get-ADComputer $ComputerName -Property MemberOf
 	$ADMember = $AD.MemberOf
 	$ADFilter = $ADMember
-	$ADResult = $ADFilter | where {$_ -like "*PC*" } | sort MemberOf
+	$ADResult = $ADFilter | Where-Object {$_ -like "*PC*" } | Sort-Object MemberOf
 
 	foreach ( $ObjectMemberAD in $ADResult )
 	{
@@ -61,7 +61,7 @@ try
 		Write-Host -ForegroundColor Green "Core applications for" -NoNewline
 		Write-Host ": $ComputerName".ToUpper() -NoNewline
 		Write-Host " ($ObjectMemberSysman)"
-		$StandardApps.mappedApplications | select -ExpandProperty Name | sort
+		$StandardApps.mappedApplications | Select-Object -ExpandProperty Name | Sort-Object
 	}
 }
 catch

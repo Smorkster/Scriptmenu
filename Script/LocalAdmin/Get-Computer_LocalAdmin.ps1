@@ -10,7 +10,7 @@ $ComputerName = Read-Host "Computername "
 
 $Computer = Get-ADComputer $ComputerName -Properties adminDescription
 
-if ( $Computer.adminDescription -eq $null )
+if ( $null -eq $Computer.adminDescription )
 {
 	Write-Host "No LocalAdmin-account registered for computer"
 	$logText = "No LocalAdmin"
@@ -18,7 +18,7 @@ if ( $Computer.adminDescription -eq $null )
 else
 {
 	$logText = $Computer.adminDescription
-	foreach ( $data in ( $Computer.adminDescription -split ";" | where { $_ -ne "" } ) )
+	foreach ( $data in ( $Computer.adminDescription -split ";" | Where-Object { $_ -ne "" } ) )
 	{
 		$split = $data -split ":"
 		Write-Host "Date: $( $split[0] )`nUser: $( $split[1] )"

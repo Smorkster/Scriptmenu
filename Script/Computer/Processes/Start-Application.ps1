@@ -10,7 +10,7 @@ $CaseNr = Read-Host "Related casenumber (if any) "
 
 $Program = Read-Host "Name application to be started"
 
-Invoke-Command -ComputerName $ComputerName -Scriptblock { start $Using:Program }
+Invoke-Command -ComputerName $ComputerName -Scriptblock { Start-Process $Using:Program }
 
 WriteLog -LogText "$CaseNr $ComputerName $Program"
 EndScript

@@ -22,9 +22,9 @@ function GetFolderItems
 			@{ Name = "Path"; Expression = { $_.FullName } }, `
 			@{ Name = "Group"; Expression = { ( $_.Name -split "-" )[0] } }, `
 			@{ Name = "Synopsis"; Expression = { ( Select-String -InputObject $_ -Pattern "^.Synopsis" -Encoding Default ).Line.Replace( ".Synopsis ", "" ) } }, `
-			@{ Name = "Requires"; Expression = { ( [string]( Select-String -InputObject $_ -Pattern "^.Requires" -Encoding default ).Line ).Replace( ".Requires ", "" ) -split "\W" | where { $_ } } }, `
+			@{ Name = "Requires"; Expression = { ( [string]( Select-String -InputObject $_ -Pattern "^.Requires" -Encoding default ).Line ).Replace( ".Requires ", "" ) -split "\W" | Where-Object { $_ } } }, `
 			@{ Name = "Description"; Expression = { ( Select-String -InputObject $_ -Pattern "^.Description" -Encoding Default ).Line.TrimStart( ".Description " ) } } | `
-			sort Synopsis )
+			Sort-Object Synopsis )
 	{
 		if ( $dirPath.FullName -match "(Computer\\)" ) { $wpScriptGroup = CreateScriptGroup $files }
 		else { $wpScriptGroup = CreateScriptGroup $files }
@@ -48,7 +48,7 @@ function GetFolderItems
 		{
 			$tiList += ( CreateTabItem $dir )
 		}
-		$tiList | sort $_.Header | foreach {
+		$tiList | Sort-Object $_.Header | ForEach-Object {
 			if ( $_.Content.Children[0].Content.Children.Count -eq 0 )
 			{
 				$_.Visibility = [System.Windows.Visibility]::Collapsed
@@ -108,7 +108,7 @@ function GetPCInfo
 {
 	$ComputerObj.NetAdapters = @()
 	$c = FetchPCInfo -Class Win32_NetworkAdapterConfiguration -Filter "IPEnabled='True'"
-	$c | foreach { $ComputerObj.NetAdapters += [pscustomobject]@{ MAC = $_.MACAddress; NetDesc = $_.Description; IP = $_.IPAddress[0] } }
+	$c | ForEach-Object { $ComputerObj.NetAdapters += [pscustomobject]@{ MAC = $_.MACAddress; NetDesc = $_.Description; IP = $_.IPAddress[0] } }
 
 	$ComputerObj.Model = ( FetchPCInfo -Class win32_computersystem ).Model
 	$ComputerObj.Serienummer = ( FetchPCInfo -Class win32_bios ).SerialNumber
@@ -132,32 +132,32 @@ function GetPCInfo
 function GetPCRole
 {
 	$ComputerObj.Roll = $null
-	$PCRoll = Get-ADComputer $ComputerObj.Computername -Properties Memberof | select -ExpandProperty MemberOf | where { $_ -match "_Wrk_" }
+	$PCRoll = Get-ADComputer $ComputerObj.Computername -Properties Memberof | Select-Object -ExpandProperty MemberOf | Where-Object { $_ -match "_Wrk_" }
 	$types = @( "Role1", "Role2" )
 
-	switch ( ( $types | where { $PCRole -match $_ } ) )
+	switch ( ( $types | Where-Object { $PCRole -match $_ } ) )
 	{
 		"Role1" { $r = "Role1-PC" }
 		"Role2" { $r = "Role2-PC" }
 	}
-	if ( $r -eq $null ) { $r = "Unknown-PC" }
+	if ( $null -eq $r ) { $r = "Unknown-PC" }
 	$ComputerObj.Role = $r
 
 	if ( $ComputerObj.Computername -notmatch "^(Org1|Org2)" )
 	{
 		$ComputerObj.DontInstall = "Do not reinstall this computer: Other organisation"
 	}
-	elseif ( ( @( "Comp1", "CompSpec1" ) | foreach { $_ -like "$( $ComputerObj.Computername )*" } ) -eq $true )
+	elseif ( ( @( "Comp1", "CompSpec1" ) | ForEach-Object { $_ -like "$( $ComputerObj.Computername )*" } ) -eq $true )
 	{
 		$ComputerObj.DontInstall = "Special computer. Do not reinstall this computer"
 	}
 	else
 	{
 		$c1 = $true
-		$ComputerObj.Role | foreach { if ( $_ -notmatch "(Exp|Admin)" ) { $c1 = $false } }
+		$ComputerObj.Role | ForEach-Object { if ( $_ -notmatch "(Exp|Admin)" ) { $c1 = $false } }
 		if ( -not $c1 )
 		{
-			$ComputerObj.DontInstall = "Do not reinstall this computer: `n$( [string]( $PCRoll | where { $_ -notmatch "(Exp|Admin)" } | foreach { ( ( $_ -split "=" )[1] -split "," )[0] } ) )"
+			$ComputerObj.DontInstall = "Do not reinstall this computer: `n$( [string]( $PCRoll | Where-Object { $_ -notmatch "(Exp|Admin)" } | ForEach-Object { ( ( $_ -split "=" )[1] -split "," )[0] } ) )"
 		}
 	}
 }
@@ -202,7 +202,7 @@ function CreateComputerInfo
 	GetPCInfo
 	GetPCRole
 
-	$ComputerObj.Keys | sort | foreach {
+	$ComputerObj.Keys | Sort-Object | ForEach-Object {
 		$name = $_ -csplit '(?=[A-Z])' -ne '' -join ' '
 		$info = $ComputerObj.$( $_ )
 		if ( $_ -eq "NetAdapters" )
@@ -287,7 +287,7 @@ function CreateScriptGroup
 	$wpScriptGroup = New-Object System.Windows.Controls.WrapPanel
 	$wpScriptGroup.Orientation = "Vertical"
 
-	foreach ( $group in ( $files | Group { $_.Group } | sort Name ) )
+	foreach ( $group in ( $files | Group-Object { $_.Group } | Sort-Object Name ) )
 	{
 		$gb = [System.Windows.Controls.GroupBox]@{ Header = $group.Name }
 		$sp = [System.Windows.Controls.WrapPanel]@{ Orientation = "Vertical" }
@@ -318,20 +318,20 @@ function CreateScriptGroup
 
 				$button.Add_Click( {
 					$ProgramRunspace = [System.Management.Automation.PowerShell]::Create() # Create new runspace
-					$args = @( $this.ToolTip, ( Get-Item $PSScriptRoot ).Parent.FullName )
+					$ar = @( $this.ToolTip, ( Get-Item $PSScriptRoot ).Parent.FullName )
 					if ( $this.ToolTip -match "(Dator\\)" )
-					{ $args += $tbComputerName.Text }
+					{ $ar += $tbComputerName.Text }
 
-					if ( Get-ChildItem "$( ( Get-Item $PSCommandPath ).Directory.Parent.FullName )\Gui" | where { $_.Name -match ( ( Get-Item $this.ToolTip ).Name -split "\." )[0] } ) { $hidden = $true }
+					if ( Get-ChildItem "$( ( Get-Item $PSCommandPath ).Directory.Parent.FullName )\Gui" | Where-Object { $_.Name -match ( ( Get-Item $this.ToolTip ).Name -split "\." )[0] } ) { $hidden = $true }
 					else { $hidden = $false }
 
 					[void]$ProgramRunspace.AddScript( {
-						param( $arg, $hidden )
+						param( $ar, $hidden )
 						if ( $hidden )
-						{ start powershell -WindowStyle Hidden -ArgumentList $arg } # Starts script with gui, without a powershell-window
+						{ Start-Process powershell -WindowStyle Hidden -ArgumentList $ar } # Starts script with gui, without a powershell-window
 						else
-						{ start powershell -ArgumentList $arg } # Starts script without gui, with new powershell-window
-					} ).AddArgument( $args ).AddArgument( $hidden )
+						{ Start-Process powershell -ArgumentList $a } # Starts script without gui, with new powershell-window
+					} ).AddArgument( $ar ).AddArgument( $hidden )
 
 					$run = $ProgramRunspace.BeginInvoke() # Run runspace
 					do { Start-Sleep -Milliseconds 50 } until ( $run.IsCompleted )
@@ -359,7 +359,7 @@ function CreateTabItem
 	)
 
 	$tT = ""
-	( $dirPath.Name ).GetEnumerator() | foreach { if ( $_ -cmatch "\b[A-Z]") { $tT += " $_" } else { $tT += $_ } }
+	( $dirPath.Name ).GetEnumerator() | ForEach-Object { if ( $_ -cmatch "\b[A-Z]") { $tT += " $_" } else { $tT += $_ } }
 	$tabitem = [System.Windows.Controls.TabItem]@{ Header = $tT.Trim(); Name = "ti" + $( $dirPath.Name ) }
 	Set-Variable -Name ( "ti" + $( $dirPath.Name ) ) -Value $tabitem -Scope Script
 
@@ -385,8 +385,8 @@ function CheckForAdmin
 			{ $script = "Update-Scripts.ps1" }
 			else
 			{ $script = "Development\Update-Scripts.ps1" }
-			$args = @( "$( ( Get-Item $PSScriptRoot ).Parent.FullName )\$script", ( Get-Item $PSScriptRoot ).Parent.FullName )
-			[void]$ProgramRunspace.AddScript( { param( $arg ); start powershell -WindowStyle Hidden -ArgumentList $arg } ).AddArgument( $args )
+			$ar = @( "$( ( Get-Item $PSScriptRoot ).Parent.FullName )\$script", ( Get-Item $PSScriptRoot ).Parent.FullName )
+			[void]$ProgramRunspace.AddScript( { param( $ar ); Start-Process powershell -WindowStyle Hidden -ArgumentList $ar } ).AddArgument( $ar )
 			$run = $ProgramRunspace.BeginInvoke() # Run runspace
 			do { Start-Sleep -Milliseconds 50 } until ( $run.IsCompleted )
 			$ProgramRunspace.Dispose()
@@ -410,7 +410,7 @@ function AddReportTool
 	$rbR = [System.Windows.Controls.RadioButton]@{ Content = "Error report"; GroupName = "Subject"; IsChecked = $true }
 	$rbS = [System.Windows.Controls.RadioButton]@{ Content = "Suggestion"; GroupName = "Subject" }
 
-	Get-ChildItem $PSCommandPath.Directory -Filter "*ps1" -File -Recurse | select Name, @{ Name = "Synopsis"; Expression = { ( Select-String -InputObject $_ -Pattern "^.Synopsis" -Encoding Default ).Line.Replace( ".Synopsis ", "" ) } } | sort Synopsis | foreach { [void] $cb.Items.Add( "$( $_.Synopsis )`n`t$( $_.Name )" ) }
+	Get-ChildItem $PSCommandPath.Directory -Filter "*ps1" -File -Recurse | Select-Object Name, @{ Name = "Synopsis"; Expression = { ( Select-String -InputObject $_ -Pattern "^.Synopsis" -Encoding Default ).Line.Replace( ".Synopsis ", "" ) } } | Sort-Object Synopsis | ForEach-Object { [void] $cb.Items.Add( "$( $_.Synopsis )`n`t$( $_.Name )" ) }
 
 	$btnAdd.Add_Click( {
 		$this.Parent.Parent.Children[2].Text = $this.Parent.Children[1].SelectedItem + "`r`n" + $this.Parent.Parent.Children[2].Text
@@ -462,11 +462,11 @@ function FulHack
 ############################## Script start
 Import-Module "$( ( Get-Item $PSCommandPath ).Directory.Parent.FullName )\Modules\FileOps.psm1" -Force
 
-$userGroups = ( Get-ADUser $env:USERNAME -Properties memberof ).memberof | foreach { ( ( $_ -split "=" )[1] -split "," )[0] }
+$userGroups = ( Get-ADUser $env:USERNAME -Properties memberof ).memberof | ForEach-Object { ( ( $_ -split "=" )[1] -split "," )[0] }
 $Script:ComputerObj = @{}
 $Window, $vars = CreateWindow
 if ( $PSCommandPath -match "Development" ) { SetTitle -Add " - Developer edition" }
-$vars | foreach { Set-Variable -Name $_ -Value $Window.FindName( $_ ) }
+$vars | ForEach-Object { Set-Variable -Name $_ -Value $Window.FindName( $_ ) }
 $adminList = @( "admin1", "admin2", "admin3" )
 
 Push-Location ( Get-Item $PSCommandPath ).Directory.FullName

@@ -45,7 +45,7 @@ function BtnStart_Click
 # Exports information to CSV
 function BtnExport_Click
 {
-	$output = $installations | sort Installations -Descending | foreach { [pscustomobject]@{ User=$_.User; OS_Installations=$_.Installations } } | ConvertTo-Csv -NoTypeInformation -Delimiter ";"
+	$output = $installations | Sort-Object Installations -Descending | ForEach-Object { [pscustomobject]@{ User=$_.User; OS_Installations=$_.Installations } } | ConvertTo-Csv -NoTypeInformation -Delimiter ";"
 	$outputFile = WriteOutput -Output $output -FileExtension "csv" -Scoreboard
 	ShowMessageBox "List was exported to:`n$outputFile"
 	$btnExport.IsEnabled = $false
@@ -131,12 +131,12 @@ function GetUserInstallations
 			try
 			{
 				$ofs = "`n"
-				$r = Get-ADComputer ( $in.Computer ) -Properties MemberOf | select -ExpandProperty MemberOf | where { $_ -like "*_Wrk*PR*_PC*" } | foreach { ( ( $_ -split "=" )[1] -split "," )[0] }
+				$r = Get-ADComputer ( $in.Computer ) -Properties MemberOf | Select-Object -ExpandProperty MemberOf | Where-Object { $_ -like "*_Wrk*PR*_PC*" } | ForEach-Object { ( ( $_ -split "=" )[1] -split "," )[0] }
 				if ( $r.Count -eq 0 )
 				{ $t = "Annan datortyp" }
 				else
 				{
-					$r | foreach {
+					$r | ForEach-Object {
 						if ( ( $_ -like "*Role1*" -or $_ -like "*Role2*" -or $_ -like "*Role3*" ) -and ($_ -like "*Org1*" -or $_ -like "*Org2*"-or $_ -like "*Org3*") )
 						{ $wrongType = 0 } else { $containsWrongType = $true }
 					}
@@ -168,7 +168,7 @@ function UserView_SelectionChanged
 		do
 		{
 			Start-Sleep -Milliseconds 500
-			$completed = ( $data.Jobs | where { $_.Handle.IsCompleted -eq "Completed" } ).Count
+			$completed = ( $data.Jobs | Where-Object { $_.Handle.IsCompleted -eq "Completed" } ).Count
 			$Window.Title = "Waiting for data > $( [Math]::Floor( ( $completed / $data.Jobs.Count ) * 100 ) )%"
 		} until ( $completed -eq $data.Jobs.Count )
 
@@ -250,7 +250,7 @@ function LoadUserData
 		$loopCount = 0
 	}
 
-	$installations | sort Installations -Descending | foreach `
+	$installations | Sort-Object Installations -Descending | ForEach-Object `
 	{
 		$Row = [pscustomobject]@{ User = $_.User; Installations = $_.Installations }
 		[void] $UserView.Items.Add( $row )
@@ -286,7 +286,7 @@ function Get-SysManLogs
 		[void]$Runspace.AddScript( {
 			param ( $processingDate )
 			$processingEnd = $processingDate.AddDays( 1 ).AddSeconds( -1 )
-			$entries = ( Invoke-RestMethod -Uri "http://sysman.domain.com/SysMan//api/Log?name=osinst&take=10000&skip=0&startDate=$processingDate&endDate=$processingEnd" -Method Get -UseDefaultCredentials -ContentType "application/json" ).result | where { $_.LoggedBy -like "*admin*" }
+			$entries = ( Invoke-RestMethod -Uri "http://sysman.domain.com/SysMan//api/Log?name=osinst&take=10000&skip=0&startDate=$processingDate&endDate=$processingEnd" -Method Get -UseDefaultCredentials -ContentType "application/json" ).result | Where-Object { $_.LoggedBy -like "*admin*" }
 			$entries
 		} )
 		[void]$Runspace.AddArgument( $processingDate )
@@ -299,13 +299,13 @@ function Get-SysManLogs
 	$ticker = 0
 	foreach ( $j in $jobs )
 	{
-		$j.RS.EndInvoke( $j.H ) | foreach { [void]$logs.Add( $_ ) }
+		$j.RS.EndInvoke( $j.H ) | ForEach-Object { [void]$logs.Add( $_ ) }
 		$CurrentProgress = [math]::Floor( ( $ticker / $jobs.Count ) * 100 )
 		$Window.Title = "Getting SysMan Logs - $( $CurrentProgress )%"
 		$ticker++
 	}
 
-	$jobs | foreach { $_.RS.Dispose() }
+	$jobs | ForEach-Object { $_.RS.Dispose() }
 	$RunspacePool.Close()
 	$Window.Title = $Script:WindowTitle
 	return $logs
@@ -318,18 +318,18 @@ function SortUserList
 	param ( $Column )
 
 	if ( $Column -eq "User" )
-	{ $items = $UserView.Items | sort User, Installations }
+	{ $items = $UserView.Items | Sort-Object User, Installations }
 	else
-	{ $items = $UserView.Items | sort Installations, User -Descending }
+	{ $items = $UserView.Items | Sort-Object Installations, User -Descending }
 	$UserView.Items.Clear()
-	$items | foreach { $UserView.Items.Add( $_ ) }
+	$items | ForEach-Object { $UserView.Items.Add( $_ ) }
 }
 
 ###################### Script start
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $Window, $vars = CreateWindow
-$vars | foreach { Set-Variable -Name $_ -Value $Window.FindName( $_ ) -Scope script }
+$vars | ForEach-Object { Set-Variable -Name $_ -Value $Window.FindName( $_ ) -Scope script }
 $Script:WindowTitle = "SysMan - OS Installation Stats"
 $Script:installations = New-object System.Collections.ArrayList
 

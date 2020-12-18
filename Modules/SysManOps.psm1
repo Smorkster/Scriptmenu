@@ -8,8 +8,8 @@ function ChangeOfficeInstallation
 {
 	param( $ComputerName, $OldVersion, $NewVersion )
 
-	$Application = ( Get-ADObject -LDAPFilter "(&(objectclass=group)(name=$OldVersion))" | select -ExpandProperty name ).Replace( "_I", "" )
-	$NewApplication = ( Get-ADObject -LDAPFilter "(&(objectclass=group)(name=$NewVersion))" | select -ExpandProperty name ).Replace( "_I", "" )
+	$Application = ( Get-ADObject -LDAPFilter "(&(objectclass=group)(name=$OldVersion))" | Select-Object -ExpandProperty name ).Replace( "_I", "" )
+	$NewApplication = ( Get-ADObject -LDAPFilter "(&(objectclass=group)(name=$NewVersion))" | Select-Object -ExpandProperty name ).Replace( "_I", "" )
 
 	$SystemID = ( ( Invoke-WebRequest -Uri "$( $ServerUrl )/api/System?name=$( $Application )" -UseDefaultCredentials -ContentType "application/json" ) | ConvertFrom-Json).ID
 	$NewSystemID = ( ( Invoke-WebRequest -Uri "$( $ServerUrl )/api/System?name=$( $NewApplication )" -UseDefaultCredentials -ContentType "application/json" ) | ConvertFrom-Json).ID

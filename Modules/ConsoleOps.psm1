@@ -7,7 +7,7 @@ function StartWait
 {
 	param( $SecondsToWait, $MessageText )
 	$MessageText = "Var god vänta i $SecondsToWait sekunder $MessageText"
-	1..$SecondsToWait | foreach { Write-Progress -Activity $MessageText -PercentComplete ( ( $_ / $SecondsToWait ) * 100 ); Start-Sleep 1 }
+	1..$SecondsToWait | ForEach-Object { Write-Progress -Activity $MessageText -PercentComplete ( ( $_ / $SecondsToWait ) * 100 ); Start-Sleep 1 }
 	Write-Progress -Activity $MessageText -Completed
 }
 
@@ -23,13 +23,13 @@ function GetConsolePasteInput
 	do
 	{
 		if ( $Folders )
-		{ $Input = ( Read-Host ).Split( "`n""`n""`n""`r`n"","";" ) }
+		{ $ControlInput = ( Read-Host ).Split( "`n""`n""`n""`r`n"","";" ) }
 		else
-		{ $Input = ( Read-Host ).Split( "`n"" `n""`n ""`r`n"","";"" "":""-""_""/""\""."" `r`n""`r`n "", ""; "": ""- ""_ ""/ ""\ "". ", [System.StringSplitOptions]::RemoveEmptyEntries ) }
+		{ $ControlInput = ( Read-Host ).Split( "`n"" `n""`n ""`r`n"","";"" "":""-""_""/""\""."" `r`n""`r`n "", ""; "": ""- ""_ ""/ ""\ "". ", [System.StringSplitOptions]::RemoveEmptyEntries ) }
 
-		if ( $input -ne '' )
+		if ( $ControlInput -ne '' )
 		{
-			$Users1 += $input
+			$Users1 += $ControlInput
 		}
 		else
 		{

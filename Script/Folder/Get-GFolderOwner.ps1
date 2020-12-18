@@ -8,17 +8,17 @@ Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 $Folders = @()
 
 $CaseNr = Read-Host "Related casenumber (if any) "
-$Input = Read-Host "User-id"
+$InputID = Read-Host "User-id"
 
 try
 {
-	$User = Get-ADUser -Identity $Input -Properties *
+	$User = Get-ADUser -Identity $InputID -Properties *
 
-	$Groups = Get-ADGroup -LDAPFilter "(ManagedBy=$( $User.DistinguishedName ))" | where { $_ -like "*_File_*_Grp_*_User_*" } | select -ExpandProperty SamAccountName
+	$Groups = Get-ADGroup -LDAPFilter "(ManagedBy=$( $User.DistinguishedName ))" | Where-Object { $_ -like "*_File_*_Grp_*_User_*" } | Select-Object -ExpandProperty SamAccountName
 
 	foreach ( $Group in $Groups )
 	{
-		$Folders += "G:$( ( ( ( ( Get-ADGroup $Group -Properties Description | Select -ExpandProperty Description ) -split "\$" )[1] ) -split "\." )[0] )"
+		$Folders += "G:$( ( ( ( ( Get-ADGroup $Group -Properties Description | Select-Object -ExpandProperty Description ) -split "\$" )[1] ) -split "\." )[0] )"
 	}
 
 	Write-Host "`nUser $( $User.Name ) is " -NoNewline
@@ -37,8 +37,8 @@ try
 }
 catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException]
 {
-	Write-Host "Found no useraccount for $Input"
-	$logText = "$Input does not exist in AD"
+	Write-Host "Found no useraccount for $InputID"
+	$logText = "$InputID does not exist in AD"
 }
 
 WriteLog -LogText "$CaseNr $logText"

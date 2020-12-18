@@ -46,7 +46,7 @@ if ( $FailedFolders.Count -gt 0 )
 }
 $output += "`r`n------------------------------------------------------------------------------"
 
-sleep 3
+Start-Sleep 3
 
 foreach ( $Folder in $Folders )
 {
@@ -58,11 +58,11 @@ foreach ( $Folder in $Folders )
 	}
 	$FolderName = $Folder.Substring( 7 )
 	$output += "`r`n************************`r`n$Folder`r`n"
-	$Owner = Get-ADGroup ( ( $GroupPrefix + $FolderName + "_User_C" ) -replace "å", "a" -replace "ä", "a" -replace "ö", "o" -replace " ", "_" -replace "é", "e" ) -Properties ManagedBy | select -ExpandProperty Managedby
+	$Owner = Get-ADGroup ( ( $GroupPrefix + $FolderName + "_User_C" ) -replace "å", "a" -replace "ä", "a" -replace "ö", "o" -replace " ", "_" -replace "é", "e" ) -Properties ManagedBy | Select-Object -ExpandProperty Managedby
 
-	if ( $Owner -ne $null )
+	if ( $null -ne $Owner )
 	{
-		$output += "Owner: " + ( Get-ADUser $Owner | select -ExpandProperty Name )
+		$output += "Owner: " + ( Get-ADUser $Owner | Select-Object -ExpandProperty Name )
 	}
 	else
 	{
@@ -71,9 +71,9 @@ foreach ( $Folder in $Folders )
 
 	$output += "`r`nRead-permission: "
 
-	$RGroups = Get-ADGroupMember ( ( $GroupPrefix + $FolderName + "_User_R" ) -replace "å", "a" -replace "ä", "a" -replace "ö", "o" -replace " ", "_" -replace "é", "e" ) | select -ExpandProperty Name
-	$ROrgGroups = $RGroups | where { $_ -like ( $Customer + "_org_*" ) }
-	$RGroups = $RGroups | where { $_ -notlike ( $Customer + "_org_*" ) }
+	$RGroups = Get-ADGroupMember ( ( $GroupPrefix + $FolderName + "_User_R" ) -replace "å", "a" -replace "ä", "a" -replace "ö", "o" -replace " ", "_" -replace "é", "e" ) | Select-Object -ExpandProperty Name
+	$ROrgGroups = $RGroups | Where-Object { $_ -like ( $Customer + "_org_*" ) }
+	$RGroups = $RGroups | Where-Object { $_ -notlike ( $Customer + "_org_*" ) }
 
 	if ( $RGroups.Count -eq 0 )
 	{
@@ -81,33 +81,33 @@ foreach ( $Folder in $Folders )
 	}
 	else
 	{
-		$output += $RGroups | sort
+		$output += $RGroups | Sort-Object
 	}
 
-	if ( $ROrgGroups -ne $null )
+	if ( $null -ne $ROrgGroups )
 	{
 		foreach ( $ROrgGroup in $ROrgGroups )
 		{
-			$ROrgGroupID = ( Get-ADGroup $ROrgGroup -Properties * | select -ExpandProperty "orgIdentity" )
+			$ROrgGroupID = ( Get-ADGroup $ROrgGroup -Properties * | Select-Object -ExpandProperty "orgIdentity" )
 
 			switch ( $ROrgGroup )
 			{
 				"Org_1_Users" { $ROrgGroupMembers = "All users at Org1 " }
 				"Org_2_Users" { $ROrgGroupMembers = "All users at Org2" }
 				"Org_3_Users" { $ROrgGroupMembers = "All users at Org3" }
-				default { $ROrgGroupMembers = Get-ADGroupMember $ROrgGroup | select -ExpandProperty Name }
+				default { $ROrgGroupMembers = Get-ADGroupMember $ROrgGroup | Select-Object -ExpandProperty Name }
 			}
 
 			$output += "`r`nSynced group $ROrgGroup (Department with Id $ROrgGroupID and its subdepartments) containing these users:"
-			$output += $ROrgGroupMembers | sort
+			$output += $ROrgGroupMembers | Sort-Object
 		}
 	}
 
 	$output += "`r`nWrite permission: "
 
-	$CGroups = Get-ADGroupMember ( ( $GroupPrefix + $FolderName + "_User_C" ) -replace "å", "a" -replace "ä", "a" -replace "ö", "o" -replace " ", "_" -replace "é", "e" ) | select -ExpandProperty Name
-	$COrgGroups = $CGroups | where { $_ -like ( $Customer + "_org_*" ) }
-	$CGroups = $CGroups | where { $_ -notlike ( $Customer + "_org_*" ) }
+	$CGroups = Get-ADGroupMember ( ( $GroupPrefix + $FolderName + "_User_C" ) -replace "å", "a" -replace "ä", "a" -replace "ö", "o" -replace " ", "_" -replace "é", "e" ) | Select-Object -ExpandProperty Name
+	$COrgGroups = $CGroups | Where-Object { $_ -like ( $Customer + "_org_*" ) }
+	$CGroups = $CGroups | Where-Object { $_ -notlike ( $Customer + "_org_*" ) }
 
 	if ( $CGroups.Count -eq 0 )
 	{
@@ -115,14 +115,14 @@ foreach ( $Folder in $Folders )
 	}
 	else
 	{
-		$output += $CGroups | sort
+		$output += $CGroups | Sort-Object
 	}
 
-	if ( $COrgGroups -ne $null )
+	if ( $null -ne $COrgGroups )
 	{
 		foreach ( $COrgGroup in $COrgGroups )
 		{
-			$COrgGroupID = ( Get-ADGroup $COrgGroup -Properties * | select -ExpandProperty "orgIdentity" )
+			$COrgGroupID = ( Get-ADGroup $COrgGroup -Properties * | Select-Object -ExpandProperty "orgIdentity" )
 
 			$output += "`r`nSynced group $COrgGroup (Department with Id $COrgGroupID and its subdepartments) containint these users"
 
@@ -131,9 +131,9 @@ foreach ( $Folder in $Folders )
 				"Org_1_Users" { $COrgGroupMembers = "All users at Org1" }
 				"Org_2_Users" { $COrgGroupMembers = "All users at Org2" }
 				"Org_3_Users" { $COrgGroupMembers = "All users at Org3" }
-				default { $COrgGroupMembers = Get-ADGroupMember $COrgGroup | select -ExpandProperty Name }
+				default { $COrgGroupMembers = Get-ADGroupMember $COrgGroup | Select-Object -ExpandProperty Name }
 			}
-			$output += $COrgGroupMembers | sort
+			$output += $COrgGroupMembers | Sort-Object
 		}
 	}
 }

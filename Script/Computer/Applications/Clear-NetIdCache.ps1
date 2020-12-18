@@ -12,7 +12,7 @@ try
 	Invoke-Command -ErrorAction Stop -ComputerName $ComputerName -ScriptBlock `
 	{
 		# Remove all items under C:\Windows\Temp containing iid
-		Get-ChildItem -Path "C:\Windows\Temp\" -Include "*iid*" -Recurse | foreach `
+		Get-ChildItem -Path "C:\Windows\Temp\" -Include "*iid*" -Recurse | ForEach-Object `
 		{
 			Remove-Item $_ -Force -Recurse -ErrorAction SilentlyContinue
 			Write-Host -ForegroundColor Green "Removed $_ on Client: $Using:ComputerName"

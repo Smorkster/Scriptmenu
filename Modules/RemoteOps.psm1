@@ -12,7 +12,7 @@ function RunCycle
 		Invoke-Command -ComputerName $ComputerName -ScriptBlock `
 		{
 			param ( $Name )
-			ipmo PSScheduledJob
+			Import-Module PSScheduledJob
 			$z = ( Get-Date ).AddMinutes( 10 ).ToString( "HH:mm:ss" )
 			$T = New-JobTrigger -Once -At $z
 			Register-ScheduledJob -Name $Name -Trigger $T -ScriptBlock `

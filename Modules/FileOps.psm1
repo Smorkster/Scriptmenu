@@ -25,7 +25,7 @@ function GetUserInput
 	}
 	Start-Process notepad $InputFilePath -Wait
 
-	return Get-Content $InputFilePath | where { $_ -notlike $DefaultText }
+	return Get-Content $InputFilePath | Where-Object { $_ -notlike $DefaultText }
 }
 
 # Writes given output to file from script or scoreboard.
@@ -108,7 +108,7 @@ function CreateWindow
 		throw
 	}
 	$vars = @()
-	$xaml.SelectNodes( "//*[@Name]" ) | foreach {
+	$xaml.SelectNodes( "//*[@Name]" ) | ForEach-Object {
 		$vars += $_.Name
 	}
 

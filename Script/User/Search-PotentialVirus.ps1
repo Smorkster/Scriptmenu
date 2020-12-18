@@ -56,13 +56,13 @@ function GetFolders
 		$GGroups = @()
 		$pGroups = Get-ADPrincipalGroupMembership $syncHash.UserSamAccountName
 
-		if ( $GaiaGroups = $pGroups | where { $_.SamAccountName -notlike "*_org_*" } | where { $_.SamAccountName -ne "Domain Users" } | select -ExpandProperty SamAccountName | sort )
+		if ( $GaiaGroups = $pGroups | Where-Object { $_.SamAccountName -notlike "*_org_*" } | Where-Object { $_.SamAccountName -ne "Domain Users" } | Select-Object -ExpandProperty SamAccountName | Sort-Object )
 		{
-			$GaiaGroups | sort | foreach { $GGroups += ( Get-ADGroup $_ -Properties Description | select Name, Description ) }
+			$GaiaGroups | Sort-Object | ForEach-Object { $GGroups += ( Get-ADGroup $_ -Properties Description | Select-Object Name, Description ) }
 		}
-		if ( $OrgGroups = $pGroups | where { $_.SamAccountName -like "*_org_*" } | select -ExpandProperty SamAccountName | sort )
+		if ( $OrgGroups = $pGroups | Where-Object { $_.SamAccountName -like "*_org_*" } | Select-Object -ExpandProperty SamAccountName | Sort-Object )
 		{
-			$OrgGroups | Get-ADPrincipalGroupMembership | sort | foreach { $GGroups += ( Get-ADGroup $_ -Properties Description | select Name, Description ) }
+			$OrgGroups | Get-ADPrincipalGroupMembership | Sort-Object | ForEach-Object { $GGroups += ( Get-ADGroup $_ -Properties Description | Select-Object Name, Description ) }
 		}
 
 		$syncHash.DataContext[5] = "Filters folders"
@@ -101,18 +101,18 @@ function GetFolders
 			foreach ( $Folder in $syncHash.Folders )
 			{
 				$p = [powershell]::Create().AddScript( { param ( $syncHash, $Folder )
-					Get-ChildItem2 $Folder[0] -File -Recurse | where { $_.LastWriteTime -ge $syncHash.SelectedDate } | select -Property `
+					Get-ChildItem2 $Folder[0] -File -Recurse | Where-Object { $_.LastWriteTime -ge $syncHash.SelectedDate } | Select-Object -Property `
 						@{ Name = "Name"; Expression = { $_.FullName.Replace( $Folder[0], ".." ) } }, `
 						@{ Name = "Created"; Expression = { ( Get-Date $_.CreationTime -f "yyyy-MM-dd hh:mm:ss" ) } }, `
 						@{ Name = "FileType"; Expression = { $ft = $_.Extension.Replace( ".", "" ); foreach ( $f in $syncHash.fileFilter ) { if ( $_.Extension -match $f ) { $ft = "Files matching filter" } } ; $ft } }, `
 						@{ Name = "TT"; Expression = { $_.FullName } }, `
-						@{ Name = "Updated"; Expression = { ( Get-Date $_.LastWriteTime -f "yyyy-MM-dd hh:mm:ss" ) } } | select -Property `
+						@{ Name = "Updated"; Expression = { ( Get-Date $_.LastWriteTime -f "yyyy-MM-dd hh:mm:ss" ) } } | Select-Object -Property `
 						Name, `
 						Created, `
 						FileType, `
 						TT, `
 						Updated, `
-						@{ Name = "SortOrder"; Expression = { if ( $_.FileType -eq "Files matching filter" ) { return 0 } ; return 1 } } | foreach { $syncHash.Data[0].Add( $_ ) }
+						@{ Name = "SortOrder"; Expression = { if ( $_.FileType -eq "Files matching filter" ) { return 0 } ; return 1 } } | ForEach-Object { $syncHash.Data[0].Add( $_ ) }
 						$syncHash.DataContext[16] = $syncHash.Data[0].Count
 				} ).AddArgument( $syncHash ).AddArgument( $Folder )
 				$jobs.Add( [pscustomobject]@{ PS = $p; Handle = $p.BeginInvoke() } )
@@ -124,7 +124,7 @@ function GetFolders
 				$syncHash.DataContext[0] = [double] ( ( $c / $jobs.Count ) * 100 )
 				Start-Sleep 1
 			} until ( $c -eq $jobs.Count )
-			$jobs | foreach { $_.PS.Runspace.Close() ; $_.PS.Runspace.Dispose() }
+			$jobs | ForEach-Object { $_.PS.Runspace.Close() ; $_.PS.Runspace.Dispose() }
 			Remove-Variable jobs
 		}
 		else
@@ -133,18 +133,18 @@ function GetFolders
 			foreach ( $Folder in $syncHash.Folders )
 			{
 				$syncHash.DataContext[5] = "Getting files in '$( $Folder[0] )'"
-				Get-ChildItem2 $Folder[0] -File -Recurse | where { $_.LastWriteTime -ge $syncHash.SelectedDate } | select -Property `
+				Get-ChildItem2 $Folder[0] -File -Recurse | Where-Object { $_.LastWriteTime -ge $syncHash.SelectedDate } | Select-Object -Property `
 					@{ Name = "Name"; Expression = { $_.FullName.Replace( $Folder[0], ".." ) } }, `
 					@{ Name = "Created"; Expression = { ( Get-Date $_.CreationTime -f "yyyy-MM-dd hh:mm:ss" ) } }, `
 					@{ Name = "FileType"; Expression = { $ft = $_.Extension.Replace( ".", "" ); foreach ( $f in $syncHash.fileFilter ) { if ( $_.Extension -match $f ) { $ft = "Files matching filter" } } ; $ft } }, `
 					@{ Name = "TT"; Expression = { $_.FullName } }, `
-					@{ Name = "Updated"; Expression = { ( Get-Date $_.LastWriteTime -f "yyyy-MM-dd hh:mm:ss" ) } } | select -Property `
+					@{ Name = "Updated"; Expression = { ( Get-Date $_.LastWriteTime -f "yyyy-MM-dd hh:mm:ss" ) } } | Select-Object -Property `
 					Name, `
 					Created, `
 					FileType, `
 					TT, `
 					Updated, `
-					@{ Name = "SortOrder"; Expression = { if ( $_.FileType -eq "Files matching filter" ) { return 0 } ; return 1 } } | foreach { $syncHash.Data[0].Add( $_ ) }
+					@{ Name = "SortOrder"; Expression = { if ( $_.FileType -eq "Files matching filter" ) { return 0 } ; return 1 } } | ForEach-Object { $syncHash.Data[0].Add( $_ ) }
 				$syncHash.DataContext[16] = $syncHash.Data[0].Count
 				$syncHash.DataContext[0] = [double] ( ( $ticker / $jobs.Count ) * 100 )
 				$ticker++
@@ -152,8 +152,8 @@ function GetFolders
 		}
 
 		$List = [System.Windows.Data.ListCollectionView]$syncHash.Data[0]
-		$List2 = [System.Windows.Data.ListCollectionView]( $syncHash.Data[0] | where { $_.TT -match $syncHash.UserSamAccountName } | where { ( ( $_.Name.Split( "\" ) | select -Last 1 ).Split( "." ) ).Count -gt 2 } )
-		$List3 = [System.Windows.Data.ListCollectionView]( $syncHash.Data[0] | where { $_.TT -match "^G:\\" } | where { ( ( $_.Name.Split( "\" ) | select -Last 1 ).Split( "." ) ).Count -gt 2 } )
+		$List2 = [System.Windows.Data.ListCollectionView]( $syncHash.Data[0] | Where-Object { $_.TT -match $syncHash.UserSamAccountName } | Where-Object { ( ( $_.Name.Split( "\" ) | Select-Object -Last 1 ).Split( "." ) ).Count -gt 2 } )
+		$List3 = [System.Windows.Data.ListCollectionView]( $syncHash.Data[0] | Where-Object { $_.TT -match "^G:\\" } | Where-Object { ( ( $_.Name.Split( "\" ) | Select-Object -Last 1 ).Split( "." ) ).Count -gt 2 } )
 
 		$sort1 = New-Object System.ComponentModel.SortDescription
 		$sort2 = New-Object System.ComponentModel.SortDescription
@@ -197,9 +197,9 @@ function GetFolders
 
 		$output += "`r`nTotal number of files: $( $syncHash.Data[0].Count )`r`n**********`r`n"
 		$output += ,"*****************`r`nSearched folders:`r`n*****************"
-		$output += ( $syncHash.Folders | foreach { "$( $_[0] ) ( $( $_[1] ) )" } )
+		$output += ( $syncHash.Folders | ForEach-Object { "$( $_[0] ) ( $( $_[1] ) )" } )
 		$output += "`r`n***********`r`nAll found files:`r`n***********"
-		$output += ( $syncHash.DataContext[1].TT | sort )
+		$output += ( $syncHash.DataContext[1].TT | Sort-Object )
 		$output += ,"`r`n`r`n***********************`r`nMultiple fileextensions H:`r`n***********************"
 		$output += $syncHash.DataContext[2].TT
 		$output += ,"`r`n`r`n***********************`r`nMultiple fileextensions G:`r`n***********************"
@@ -225,14 +225,14 @@ function OpenFileFolder
 # Search on Google for the fileextension
 function SearchExtension
 {
-	start chrome "https://www.google.com/search?q=fileextension+$( ( [pscustomobject] $syncHash.menuSearchExtension.DataContext ).FileType )"
+	Start-Process chrome "https://www.google.com/search?q=fileextension+$( ( [pscustomobject] $syncHash.menuSearchExtension.DataContext ).FileType )"
 }
 
 ###################################
 # Search on Google for the filename
 function SearchFileName
 {
-	start chrome "https://www.google.com/search?q=$( [string] ( ( [pscustomobject] $syncHash.menuSearchFileName.DataContext ).Name.Split( "\" ) | select -Last 1 ) )"
+	Start-Process chrome "https://www.google.com/search?q=$( [string] ( ( [pscustomobject] $syncHash.menuSearchFileName.DataContext ).Name.Split( "\" ) | Select-Object -Last 1 ) )"
 }
 
 ####################
@@ -264,7 +264,7 @@ function Resort
 {
 	param ( $index, $sortBy )
 
-	$List = [System.Windows.Data.ListCollectionView]( $syncHash.DataContext[$index] | sort $sortBy )
+	$List = [System.Windows.Data.ListCollectionView]( $syncHash.DataContext[$index] | Sort-Object $sortBy )
 
 	$sort1 = New-Object System.ComponentModel.SortDescription
 	$sort2 = New-Object System.ComponentModel.SortDescription
@@ -298,7 +298,7 @@ Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $syncHash = [hashtable]::Synchronized( @{} )
 $syncHash.Window, $vars = CreateWindow
-$vars | foreach { $syncHash.$_ = $syncHash.Window.FindName( $_ ) }
+$vars | ForEach-Object { $syncHash.$_ = $syncHash.Window.FindName( $_ ) }
 $syncHash.SelectedDate = ( Get-Date ).AddDays( -14 )
 
 $syncHash.Data = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
@@ -309,7 +309,7 @@ $syncHash.OtherFolderPermissions.Add_CollectionChanged( {
 	if ( $syncHash.OtherFolderPermissions.Count -gt 0 )
 	{
 		$ofs = "`n"
-		$syncHash.DataContext[7] = "$( $syncHash.UserName ) have reported about a potential virus in case $( $syncHash.DataContext[9] ).`r`nHome- and common folders have been checked, but we lack permission for the following folders.`r`nCan you help in the investigation of these?`r`n`r`n$( [string]( $syncHash.OtherFolderPermissions | select -Unique | sort ) )"
+		$syncHash.DataContext[7] = "$( $syncHash.UserName ) have reported about a potential virus in case $( $syncHash.DataContext[9] ).`r`nHome- and common folders have been checked, but we lack permission for the following folders.`r`nCan you help in the investigation of these?`r`n`r`n$( [string]( $syncHash.OtherFolderPermissions | Select-Object -Unique | Sort-Object ) )"
 		$syncHash.DataContext[8] = [System.Windows.Visibility]::Visible
 	}
 } )
@@ -355,8 +355,8 @@ $syncHash.DataContext.Add( $false ) # 24 rbAll IsChecked
 $syncHash.DataContext.Add( "Search" ) # 25 btnSearch Text
 
 $Bindings = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
-0..( $syncHash.DataContext.Count - 1 ) | foreach { [void]$Bindings.Add( ( New-Object System.Windows.Data.Binding -ArgumentList "[$_]" ) ) }
-$Bindings | foreach { $_.Mode = [System.Windows.Data.BindingMode]::TwoWay }
+0..( $syncHash.DataContext.Count - 1 ) | ForEach-Object { [void]$Bindings.Add( ( New-Object System.Windows.Data.Binding -ArgumentList "[$_]" ) ) }
+$Bindings | ForEach-Object { $_.Mode = [System.Windows.Data.BindingMode]::TwoWay }
 $syncHash.Window.DataContext = $syncHash.DataContext
 
 [void][System.Windows.Data.BindingOperations]::SetBinding( $syncHash.TotalProgress, 	[System.Windows.Controls.ProgressBar]::ValueProperty, 		$Bindings[0] )

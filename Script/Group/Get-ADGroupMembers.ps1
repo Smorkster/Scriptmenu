@@ -8,10 +8,10 @@ Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 Write-Host "Listing alla members (users, computers, printers etc)`n"
 
 $CaseNr = Read-Host "Related casenumber (if any) "
-$Input = Read-Host "Groupname to search for "
+$Name = Read-Host "Groupname to search for "
 
-Get-ADGroupMember -Identity $Input | % { $members += "$_.ObjectClass`t$_.Name`r`n" }
+Get-ADGroupMember -Identity $Name | ForEach-Object { $members += "$_.ObjectClass`t$_.Name`r`n" }
 
-WriteOutput -Output "Group $Input:`r`n$members"
+WriteOutput -Output "Group $Name :`r`n$members"
 WriteLog -LogText "$CaseNr $Input`r`n`t$outputFile"
 EndScript
