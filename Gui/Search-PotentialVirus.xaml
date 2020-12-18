@@ -26,6 +26,11 @@
                             </ControlTemplate>
                         </Setter.Value>
                     </Setter>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Name}" Value="Files matching filter">
+                            <Setter Property="Background" Value="Red"/>
+                        </DataTrigger>
+                    </Style.Triggers>
                 </Style>
             </GroupStyle.ContainerStyle>
         </GroupStyle>
@@ -38,7 +43,7 @@
             <Setter Property="IsEnabled" Value="{DynamicResource Enable}"/>
             <Setter Property="Padding" Value="5"/>
         </Style>
-        <Style TargetType="{x:Type CheckBox}">
+        <Style TargetType="{x:Type RadioButton}">
             <Setter Property="Margin" Value="5"/>
             <Setter Property="IsEnabled" Value="{DynamicResource Enable}"/>
         </Style>
@@ -103,13 +108,20 @@
                 <StackPanel Orientation="Horizontal">
                     <Label Content="Casenumber" Width="160"/>
                     <TextBox x:Name="tbCaseNr"/>
-                    <CheckBox x:Name="cbLatest" Content="Search only for updates in the last two weeks" VerticalContentAlignment="Center" IsChecked="True" ToolTip="Fetching the files updated in the last two weeks.`n`nWhen getting all files (ie when this is unchecked), search will be sequential and take longer time."/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <Label Content="UserId of user" Width="160"/>
                     <TextBox x:Name="tbID"/>
-                    <Button x:Name="btnSearch" Content="Search"/>
                 </StackPanel>
+                <StackPanel>
+                    <RadioButton x:Name="rbLatest" Content="Search only for updates in the last two weeks" VerticalContentAlignment="Center" GroupName="grpDate" ToolTip="Gets the files that have been updated/changed in the last two weeks"/>
+                    <StackPanel Orientation="Horizontal" Margin="0">
+                        <RadioButton x:Name="rbPrevDate" Content="Search from this date:" VerticalContentAlignment="Center" GroupName="grpDate" ToolTip="Gets the files that have been updated/changed since the given date"/>
+                        <DatePicker Name="DatePickerStart" Width="150" IsEnabled="False"/>
+                    </StackPanel>
+                    <RadioButton x:Name="rbAll" Content="Search all files" VerticalContentAlignment="Center" GroupName="grpDate" ToolTip="Gets ALL files.`n`nWhen getting all files, the search will be done sequentualy, thus taking longer."/>
+                </StackPanel>
+                <Button x:Name="btnSearch" Content="Search"/>
             </StackPanel>
             <StackPanel Grid.Column="1" Grid.Row="0" x:Name="spInfo">
                 <StackPanel>
@@ -118,11 +130,11 @@
                         <Label x:Name="lblUser"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0">
-                        <Label Content="Total number of files:"/>
+                        <Label Content="Number of files:"/>
                         <Label x:Name="lblFileCount"/>
                     </StackPanel>
                     <StackPanel x:Name="spSummary" Visibility="Hidden" Margin="0">
-                        <Label Content="Summary is written to file:" Margin="0"/>
+                        <Label Content="Summary written to:" Margin="0"/>
                         <Label x:Name="lblSummary"/>
                         <Button x:Name="btnOpenSummary" Content="Open file"/>
                     </StackPanel>
@@ -131,7 +143,7 @@
             <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" x:Name="TotalProgress"/>
         </Grid>
         <TabControl Grid.Row="1">
-            <TabItem Header="Alla filer" x:Name="tiFiles">
+            <TabItem Header="All files" x:Name="tiFiles">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -158,13 +170,13 @@
                     </ListView>
                 </Grid>
             </TabItem>
-            <TabItem Header="Multipla filändelser på H:" x:Name="tiMDH">
+            <TabItem Header="Multiple fileextensions in H:" x:Name="tiMDH">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="30"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
-                    <Label Grid.Row="0" x:Name="lblMDH" Content="Files in homefolder with multiple dots in filename (potentially multiple file extensions)"/>
+                    <Label Grid.Row="0" x:Name="lblMDH" Content="Files in H-folder with multiple dots in filename (potentialy multiple fileextensions)"/>
                     <ListView Grid.Row="1" x:Name="lvMultiDotsH">
                         <ListView.View>
                             <GridView>
@@ -185,13 +197,13 @@
                     </ListView>
                 </Grid>
             </TabItem>
-            <TabItem Header="Multiple file extensions in common folders:" x:Name="tiMDG">
+            <TabItem Header="Multiple fileextensions in G:" x:Name="tiMDG">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="30"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
-                    <Label Grid.Row="0" x:Name="lblMDG" Content="Files with multiple points in the file name (potentially multiple file extensions)"/>
+                    <Label Grid.Row="0" x:Name="lblMDG" Content="Files in H-folder with multiple dots in filename (potentialy multiple fileextensions)"/>
                     <ListView Grid.Row="1" x:Name="lvMultiDotsG">
                         <ListView.View>
                             <GridView>
@@ -219,8 +231,8 @@
                         <RowDefinition Height="30"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
-                    <Label Grid.Row="0" x:Name="lblO" Content="Folders you do not have access to, escalate case to 3:rd line"/>
-                    <Button Grid.Row="1" x:Name="btnCreateQuestion" Content="Copy question of help to 3:rd line"/>
+                    <Label Grid.Row="0" x:Name="lblO" Content="Folders you do not have permission for, escalate case to operations"/>
+                    <Button Grid.Row="1" x:Name="btnCreateQuestion" Content="Copy question for help, to operations"/>
                     <TextBox Grid.Row="2" x:Name="txtQuestion" Width="Auto" VerticalContentAlignment="Top" AcceptsReturn="True"/>
                 </Grid>
             </TabItem>
