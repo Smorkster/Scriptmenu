@@ -28,36 +28,6 @@ function GetUserInput
 	return Get-Content $InputFilePath | where { $_ -notlike $DefaultText }
 }
 
-# Reads input from console given by Ctrl+V
-# Input is returned as an array, split according to Split
-function GetConsolePasteInput
-{
-	param ( [switch] $Folders )
-	$Quit = New-Object -ComObject wscript.shell
-
-	$Users1 = @()
-	do
-	{
-		if ( $Folders )
-		{ $Input = ( Read-Host ).Split( "`n""`n""`n""`r`n"","";" ) }
-		else
-		{ $Input = ( Read-Host ).Split( "`n"" `n""`n ""`r`n"","";"" "":""-""_""/""\""."" `r`n""`r`n "", ""; "": ""- ""_ ""/ ""\ "". ", [System.StringSplitOptions]::RemoveEmptyEntries ) }
-
-		if ( $input -ne '' )
-		{
-			$Users1 += $input
-		}
-		else
-		{
-			$Quit.SendKeys( "Done" )
-			$Quit.SendKeys( "~" )
-		}
-	} until ( $input -eq "Done" )
-	$Users2 = $Users1 -ne "Done"
-
-	return $Users2
-}
-
 # Writes given output to file from script or scoreboard.
 # Returns filepath to outputfile.
 function WriteOutput
@@ -76,9 +46,10 @@ function WriteOutput
 function WriteLog
 {
 	param ( $LogText )
-	$LogFilePath = "$RootDir\Logs\$( [datetime]::Now.Year )\$( [datetime]::Now.Month )\$CallingScript - log.txt" # Create filepath for file
-	if ( -not ( Test-Path $LogFilePath ) ) { New-Item -Path $LogFilePath -ItemType File -Force | Out-Null } # If file does not exist, create it
+	$LogFilePath = "$RootDir\Logs\$( [datetime]::Now.Year )\$( [datetime]::Now.Month )\$CallingScript - log.txt" 
+	if ( -not ( Test-Path $LogFilePath ) ) { New-Item -Path $LogFilePath -ItemType File -Force | Out-Null }
 	Add-Content -Path $LogFilePath -Value ( $nudate + " " + $env:USERNAME + " [" + $env:USERDOMAIN + "] => " + $LogText )
+	return $LogFilePath
 }
 
 # Writes errorlog from running script.
@@ -88,7 +59,7 @@ function WriteErrorlog
 {
 	param ( $LogText )
 	$ErrorLogFilePath = "$RootDir\ErrorLogs\$( [datetime]::Now.Year )\$( [datetime]::Now.Month )\$CallingScript - Errorlog $( Get-Date -Format 'yyyyMMddHHmmss' ).txt"
-	if ( -not ( Test-Path $ErrorLogFilePath ) ) { New-Item -Path $ErrorLogFilePath -ItemType File -Force | Out-Null } # If file does not exist, create it
+	if ( -not ( Test-Path $ErrorLogFilePath ) ) { New-Item -Path $ErrorLogFilePath -ItemType File -Force | Out-Null }
 	Add-Content -Path $ErrorLogFilePath -Value ( ( Get-Date -Format "yyyy-MM-dd HH:mm:ss" ) + " " + $env:USERNAME + " [" + $env:USERDOMAIN + "] => " + $LogText )
 	return $ErrorLogFilePath
 }
@@ -119,6 +90,7 @@ function EndScript
 function CreateWindow
 {
 	Add-Type -AssemblyName PresentationFramework
+
 	$XamlFile = "$RootDir\Gui\$CallingScript.xaml"
 	$inputXML = Get-Content $XamlFile -Raw
 	$inputXML = $inputXML -replace "x:N", 'N' -replace '^<Win.*', '<Window'
