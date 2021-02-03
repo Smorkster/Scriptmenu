@@ -95,9 +95,9 @@ function EndScript
 $nudate = Get-Date -Format "yyyy-MM-dd HH:mm"
 $RootDir = ( Get-Item $PSCommandPath ).Directory.Parent.FullName
 $CallingScript = ( Get-Item $MyInvocation.PSCommandPath )
-$Host.UI.RawUI.WindowTitle = "$( $IntmsgTable.ConsoleWinTitlePrefix ): $( ( ( Get-Item $MyInvocation.PSCommandPath ).FullName -split "Script" )[1] )"
 Import-LocalizedData -BindingVariable IntmsgTable -UICulture $culture -FileName "$( ( $PSCommandPath.Split( "\" ) | select -Last 1 ).Split( "." )[0] ).psd1" -BaseDirectory "$RootDir\Localization"
 try { Import-LocalizedData -BindingVariable msgTable -UICulture $culture -FileName $CallingScript.Name -BaseDirectory ( $CallingScript.Directory.FullName -replace "Script", "Localization\$culture" ) -ErrorAction SilentlyContinue } catch {}
+$Host.UI.RawUI.WindowTitle = "$( $IntmsgTable.ConsoleWinTitlePrefix ): $( ( ( Get-Item $MyInvocation.PSCommandPath ).FullName -split "Script" )[1] )"
 
 Export-ModuleMember -Function *
 Export-ModuleMember -Variable msgTable
