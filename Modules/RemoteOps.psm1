@@ -2,34 +2,34 @@
 # Use this to import module:
 # Import-Module "$( $args[0] )\Modules\RemoteOps.psm1" -Force
 
-######################################################################
-# Create a job to check for applicationupgrades in 10 minutes
+#############################################################################
+# Create a job to in 10 minutes check for updates of distributed applications
 function RunCycle
 {
-	param( $ComputerName, $CykelName )
+	param( $ComputerName, $CycleName )
 	try
 	{
 		Invoke-Command -ComputerName $ComputerName -ScriptBlock `
 		{
 			param ( $Name )
-			Import-Module PSScheduledJob
+			ipmo PSScheduledJob
 			$z = ( Get-Date ).AddMinutes( 10 ).ToString( "HH:mm:ss" )
 			$T = New-JobTrigger -Once -At $z
 			Register-ScheduledJob -Name $Name -Trigger $T -ScriptBlock `
 			{
 				Invoke-WmiMethod -Namespace root\ccm -Class SMS_CLIENT -Name TriggerSchedule "{00000000-0000-0000-0000-000000000113}"
 				Unregister-ScheduledJob Test-OpenIE
-			}
-		} -ArgumentList $CycleName
-		Write-Host "In 10 minutes the computer will check for updates." 
+			} | Out-Null
+		} -ArgumentList $CycleName -ErrorAction Stop
+		Write-Host $IntmsgTable.RunCycle1
 	}
 	catch [System.Management.Automation.Remoting.PSRemotingTransportException]
 	{
-		Write-Host "Could not reach computer."
+		Write-Host $IntmsgTable.RunCycle2
 	}
 	catch
 	{
-		Write-Host "Error upon trying to reach computer:`n$( $_.CategoryInfo.Reason )`n$( $_.Exception )"
+		Write-Host "$( $IntmsgTable.RunCycle3):`n$( $_.CategoryInfo.Reason )`n$( $_.Exception )"
 	}
 }
 
@@ -37,36 +37,44 @@ function RunCycle
 # Send a toastmessage to designated computer
 function SendToast
 {
-	param ( $Message , $ComputerName )
-	$code = {
-		$XmlString = @"
-<toast duration="Long">
-	<visual>
-		<binding template="ToastGeneric">
-			<text>Message from Servicedesk</text>
-			<text>$Message</text>
-		</binding>
-	</visual>
-	<audio src="ms-winsoundevent:Notification.Default" />
-</toast>
-"@
+	param ( $Message, $ComputerName )
 
-		$AppId = '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\WindowsPowerShell\v1.0\powershell.exe'
-		$null = [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime]
-		$null = [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime]
+	try { $WinVersion = ( Get-CimInstance -ComputerName $ComputerName -ClassName win32_operatingsystem -ErrorAction Stop ).Version } catch { return 1 }
+	if ( ( $WinVersion.Split( "." ) )[0] -ge 10 )
+	{
+		$code = {
+			$XmlString = "<toast duration=`"Short`" scenario=`"alarm`"><visual><binding template=`"ToastGeneric`"><text>$( $IntmsgTable.SendToast1 )</text><text>$Message</text></binding></visual><audio src=`"ms-winsoundevent:Notification.Default`" /></toast>"
 
-		$ToastXml = [Windows.Data.Xml.Dom.XmlDocument]::new()
-		$ToastXml.LoadXml($XmlString)
+			$AppId = '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\WindowsPowerShell\v1.0\powershell.exe'
+			$null = [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime]
+			$null = [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime]
 
-		$Toast = [Windows.UI.Notifications.ToastNotification]::new( $ToastXml )
-		[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier( $AppId ).Show( $Toast )
+			$ToastXml = [Windows.Data.Xml.Dom.XmlDocument]::new()
+			$ToastXml.LoadXml($XmlString)
+
+			$Toast = [Windows.UI.Notifications.ToastNotification]::new( $ToastXml )
+			[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier( $AppId ).Show( $Toast )
+		}
+
+		try
+		{
+			Invoke-Command -ComputerName $ComputerName -ScriptBlock $code
+			return 0
+		}
+		catch
+		{
+			return 2
+		}
 	}
-
-	Invoke-Command -ComputerName $ComputerName -ScriptBlock $code
+	else
+	{
+		return 3
+	}
 }
 
 $nudate = Get-Date -Format "yyyy-MM-dd HH:mm"
 $RootDir = ( Get-Item $PSCommandPath ).Directory.Parent.FullName
-$CallingScript = ( Get-Item $MyInvocation.PSCommandPath ).BaseName
+try { $CallingScript = ( Get-Item $MyInvocation.PSCommandPath ).BaseName } catch {}
+Import-LocalizedData -BindingVariable IntmsgTable -UICulture $culture -FileName "$( ( $PSCommandPath.Split( "\" ) | select -Last 1 ).Split( "." )[0] ).psd1" -BaseDirectory "$RootDir\Localization"
 
 Export-ModuleMember -Function *

@@ -3,6 +3,7 @@
 .Description Main script for collecting and accessing script
 .Author Someone
 #>
+
 ####################################################
 # Search folder for items, operate depending on type
 function GetFolderItems
@@ -11,38 +12,35 @@ function GetFolderItems
 		$dirPath
 	)
 
-	$spFolder = New-Object System.Windows.Controls.WrapPanel
-	$spFolder.Orientation = "Vertical"
-	$spFolder.Name = "wp$( $dirPath.Name -replace " " )"
-
+	$spFolder = [System.Windows.Controls.WrapPanel]@{ Orientation = "Vertical"; Name = "wp$( $dirPath.Name -replace " " )" }
 	Set-Variable -Name ( "wp" + $( $dirPath.Name ) ) -Value $spFolder -Scope script
 
 	if ( $files = Get-ChildItem -File -Filter "*ps1" -Path $dirPath.FullName | Where-Object { $_.Name -ne ( Get-Item $PSCommandPath ).Name } | `
 		Select-Object -Property @{ Name = "Name"; Expression = { $_.Name } }, `
 			@{ Name = "Path"; Expression = { $_.FullName } }, `
 			@{ Name = "Group"; Expression = { ( $_.Name -split "-" )[0] } }, `
-			@{ Name = "Synopsis"; Expression = { ( Select-String -InputObject $_ -Pattern "^.Synopsis" -Encoding Default ).Line.Replace( ".Synopsis ", "" ) } }, `
-			@{ Name = "Requires"; Expression = { ( [string]( Select-String -InputObject $_ -Pattern "^.Requires" -Encoding default ).Line ).Replace( ".Requires ", "" ) -split "\W" | Where-Object { $_ } } }, `
-			@{ Name = "Description"; Expression = { ( Select-String -InputObject $_ -Pattern "^.Description" -Encoding Default ).Line.TrimStart( ".Description " ) } } | `
+			@{ Name = "Synopsis"; Expression = { ( Select-String -InputObject $_ -Pattern "^.Synopsis" -Encoding UTF8 ).Line.Replace( ".Synopsis ", "" ) } }, `
+			@{ Name = "Requires"; Expression = { ( [string]( Select-String -InputObject $_ -Pattern "^.Requires" -Encoding UTF8 ).Line ).Replace( ".Requires ", "" ) -split "\W" | Where-Object { $_ } } }, `
+			@{ Name = "AllowedUsers"; Expression = { ( [string]( Select-String -InputObject $_ -Pattern "^.AllowedUsers" -Encoding UTF8 ).Line ).Replace( ".AllowedUsers ", "" ) -split "\W" | Where-Object { $_ } } }, `
+			@{ Name = "Description"; Expression = { ( Select-String -InputObject $_ -Pattern "^.Description" -Encoding UTF8 ).Line.TrimStart( ".Description " ) } } | `
 			Sort-Object Synopsis )
 	{
-		if ( $dirPath.FullName -match "(Computer\\)" ) { $wpScriptGroup = CreateScriptGroup $files }
-		else { $wpScriptGroup = CreateScriptGroup $files }
+		$wpScriptGroup = CreateScriptGroup $files
 		$spFolder.AddChild( $wpScriptGroup )
 	}
 
-	if ( $dirPath.Name -like "*Computer" )
+	if ( $dirPath.Name -like "*$( $msgTable.ComputerFolder )" )
 	{
 		$spFolder.AddChild( ( CreateComputerInput ) )
 	}
 
 	if ( $dirs = Get-ChildItem -Directory -Path $dirPath.FullName )
 	{
-		$tabcontrol = New-Object System.Windows.Controls.TabControl
-		if ( $dirPath.FullName -match "(Computer)" ) { $tabcontrol.Visibility = [System.Windows.Visibility]::Collapsed }
+		$tabcontrol = [System.Windows.Controls.TabControl]@{ Name = "tc"+( $dirPath.Name -replace " " ) }
+		if ( $dirPath.FullName -match "($( $msgTable.ComputerFolder ))" ) { $tabcontrol.Visibility = [System.Windows.Visibility]::Collapsed }
 		if ( $dirPath -eq "" ) { $tabcontrol.MaxHeight = 700 }
-		$tabcontrol.Name = "tc"+( $dirPath.Name -replace " " )
 		Set-Variable -Name ( "tc" + $( $dirPath.Name ) ) -Value $tabcontrol -Scope script
+
 		$tiList = @()
 		foreach ( $dir in $dirs )
 		{
@@ -60,9 +58,11 @@ function GetFolderItems
 	return $spFolder
 }
 
+#########################################
+# Clears content for 'connected' computer
 function DisconnectComputer
 {
-	$Script:ComputerObj = $null
+	$Script:ComputerObj.Clear()
 	$tcDator.Items.RemoveAt( 0 )
 	$btnConnect.IsEnabled = $true
 	$tbComputerName.IsReadOnly = $false
@@ -77,19 +77,21 @@ function StartWinRMOnRemoteComputer
 {
 	try
 	{
-		SetTitle -Replace -Text ( "Verifies that '" + $tbComputerName.Text + "' is reachable" )
-		Test-WSMan $tbComputerName.Text -ErrorAction Stop
+		SetTitle -Replace -Text $msgTable.ComputerOnline
+		Test-WSMan $tbComputerName.Text.Trim() -ErrorAction Stop
 
 		$btnConnect.IsEnabled = $false
 		$tbComputerName.IsReadOnly = $true
 		$tcDator.Visibility = [System.Windows.Visibility]::Visible
 		$btnDisconnect.Visibility = [System.Windows.Visibility]::Visible
+		$ComputerObj.Computername = $tbComputerName.Text.Trim()
 		CreateComputerInfo
 	}
 	catch
 	{
-		SetTitle -Add -Text " ... failed"
-		ShowMessageBox "No contact to computer, or name does not exist. Try again."
+		WriteErrorLog -LogText $_
+		SetTitle -Add -Text $msgTable.ComputerOffline
+		ShowMessageBox -Text "$( $msgTable.ComputerOfflineMessage )`n$_ " -Title $tbComputerName.Text
 		$tbComputerName.Focus()
 	}
 }
@@ -117,7 +119,7 @@ function GetPCInfo
 	$ComputerObj.TimeOfLastBoot = $c.LastBootUpTime.GetDateTimeFormats()[22]
 	$ComputerObj.TimeOfInstallation = $c.InstallDate.GetDateTimeFormats()[22]
 	$duration = ( Get-Date ) - $c.LastBootUpTime
-	$ComputerObj.TimeSinceLastBoot = "$( $duration.Days ) days $( $duration.Hours ) hours $( $duration.Minutes ) minutes"
+	$ComputerObj.TimeSinceLastBoot = "$( $duration.Days ) dagar $( $duration.Hours ) timmar $( $duration.Minutes ) minuter"
 
 	$ComputerObj.IEVersion = ( ( [Microsoft.Win32.RegistryKey]::OpenRemoteBaseKey( 'LocalMachine', $ComputerObj.Computername ) ).OpenSubKey( "SOFTWARE\\Microsoft\\Internet Explorer" ) ).GetValue( 'svcVersion' )
 
@@ -133,31 +135,30 @@ function GetPCRole
 {
 	$ComputerObj.Roll = $null
 	$PCRoll = Get-ADComputer $ComputerObj.Computername -Properties Memberof | Select-Object -ExpandProperty MemberOf | Where-Object { $_ -match "_Wrk_" }
-	$types = @( "Role1", "Role2" )
 
-	switch ( ( $types | Where-Object { $PCRole -match $_ } ) )
+	switch -Regex ( $PCRoll )
 	{
 		"Role1" { $r = "Role1-PC" }
 		"Role2" { $r = "Role2-PC" }
 	}
-	if ( $null -eq $r ) { $r = "Unknown-PC" }
-	$ComputerObj.Role = $r
+	if ( $null -eq $r ) { $r = $msgTable.ComputerUnknownRole }
+	$ComputerObj.Roll = $r
 
-	if ( $ComputerObj.Computername -notmatch "^(Org1|Org2)" )
+	if ( $ComputerObj.Computername -notmatch "^($( $msgTable.OrgList ))" )
 	{
-		$ComputerObj.DontInstall = "Do not reinstall this computer: Other organisation"
+		$ComputerObj.DontInstall = "$( $msgTable.ComputerNoReInstall ): $( $msgTable.StrOtherOrg )"
 	}
-	elseif ( ( @( "Comp1", "CompSpec1" ) | ForEach-Object { $_ -like "$( $ComputerObj.Computername )*" } ) -eq $true )
+	elseif ( $msgTable.CompList -match $ComputerObj.Computername )
 	{
-		$ComputerObj.DontInstall = "Special computer. Do not reinstall this computer"
+		$ComputerObj.DontInstall = "$( $msgTable.ComputerNoReInstall ): $( $msgTable.StrSpecComp )"
 	}
 	else
 	{
 		$c1 = $true
-		$ComputerObj.Role | ForEach-Object { if ( $_ -notmatch "(Exp|Admin)" ) { $c1 = $false } }
+		$ComputerObj.Roll | ForEach-Object { if ( $_ -notmatch "($( $msgTable.RoleList ))" ) { $c1 = $false } }
 		if ( -not $c1 )
 		{
-			$ComputerObj.DontInstall = "Do not reinstall this computer: `n$( [string]( $PCRoll | Where-Object { $_ -notmatch "(Exp|Admin)" } | ForEach-Object { ( ( $_ -split "=" )[1] -split "," )[0] } ) )"
+			$ComputerObj.DontInstall = "$( $msgTable.ComputerNoReInstall ): `n$( [string]( $PCRoll | Where-Object { $_ -notmatch "($( $msgTable.RoleList ))" } | ForEach-Object { ( ( $_ -split "=" )[1] -split "," )[0] } ) )"
 		}
 	}
 }
@@ -179,7 +180,7 @@ function SetTitle
 	}
 	elseif ( $Remove )
 	{
-		$Window.Title = "SDGUI"
+		$Window.Title = $msgTable.StrScriptSuite
 	}
 	elseif ( $Replace )
 	{
@@ -191,13 +192,12 @@ function SetTitle
 # Create controls to hold computerinfo and buttons for computer-scripts
 function CreateComputerInfo
 {
-	$tI = [System.Windows.Controls.TabItem]@{ Name = "Baseinformation"; Header = "Baseinformation" }
+	$tI = [System.Windows.Controls.TabItem]@{ Name = "$( $msgTable.ComputerBaseInfo )"; Header = "$( $msgTable.ComputerBaseInfo )" }
 	$datagrid = [System.Windows.Controls.DataGrid]@{ AutoGenerateColumns = $true }
 	Set-Variable -Name datagrid -Value $datagrid
 
 	$Script:colName = [System.Windows.Controls.DataGridTextColumn]@{ Header = "Name"; Width = "SizeToCells"; Binding = [System.Windows.Data.Binding]@{ Path = "Name" } }
-	$Script:colInfo = [System.Windows.Controls.DataGridTextColumn]@{ Header = "Info"; Width = "SizeToCells"; Binding = [System.Windows.Data.Binding]@{ Path = "Info" } }
-	$Script:ComputerObj.Computername = $tbComputerName.Text
+	$Script:colInfo = [System.Windows.Controls.DataGridTextColumn]@{ Header = "Info"; Binding = [System.Windows.Data.Binding]@{ Path = "Info" } }
 
 	GetPCInfo
 	GetPCRole
@@ -239,18 +239,18 @@ function CreateComputerInput
 		Margin = "0,15,0,10"
 		Orientation = "Horizontal"
 	}
-	$l = [System.Windows.Controls.Label]@{ Content = "Computername" }
+	$l = [System.Windows.Controls.Label]@{ Content = $msgTable.InputComputerName }
 	$tb = [System.Windows.Controls.TextBox]@{
 		Name = "tbComputerName"
 		VerticalContentAlignment = "Center"
 		Width = 200
 	}
 	$tb.Add_TextChanged( { if ( $this.Text.Length -gt 5 ) { $btnConnect.IsEnabled = $true } else { $btnConnect.IsEnabled = $false } } )
-	$tb.Add_KeyDown( { if ( $args[1].Key -eq "Return" ) { StartWinRMOnRemoteComputer } } )
+	$tb.Add_KeyDown( { if ( $scriptArguments[1].Key -eq "Return" ) { StartWinRMOnRemoteComputer } } )
 	Set-Variable -Name "tbComputerName" -Value $tb -Scope script
 
 	$b = [System.Windows.Controls.Button]@{
-		Content = "Get info"
+		Content = $msgTable.ContentBtnGetComputerInfo
 		IsEnabled = $false
 		Margin = "5,0,0,0"
 		Name = "btnConnect"
@@ -260,7 +260,7 @@ function CreateComputerInput
 	Set-Variable -Name "btnConnect" -Value $b -Scope script
 
 	$b2 = [System.Windows.Controls.Button]@{
-		Content = "Disconnect"
+		Content = $msgTable.ContentBtnDisconnectComputer
 		Margin = "5,0,0,0"
 		Name = "btnDisconnect"
 		Visibility = [System.Windows.Visibility]::Collapsed
@@ -281,57 +281,56 @@ function CreateComputerInput
 function CreateScriptGroup
 {
 	param (
-		$Files
+		$FilesInFolder
 	)
 
-	$wpScriptGroup = New-Object System.Windows.Controls.WrapPanel
-	$wpScriptGroup.Orientation = "Vertical"
+	$wpScriptGroup = [System.Windows.Controls.WrapPanel]@{ Orientation = "Vertical" }
 
-	foreach ( $group in ( $files | Group-Object { $_.Group } | Sort-Object Name ) )
+	foreach ( $group in ( $FilesInFolder | Group-Object { $_.Group } | Sort-Object Name ) )
 	{
 		$gb = [System.Windows.Controls.GroupBox]@{ Header = $group.Name }
 		$sp = [System.Windows.Controls.WrapPanel]@{ Orientation = "Vertical" }
 		foreach ( $file in $group.Group )
 		{
-			if ( $file.Requires -eq "" -or
-			( $userGroups -match $file.Requires ) )
+			# Check if user is member of a group required to allow running this script
+			# or if user is listed as allowed user
+			if ( ( ( $null -eq $file.Requires ) -or ( $file.Requires | ForEach-Object { if ( $_ -in $userGroups ) { $true } } ) ) -or `
+				( ( $null -eq $file.Requires ) -or ( $env:username -in $file.AllowedUsers ) ) )
 			{
 				$wpScriptControls = New-Object System.Windows.Controls.WrapPanel
-				$button = New-Object System.Windows.Controls.Button
-				$label = New-Object System.Windows.Controls.Label
+				$button = [System.Windows.Controls.Button]@{ Content = "$( $msgTable.ContentBtnRun ) >"; ToolTip = $file.Path }
+				$label = [System.Windows.Controls.Label]@{ Content = $file.Synopsis; ToolTip = [string]$file.Description.Replace( ". ", ".`n" ) }
 
-				$button.Content = "Run >"
-				$button.ToolTip = $file.Path
-				$label.Content = $file.Synopsis
-				$label.ToolTip = [string]$file.Description.Replace( ". ", ".`n" )
-
-				if ( $file.Synopsis -match "under development" )
+				if ( $file.Synopsis -match "$( $msgTable.ScriptContentInDev )" )
 				{
 					$label.Background = "Red"
-					if ( $adminList -notcontains $env:USERNAME ) { $button.IsEnabled = $false }
+					if ( $msgTable.AdmList -notmatch $env:USERNAME ) { $button.IsEnabled = $false }
 				}
-				elseif ( $file.Synopsis -match "under testing" )
+				elseif ( $file.Synopsis -match "$( $msgTable.ScriptContentInTest )" )
 				{
 					$label.Background = "LightBlue"
-					$label.Content += "`nOnly use if you're told to."
+					$label.Content += "`n$( $msgTable.ContentLblInTest )"
 				}
 
 				$button.Add_Click( {
-					$ProgramRunspace = [System.Management.Automation.PowerShell]::Create() # Create new runspace
-					$ar = @( $this.ToolTip, ( Get-Item $PSScriptRoot ).Parent.FullName )
-					if ( $this.ToolTip -match "(Dator\\)" )
-					{ $ar += $tbComputerName.Text }
+					$ProgramRunspace = [System.Management.Automation.PowerShell]::Create() # Create new runspace for the script to run in
+					$scriptArguments = @( $this.ToolTip, ( Get-Item $PSScriptRoot ).Parent.FullName )
 
+					# If script is in the computer-folder, add computername to runspace argumentlist
+					if ( $this.ToolTip -match "$( $msgTable.ComputerFolder )\\" -and $tbComputerName.Text.Length -gt 0 )
+					{ $scriptArguments += $tbComputerName.Text }
+
+					# Checks if there exists a XAML-file for GUI for the script
 					if ( Get-ChildItem "$( ( Get-Item $PSCommandPath ).Directory.Parent.FullName )\Gui" | Where-Object { $_.Name -match ( ( Get-Item $this.ToolTip ).Name -split "\." )[0] } ) { $hidden = $true }
 					else { $hidden = $false }
 
 					[void]$ProgramRunspace.AddScript( {
-						param( $ar, $hidden )
+						param( $arg, $hidden )
 						if ( $hidden )
-						{ Start-Process powershell -WindowStyle Hidden -ArgumentList $ar } # Starts script with gui, without a powershell-window
+						{ Start-Process powershell -WindowStyle Hidden -ArgumentList $arg } # Run script with GUI, without a PowerShell-window
 						else
-						{ Start-Process powershell -ArgumentList $a } # Starts script without gui, with new powershell-window
-					} ).AddArgument( $ar ).AddArgument( $hidden )
+						{ Start-Process powershell -ArgumentList $arg } # Run script without GUI, with a PowerShell-window
+					} ).AddArgument( $scriptArguments ).AddArgument( $hidden )
 
 					$run = $ProgramRunspace.BeginInvoke() # Run runspace
 					do { Start-Sleep -Milliseconds 50 } until ( $run.IsCompleted )
@@ -344,8 +343,12 @@ function CreateScriptGroup
 			}
 		}
 
-		$gb.Content = $sp
-		$wpScriptGroup.AddChild( $gb )
+		# If there are scripts for this group, add groupbox
+		if ( $sp.Children.Count -gt 0 )
+		{
+			$gb.Content = $sp
+			$wpScriptGroup.AddChild( $gb )
+		}
 	}
 	return $wpScriptGroup
 }
@@ -376,7 +379,7 @@ function CreateTabItem
 # Check if user is part of admingroup for Scriptmenu
 function CheckForAdmin
 {
-	if ( $adminList -contains $env:USERNAME )
+	if ( $msgTable.AdmList -match $env:USERNAME )
 	{
 		$Admins.Visibility = [System.Windows.Visibility]::Visible
 		$btnCheckForUpdates.Add_Click( {
@@ -385,8 +388,8 @@ function CheckForAdmin
 			{ $script = "Update-Scripts.ps1" }
 			else
 			{ $script = "Development\Update-Scripts.ps1" }
-			$ar = @( "$( ( Get-Item $PSScriptRoot ).Parent.FullName )\$script", ( Get-Item $PSScriptRoot ).Parent.FullName )
-			[void]$ProgramRunspace.AddScript( { param( $ar ); Start-Process powershell -WindowStyle Hidden -ArgumentList $ar } ).AddArgument( $ar )
+			$scriptArguments = @( "$( ( Get-Item $PSScriptRoot ).Parent.FullName )\$script", ( Get-Item $PSScriptRoot ).Parent.FullName )
+			[void]$ProgramRunspace.AddScript( { param( $arg ); Start-Process powershell -WindowStyle Hidden -ArgumentList $arg } ).AddArgument( $scriptArguments )
 			$run = $ProgramRunspace.BeginInvoke() # Run runspace
 			do { Start-Sleep -Milliseconds 50 } until ( $run.IsCompleted )
 			$ProgramRunspace.Dispose()
@@ -398,41 +401,41 @@ function CheckForAdmin
 # Add controls to send report or suggestion mail
 function AddReportTool
 {
-	$ti = [System.Windows.Controls.TabItem]@{ Header = "Error report / Suggestions"; Background = "#FFFF9C9C" }
+	$ti = [System.Windows.Controls.TabItem]@{ Header = "$( $msgTable.ContentFeedbackHeader )"; Background = "#FFFF9C9C" }
 	$sp = New-Object System.Windows.Controls.StackPanel
 	$spScript = [System.Windows.Controls.StackPanel]@{ Orientation = "Horizontal" }
 	$spSubject = [System.Windows.Controls.StackPanel]@{ Orientation = "Horizontal" }
 	$cb = [System.Windows.Controls.ComboBox]@{ Height = "25"; Width = "300" }
 	$tbText = [System.Windows.Controls.TextBox]@{ AcceptsReturn = $true; AcceptsTab = $true; TextWrapping = "WrapWithOverflow"; VerticalScrollBarVisibility = "Auto"; Height = "300" }
-	$btnAdd = [System.Windows.Controls.Button]@{ Content = "Add name of script to be reported"; IsEnabled = $false; Margin = "0,5,10,5" }
-	$btnSend = [System.Windows.Controls.Button]@{ Content = "Send report" }
-	$lblSubject = [System.Windows.Controls.Label]@{ Content = "Type of message: " }
-	$rbR = [System.Windows.Controls.RadioButton]@{ Content = "Error report"; GroupName = "Subject"; IsChecked = $true }
-	$rbS = [System.Windows.Controls.RadioButton]@{ Content = "Suggestion"; GroupName = "Subject" }
+	$btnAdd = [System.Windows.Controls.Button]@{ Content = $msgTable.ContentBtnAddScript; IsEnabled = $false; Margin = "0,5,10,5" }
+	$btnSend = [System.Windows.Controls.Button]@{ Content = $msgTable.ContentBtnSend; Tag = @{ 
+		From = ( ( Get-ADUser ( Get-ADUser $env:USERNAME ).SamAccountName.Replace( $msgTable.StrAdmPrefix, "" ) -Properties EmailAddress ).EmailAddress )
+		To = $msgTable.StrMailAddress
+		SMTP = $msgTable.StrSMTP
+		Body = "`n`n$( $msgTable.StrMailSender ):`n$( ( Get-ADUser $env:USERNAME ).Name )`n$( Get-Date -f "yyyy-MM-dd HH:mm:ss" )"
+		Subject = $msgTable.StrScriptSuite } }
+	$lblSubject = [System.Windows.Controls.Label]@{ Content = "$( $msgTable.ContentLblMessageType ): " }
+	$rbR = [System.Windows.Controls.RadioButton]@{ Content = $msgTable.ContentRBtnErrorReport; GroupName = "Subject"; IsChecked = $true }
+	$rbS = [System.Windows.Controls.RadioButton]@{ Content = $msgTable.ContentRBtnSuggestion; GroupName = "Subject" }
 
 	Get-ChildItem $PSCommandPath.Directory -Filter "*ps1" -File -Recurse | Select-Object Name, @{ Name = "Synopsis"; Expression = { ( Select-String -InputObject $_ -Pattern "^.Synopsis" -Encoding Default ).Line.Replace( ".Synopsis ", "" ) } } | Sort-Object Synopsis | ForEach-Object { [void] $cb.Items.Add( "$( $_.Synopsis )`n`t$( $_.Name )" ) }
 
 	$btnAdd.Add_Click( {
-		$this.Parent.Parent.Children[2].Text = $this.Parent.Children[1].SelectedItem + "`r`n" + $this.Parent.Parent.Children[2].Text
+		$this.Parent.Parent.Children[2].Text = $this.Parent.Children[1].SelectedItem + "`n" + $this.Parent.Parent.Children[2].Text
 		$this.Parent.Children[1].SelectedIndex = -1
+		$this.IsEnabled = $false
 	} )
 	$btnSend.Add_Click( {
-		if ( $this.Parent.Children[1].Children[1].IsChecked ) { $subject = "Error report" }
-		elseif ( $this.Parent.Children[1].Children[2].IsChecked ) { $subject = "Suggestion" }
-		Send-MailMessage -From ( ( Get-ADUser ( Get-ADUser $env:USERNAME ).SamAccountName.Replace( "admin", "" ) -Properties EmailAddress ).EmailAddress ) `
-			-To backoffice@test.com `
-			-Body "$( $this.Parent.Children[2].Text )`n`nFrån:`n$( ( Get-ADUser $env:USERNAME ).Name )" `
-			-BodyAsHTML
-			-Encoding Default
-			-SmtpServer smtprelay.test.com `
-			-Subject "$subject Scriptmenu" `
+		$ofs = "`r`n"
+		Send-MailMessage -From $this.Tag.From `
+			-To $this.Tag.To `
+			-Body "$( $this.Parent.Children[2].Text )$( $this.Tag.Body )" `
+			-Encoding UTF8 `
+			-SmtpServer $this.Tag.SMTP `
+			-Subject $this.Tag.Subject
 		$this.Parent.Children[2].Text = ""
 	} )
 	$cb.Add_DropDownClosed( { if ( $this.Text -eq [string]::Empty ) { $this.Parent.Children[0].IsEnabled = $false } else { $this.Parent.Children[0].IsEnabled = $true } } )
-	$rbR.Add_Checked( { $this.Parent.Parent.Children[1].Children[0].Content = "Add scriptname to be reported"
-		$this.Parent.Parent.Children[3].Content = "Send report" } )
-	$rbS.Add_Checked( { $this.Parent.Parent.Children[1].Children[0].Content = "Add scriptname to suggestion"
-		$this.Parent.Parent.Children[3].Content = "Send suggestion" } )
 
 	[void] $spSubject.AddChild( $lblSubject )
 	[void] $spSubject.AddChild( $rbR )
@@ -461,13 +464,14 @@ function FulHack
 
 ############################## Script start
 Import-Module "$( ( Get-Item $PSCommandPath ).Directory.Parent.FullName )\Modules\FileOps.psm1" -Force
+Import-Module "$( ( Get-Item $PSCommandPath ).Directory.Parent.FullName )\Modules\GUIOps.psm1" -Force
 
 $userGroups = ( Get-ADUser $env:USERNAME -Properties memberof ).memberof | ForEach-Object { ( ( $_ -split "=" )[1] -split "," )[0] }
 $Script:ComputerObj = @{}
 $Window, $vars = CreateWindow
+SetTitle -Add -Text $( $msgTable.StrScriptSuite )
 if ( $PSCommandPath -match "Development" ) { SetTitle -Add " - Developer edition" }
 $vars | ForEach-Object { Set-Variable -Name $_ -Value $Window.FindName( $_ ) }
-$adminList = @( "admin1", "admin2", "admin3" )
 
 Push-Location ( Get-Item $PSCommandPath ).Directory.FullName
 $MainContent.AddChild( ( GetFolderItems "" ) )

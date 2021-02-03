@@ -2,18 +2,19 @@
 # Use this to import module:
 # Import-Module "$( $args[0] )\Modules\ConsoleOps.psm1" -Force
 
-# Initializes waiting, with given messagetext
+#####################################################
+# Initiates sleep with a progressbar and defined text
 function StartWait
 {
 	param( $SecondsToWait, $MessageText )
-	$MessageText = "Var god vänta i $SecondsToWait sekunder $MessageText"
-	1..$SecondsToWait | ForEach-Object { Write-Progress -Activity $MessageText -PercentComplete ( ( $_ / $SecondsToWait ) * 100 ); Start-Sleep 1 }
+	$MessageText = "$( $IntmsgTable.StartWait1 ) $SecondsToWait $( $IntmsgTable.StartWait2 ) $MessageText"
+	1..$SecondsToWait | foreach { Write-Progress -Activity $MessageText -PercentComplete ( ( $_ / $SecondsToWait ) * 100 ); Start-Sleep 1 }
 	Write-Progress -Activity $MessageText -Completed
 }
 
-# Reads input from console
-# For data to be pasted with Ctrl+V
-# Returns input as array
+################################################################
+# Reads input from the console. The data is pasted with Ctrl + V
+# Returns the input as an array, separated according to Split
 function GetConsolePasteInput
 {
 	param ( [switch] $Folders )
@@ -23,23 +24,25 @@ function GetConsolePasteInput
 	do
 	{
 		if ( $Folders )
-		{ $ControlInput = ( Read-Host ).Split( "`n""`n""`n""`r`n"","";" ) }
+		{ $Input = ( Read-Host ).Split( "`n""`n""`n""`r`n"","";" ) }
 		else
-		{ $ControlInput = ( Read-Host ).Split( "`n"" `n""`n ""`r`n"","";"" "":""-""_""/""\""."" `r`n""`r`n "", ""; "": ""- ""_ ""/ ""\ "". ", [System.StringSplitOptions]::RemoveEmptyEntries ) }
+		{ $Input = ( Read-Host ).Split( "`n"" `n""`n ""`r`n"","";"" "":""-""_""/""\""."" `r`n""`r`n "", ""; "": ""- ""_ ""/ ""\ "". ", [System.StringSplitOptions]::RemoveEmptyEntries ) }
 
-		if ( $ControlInput -ne '' )
+		if ( $input -ne '' )
 		{
-			$Users1 += $ControlInput
+			$Users1 += $input
 		}
 		else
 		{
-			$Quit.SendKeys( "Klar" )
+			$Quit.SendKeys( ( $IntmsgTable.GetConsolePasteInput ) )
 			$Quit.SendKeys( "~" )
 		}
-	} until ( $input -eq "Klar" )
-	$Users2 = $Users1 -ne "Klar"
+	} until ( $input -eq ( $IntmsgTable.GetConsolePasteInput ) )
+	$Users2 = $Users1 -ne ( $IntmsgTable.GetConsolePasteInput )
 
 	return $Users2
 }
+
+Import-LocalizedData -BindingVariable IntmsgTable -UICulture $culture -FileName "$( ( $PSCommandPath.Split( "\" ) | select -Last 1 ).Split( "." )[0] ).psd1" -BaseDirectory "$RootDir\Localization"
 
 Export-ModuleMember -Function *

@@ -1,15 +1,17 @@
-# A module for functions operating on files
+﻿# A module for functions operating on files
 # Use this to import module:
 # Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
-# Creates a file to use for input from user, then returns its content.
-# If file exists, its content is replaced, otherwise a new file is created.
-# DefaultText is entered as initial content.
-# Returns the files content, with DefaultText removed.
+param ( $culture = "sv-SE" )
+########################################################################
+# Creates file for input from user, then returns its content.
+# If file exists, the content is replaced. Otherise the file is created.
+# DefaultText is placed in the begining of the file.
+# Returns the file content, with DefaultText removed.
 function GetUserInput
 {
 	param ( $DefaultText )
-	$InputFilePath = "$RootDir\Input\$env:USERNAME\$CallingScript.txt"
+	$InputFilePath = "$RootDir\Input\$env:USERNAME\$( $CallingScript.BaseName ).txt"
 	if ( Test-Path -Path $InputFilePath )
 	{
 		Clear-Content $InputFilePath
@@ -28,44 +30,48 @@ function GetUserInput
 	return Get-Content $InputFilePath | Where-Object { $_ -notlike $DefaultText }
 }
 
-# Writes given output to file from script or scoreboard.
-# Returns filepath to outputfile.
+#################################################################################################
+# Writes output to corresponding file for the calling script, alternatively to a scoreboard file.
+# Returns full path to the file written.
 function WriteOutput
 {
 	param ( $FileNameAddition, $Output, $FileExtension = "txt", [switch] $Scoreboard )
 	if ( $Scoreboard ) { $Folder = "Scoreboard" } else { $Folder = $env:USERNAME }
 
-	$OutputFilePath = "$RootDir\Output\$Folder\$( if ( $FileNameAddition ) { "$FileNameAddition " } )$CallingScript, $( Get-Date -Format "yyyy-MM-dd HH.mm.ss").$FileExtension"
+	$OutputFilePath = "$RootDir\Output\$Folder\$( if ( $FileNameAddition ) { "$FileNameAddition " } )$( $CallingScript.BaseName ), $( Get-Date -Format "yyyy-MM-dd HH.mm.ss").$FileExtension"
 	if ( -not ( Test-Path $OutputFilePath ) ) { New-Item -Path $OutputFilePath -ItemType File -Force | Out-Null }
 	Set-Content -Path $OutputFilePath -Value ( $Output )
 	return $OutputFilePath
 }
 
-# Writes log from running script.
-# Each row is preceded by default logdata, followed by logtext from script.
+################################
+# Writes log from running script
+# Each row (the text from calling script) is preceded by logdata (date and user)
 function WriteLog
 {
 	param ( $LogText )
-	$LogFilePath = "$RootDir\Logs\$( [datetime]::Now.Year )\$( [datetime]::Now.Month )\$CallingScript - log.txt" 
-	if ( -not ( Test-Path $LogFilePath ) ) { New-Item -Path $LogFilePath -ItemType File -Force | Out-Null }
+	$LogFilePath = "$RootDir\Logs\$( [datetime]::Now.Year )\$( [datetime]::Now.Month )\$( $CallingScript.BaseName ) - log.txt" # Create path for logfile
+	if ( -not ( Test-Path $LogFilePath ) ) { New-Item -Path $LogFilePath -ItemType File -Force | Out-Null } # Does a file at path exist? If not, create file
 	Add-Content -Path $LogFilePath -Value ( $nudate + " " + $env:USERNAME + " [" + $env:USERDOMAIN + "] => " + $LogText )
 	return $LogFilePath
 }
 
-# Writes errorlog from running script.
-# Each row is preceded by default logdata, followed by errortext from script.
-# Returns filepath to file.
+####################################
+# Write errorlog from running script
+# Each row (the text from calling script) is preceded by logdata (date and user)
+# Returns path to errorlogfile
 function WriteErrorlog
 {
 	param ( $LogText )
-	$ErrorLogFilePath = "$RootDir\ErrorLogs\$( [datetime]::Now.Year )\$( [datetime]::Now.Month )\$CallingScript - Errorlog $( Get-Date -Format 'yyyyMMddHHmmss' ).txt"
-	if ( -not ( Test-Path $ErrorLogFilePath ) ) { New-Item -Path $ErrorLogFilePath -ItemType File -Force | Out-Null }
+	$ErrorLogFilePath = "$RootDir\ErrorLogs\$( [datetime]::Now.Year )\$( [datetime]::Now.Month )\$( $CallingScript.BaseName ) - Errorlog $( Get-Date -Format 'yyyyMMddHHmmss' ).txt"
+	if ( -not ( Test-Path $ErrorLogFilePath ) ) { New-Item -Path $ErrorLogFilePath -ItemType File -Force | Out-Null } # Does a file at path exist? If not, create file
 	Add-Content -Path $ErrorLogFilePath -Value ( ( Get-Date -Format "yyyy-MM-dd HH:mm:ss" ) + " " + $env:USERNAME + " [" + $env:USERDOMAIN + "] => " + $LogText )
 	return $ErrorLogFilePath
 }
 
-# Display a messagebox with given text, title, button and icon
-# Returns button pressed.
+##################################################################################
+# Display a messagebox with given text, and, if defined, title, icon and button/-s
+# Returns which button in the messagebox was clicked
 function ShowMessageBox
 {
 	param (
@@ -77,51 +83,21 @@ function ShowMessageBox
 	return [System.Windows.MessageBox]::Show( "$Text", "$Title", "$Button", "$Icon" )
 }
 
-# Displays message in console that the script can be closed.
+##################################################################################
+# Prints a message in the consolewindow, that the script is done and can be exited
 function EndScript
 {
-	$dummy = Read-Host "`nPress Enter to exit"
+	$dummy = Read-Host "`n$( $IntmsgTable.FileOpsEndScript )"
 	if ( $dummy -ne "" )
-	{ Add-Content -Path "$RootDir\Logs\DummyQuitting.txt" -Value "$nudate $env:USERNAME $CallingScript - $dummy" }
+	{ Add-Content -Path "$RootDir\Logs\DummyQuitting.txt" -Value "$nudate $env:USERNAME $( $CallingScript.BaseName ) - $dummy" }
 }
 
-# Creates a WPF-window, based on XAML-file with the same name as the script calling.
-# Returns window and an array with all named controls in window.
-function CreateWindow
-{
-	Add-Type -AssemblyName PresentationFramework
-
-	$XamlFile = "$RootDir\Gui\$CallingScript.xaml"
-	$inputXML = Get-Content $XamlFile -Raw
-	$inputXML = $inputXML -replace "x:N", 'N' -replace '^<Win.*', '<Window'
-	[XML]$XAML = $inputXML
-
-	$reader = ( New-Object System.Xml.XmlNodeReader $Xaml )
-	try
-	{
-		$Window = [Windows.Markup.XamlReader]::Load( $reader )
-	}
-	catch
-	{
-		Write-Host $_
-		Read-Host
-		throw
-	}
-	$vars = @()
-	$xaml.SelectNodes( "//*[@Name]" ) | ForEach-Object {
-		$vars += $_.Name
-	}
-
-	return $Window, $vars
-}
-
-# Current date and time
 $nudate = Get-Date -Format "yyyy-MM-dd HH:mm"
-# Root directory for scriptmenu
 $RootDir = ( Get-Item $PSCommandPath ).Directory.Parent.FullName
-# Name of the script calling
-$CallingScript = ( Get-Item $MyInvocation.PSCommandPath ).BaseName
-# Set title for consolewindow to scriptname
-$Host.UI.RawUI.WindowTitle = "Script: $( ( ( Get-Item $MyInvocation.PSCommandPath ).FullName -split "Skript" )[1] )"
+$CallingScript = ( Get-Item $MyInvocation.PSCommandPath )
+$Host.UI.RawUI.WindowTitle = "$( $IntmsgTable.ConsoleWinTitlePrefix ): $( ( ( Get-Item $MyInvocation.PSCommandPath ).FullName -split "Script" )[1] )"
+Import-LocalizedData -BindingVariable IntmsgTable -UICulture $culture -FileName "$( ( $PSCommandPath.Split( "\" ) | select -Last 1 ).Split( "." )[0] ).psd1" -BaseDirectory "$RootDir\Localization"
+try { Import-LocalizedData -BindingVariable msgTable -UICulture $culture -FileName $CallingScript.Name -BaseDirectory ( $CallingScript.Directory.FullName -replace "Script", "Localization\$culture" ) -ErrorAction SilentlyContinue } catch {}
 
 Export-ModuleMember -Function *
+Export-ModuleMember -Variable msgTable

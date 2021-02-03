@@ -1,0 +1,3 @@
+﻿ConvertFrom-StringData @'
+ConsoleWinTitlePrefix = Skript
+'@

@@ -1,0 +1,33 @@
+﻿ConvertFrom-StringData @'
+AdmList = sysA, sysB, sysC
+CompList = Comp1, Comp2
+ComputerBaseInfo = Baseinformation
+ComputerFolder = Computer
+ComputerNoReinstall = Do NOT reinstall this PC
+ComputerOffline = ... Failed
+ComputerOfflineMessage = No connection with computer, or wrong computername. Try again.
+ComputerOnline = Checking if computer is online
+ComputerUnknownRole = Unknown-PC
+ContentBtnAddScript = Add name of script to message
+ContentBtnDisconnectComputer = Reset
+ContentBtnGetComputerInfo = Get info
+ContentBtnRun = Run
+ContentBtnSend = Send message
+ContentFeedbackHeader = Report error / suggestions
+ContentLblInTest = Only use this if you have been asked to
+ContentLblMessageType = Type of message
+ContentRBtnErrorReport = Report error
+ContentRBtnSuggestion = Suggestion
+InputComputerName = Computername
+OrgList = Org1|Org2|Org3
+RoleList = Role1|Role2|Role3
+ScriptContentInDev = in developement
+ScriptContentInTest = in testing
+StrAdmPrefix = sys
+StrMailAddress = servicedesk@test.com
+StrMailSender = From
+StrOtherOrg = Other organisation
+StrScriptSuite = Scriptmenu
+StrSMTP = smtp.test.com
+StrSpecComp = Other computer
+'@

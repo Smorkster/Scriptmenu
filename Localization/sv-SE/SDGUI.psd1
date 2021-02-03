@@ -1,0 +1,33 @@
+﻿ConvertFrom-StringData @'
+AdmList = sysA, sysB, sysC
+CompList = Comp1, Comp2
+ComputerBaseInfo = Basinformation
+ComputerFolder = Dator
+ComputerNoReinstall = Ominstallera EJ denna PC
+ComputerOffline = ... Misslyckades
+ComputerOfflineMessage = Ingen kontakt med dator eller felaktigt datornamn. Försök igen.
+ComputerOnline = Kontrollerar att datorn är nåbar
+ComputerUnknownRole = Okänd-PC
+ContentBtnAddScript = Lägg till namn på skript i meddelande
+ContentBtnDisconnectComputer = Avsluta
+ContentBtnGetComputerInfo = Hämta info
+ContentBtnRun = Kör
+ContentBtnSend = Skicka meddelande
+ContentFeedbackHeader = Felanmälan / Förslag
+ContentLblInTest = Använd enbart om du tillfrågats
+ContentLblMessageType = Typ av meddelande
+ContentRBtnErrorReport = Felanmälan
+ContentRBtnSuggestion = Förslag
+InputComputerName = Ange datornamn
+OrgList = Org1|Org2|Org3
+RoleList = Role1|Role2|Role3
+ScriptContentInDev = under utveckling
+ScriptContentInTest = under testning
+StrAdmPrefix = sys
+StrMailAddress = servicedesk@test.com
+StrMailSender = Från
+StrOtherOrg = Annan organisation
+StrScriptSuite = Skriptmeny
+StrSMTP = smtp.test.com
+StrSpecComp = Annan dator
+'@

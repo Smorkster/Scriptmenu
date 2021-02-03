@@ -2,14 +2,14 @@
 # Use this to import module:
 # Import-Module "$( $args[0] )\Modules\SysManOps.psm1" -Force
 
-######################################################################################################
-# Changes Office version, from Office ProfessionalPlus, to ProPlus (that contains Outlook and Skype)
-function ChangeOfficeInstallation
+########################################################################
+# Changes installed version of a deployed application for given computer
+function ChangeInstallation
 {
 	param( $ComputerName, $OldVersion, $NewVersion )
 
-	$Application = ( Get-ADObject -LDAPFilter "(&(objectclass=group)(name=$OldVersion))" | Select-Object -ExpandProperty name ).Replace( "_I", "" )
-	$NewApplication = ( Get-ADObject -LDAPFilter "(&(objectclass=group)(name=$NewVersion))" | Select-Object -ExpandProperty name ).Replace( "_I", "" )
+	$Application = ( Get-ADObject -LDAPFilter "(&(objectclass=group)(name=$OldVersion))" | select -ExpandProperty name ).Replace( "_I", "" )
+	$NewApplication = ( Get-ADObject -LDAPFilter "(&(objectclass=group)(name=$NewVersion))" | select -ExpandProperty name ).Replace( "_I", "" )
 
 	$SystemID = ( ( Invoke-WebRequest -Uri "$( $ServerUrl )/api/System?name=$( $Application )" -UseDefaultCredentials -ContentType "application/json" ) | ConvertFrom-Json).ID
 	$NewSystemID = ( ( Invoke-WebRequest -Uri "$( $ServerUrl )/api/System?name=$( $NewApplication )" -UseDefaultCredentials -ContentType "application/json" ) | ConvertFrom-Json).ID
@@ -35,7 +35,7 @@ function GetSysManComputerId
 	return ( Invoke-RestMethod -uri "$( $ServerUrl )/api/Client?name=$ComputerName" -UseDefaultCredentials ).Id
 }
 
-#########################################################
+####################################################
 # Return the internal id in SysMan for given user id
 function GetSysManUserId
 {
@@ -46,6 +46,7 @@ function GetSysManUserId
 $nudate = Get-Date -Format "yyyy-MM-dd HH:mm"
 $RootDir = ( Get-Item $PSCommandPath ).Directory.Parent.FullName
 $CallingScript = ( Get-Item $MyInvocation.PSCommandPath ).BaseName
-$ServerUrl = "http://domain.com/sysman"
+Import-LocalizedData -BindingVariable IntmsgTable -UICulture $culture -FileName "$( ( $PSCommandPath.Split( "\" ) | select -Last 1 ).Split( "." )[0] ).psd1" -BaseDirectory "$RootDir\Localization"
+$ServerUrl = $IntmsgTable.SysManServerUrl
 
 Export-ModuleMember -Function *
