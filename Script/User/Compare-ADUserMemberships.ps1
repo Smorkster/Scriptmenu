@@ -5,13 +5,12 @@
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
-$CaseNr = Read-Host "Related casenumber (if any) "
-Write-Host "Chose one:`n"
-Write-Host "[1] - Compare 2 users, Ids is written in console."
-Write-Host "[2] - Compare 2 or more users and/or groups, Ids is entered in file.`n"
+Write-Host "$( $msgTable.WAlternatives ):`n"
+Write-Host "[1] - $( $msgTable.WAlternative1 )."
+Write-Host "[2] - $( $msgTable.WAlternative2 ).`n"
 do
 {
-	$Choice = Read-Host "Write your choice (1 or 2)"
+	$Choice = Read-Host "$( $msgTable.QAlternative )"
 }
 until ( ( $Choice -eq 1 ) -or ( $Choice -eq 2 ) )
 
@@ -23,18 +22,18 @@ $AllGroups = @()
 
 if ( $Choice -eq 1 )
 {
-	$UsersIn += Read-Host "Write first Id "
-	$UsersIn += Read-Host "Write second Id "
+	$UsersIn += Read-Host "1 ) $( $msgTable.QID ) "
+	$UsersIn += Read-Host "2 ) $( $msgTable.QID )"
 	Write-Host "`n"
 
 }
 elseif ( $Choice -eq 2 )
 {
-	$UsersIn = GetUserInput -DefaultText "Write Id for users to compare membership for"
+	$UsersIn = GetUserInput -DefaultText $msgTable.QIDList
 }
 else
 {
-	Write-Host "Wrong choice! Run script again and enter correct choice." -ForegroundColor Red
+	Write-Host "$( $msgTable.ErrID )" -ForegroundColor Red
 }
 
 if ( $UsersIn.Count -gt 1 )
@@ -42,13 +41,13 @@ if ( $UsersIn.Count -gt 1 )
 	foreach ( $u in $UsersIn )
 	{
 		$user = New-Object -TypeName psobject
-		$user | Add-Member -MemberType NoteProperty -Name Groups -Value ( Get-ADPrincipalGroupMembership -Identity $u | Select-Object -ExpandProperty Name )
+		$user | Add-Member -MemberType NoteProperty -Name Groups -Value ( Get-ADPrincipalGroupMembership -Identity $u | select -ExpandProperty Name )
 		$user | Add-Member -MemberType NoteProperty -Name UserName -Value $u
 		$Users += $user
 		$AllGroups += $user.Groups
 	}
 
-	$AllGroups = $AllGroups | Sort-Object | Select-Object -Unique
+	$AllGroups = $AllGroups | sort | select -Unique
 
 	$groups = @()
 	foreach ( $g in $Allgroups )
@@ -56,7 +55,7 @@ if ( $UsersIn.Count -gt 1 )
 		$group = New-Object -TypeName psobject
 		$group | Add-Member -MemberType NoteProperty -Name GroupName -Value $g
 		$group | Add-Member -MemberType NoteProperty -Name Users -Value @()
-		foreach ( $u in $users )
+		foreach ($u in $users)
 		{
 			if ( $u.Groups -contains $group.Groupname )
 			{
@@ -66,9 +65,9 @@ if ( $UsersIn.Count -gt 1 )
 		$groups += $group
 	}
 
-	$users | Select-Object UserName
+	$users | select UserName
 	$file = @()
-	Write-Host "`nGroups`n------"
+	Write-Host "`n$( $msgTable.WGroups )`n------"
 	foreach ( $g in $groups )
 	{
 		Write-Host "$( $g.GroupName ): " -NoNewline
@@ -76,14 +75,14 @@ if ( $UsersIn.Count -gt 1 )
 		if ( $g.Users.Count -eq $users.Count )
 		{
 			if ( $users.Count -eq 2 )
-			{ $members = "both are members" }
+			{ $members = $msgTable.WBoth }
 			else
-			{ $members = "all are members" }
+			{ $members = $msgTable.WAll }
 		}
 		else
 		{
 			$members = ""
-			$g.Users | ForEach-Object { $members += "$_ " }
+			$g.Users | foreach { $members += "$_ " }
 		}
 		Write-Host $members.Trim()
 		Add-Member -InputObject $row -MemberType NoteProperty -Name "Members" -Value $members.Trim()
@@ -96,19 +95,19 @@ if ( $UsersIn.Count -gt 1 )
 		if ( $UsersIn.Count -eq 2 )
 		{ $fna += "$( $UsersIn[0] ), $( $UsersIn[1] )" }
 		else
-		{ $fna += "$( $usersIn.Count.ToString() ) users" }
+		{ $fna += "$( $usersIn.Count.ToString() ) $( $msgTable.WUserCount )" }
 		$file = $file | ConvertTo-Csv -NoTypeInformation -Delimiter ';'
 
 		$outputFile = WriteOutput -FileNameAddition $fna -Output $file -FileExtension "csv"
-		Write-Host "`nResults written to '$outputFile'"
+		Write-Host "`n$( $msgTable.WSummary ) '$outputFile'"
 
-		$logText = "$CaseNr $fna`r`n`tOutput: $outputFile"
+		$logText = "$fna`r`n`t$( $msgTable.WLogOutputTitle ): $outputFile"
 	}
 }
 else
 {
-	$logText = "No comparision, to few users entered"
+	$logText = $msgTable.ErrToFew
 }
 
-WriteLog -LogText $logText
+WriteLog -LogText $logText | Out-Null
 EndScript
