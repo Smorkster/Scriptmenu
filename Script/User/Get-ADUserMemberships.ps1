@@ -5,42 +5,39 @@
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
-$CopyToClipBoard = @()
+$UserInput = Read-Host $msgTable.QID
 
-$CaseNr = Read-Host "Related casenumber (if any) "
-$UserID = Read-Host "User id "
-
-if ( !( dsquery User -samid $UserID ) )
+if ( !( dsquery User -samid $UserInput ) )
 {
-	Write-Host "`nNo user with id $UserID was found!" -ForegroundColor Red
-	$outputFile = "$UserID does not exist"
+	Write-Host "`n$( $msgTable.ErrWID ) $UserInput!" -ForegroundColor Red
+	$outputFile = "$UserInput $( $msgTable.ErrID )"
 }
 else
 {
 	$output = @()
-	$User = Get-ADUser $UserID -Properties *
-	if ( $GaiaGroups = Get-ADPrincipalGroupMembership $User | Where-Object { $_.SamAccountName -notlike "*_org_*" } | Where-Object { $_.SamAccountName -ne "Domain Users" } | Select-Object -ExpandProperty SamAccountName | Sort-Object )
+	$User = Get-ADUser $UserInput -Properties *
+	if ( $GaiaGroups = Get-ADPrincipalGroupMembership $User | where { $_.SamAccountName -notlike "*_org_*" } | where { $_.SamAccountName -ne "Domain Users" } | select -ExpandProperty SamAccountName | sort )
 	{
-		$output += $User.Name + " have permission for these AD-groups:"
-		$GaiaGroups | Sort-Object | ForEach-Object { $output += "`t$( $_ )" }
+		$output += $User.Name + " $( $msgTable.WGroupTitle ):"
+		$GaiaGroups | sort | foreach { $output += "`t$( $_ )" }
 	}
 	else
 	{
-		$output += $User.Name + " does not have any group-permissions in AD."
+		$output += $User.Name + " $( $msgTable.WNoGroups )."
 	}
 
-	if ( $OrgGroups = Get-ADPrincipalGroupMembership $User | Where-Object { $_.SamAccountName -like "*_org_*" } | Select-Object -ExpandProperty SamAccountName | Sort-Object )
+	if ( $OrgGroups = Get-ADPrincipalGroupMembership $User | where { $_.SamAccountName -like "*_org_*" } | select -ExpandProperty SamAccountName | sort )
 	{
-		$output += "`r`nAnd permissions for these sync org-groups:"
-		foreach ( $g in $orggroups )
+		$output += "`r`n$( $msgTable.WGroupCont ):"
+		foreach ( $g in $orggroups)
 		{
-			Get-ADGroup $g -Properties hsaidentity | ForEach-Object { $output += "$( $_.Name ) - $( $_.orgIdentity )" }
-			Get-ADPrincipalGroupMembership $g | Sort-Object | ForEach-Object { $output += "`t" + $_.Name }
+			Get-ADGroup $g -Properties hsaidentity | foreach { $output += "$( $_.Name ) - $( $_.hsaidentity )" }
+			Get-ADPrincipalGroupMembership $g | sort | foreach { $output += "`t" + $_.Name }
 		}
 	}
 	else
 	{
-		$output += "`nNo permissions for sync org-groups"
+		$output += "`n$( $msgTable.WGroupNoCont )"
 	}
 
 	Start-Sleep -Milliseconds 500
@@ -49,9 +46,23 @@ else
 if ( $output )
 {
 	$outputFile = WriteOutput -Output $output
-	Write-Host "Results written to`n'$outputFile'"
+	Write-Host "$( $msgTable.WSummaryFile ) '$outputFile'"
 	Start-Process notepad $outputFile
 }
 
-WriteLog -LogText "$CaseNr $UserID`r`n`tOutput: $outputFile"
+if ( ( Read-Host "$( $msgTable.QQuestion )? ( Y / N )" ) -eq "Y" )
+{
+	$cloneTarget = Read-Host "$( $msgTable.QQID ):"
+	$message = @("$( $msgTable.MQ1 ) $( $User.Name ) $( $msgTable.MQ2 ):")
+	$GaiaGroups | sort | foreach { $message += "`t$( $_ )" }
+	$message += "$( $msgTable.MQ3 ) [ $( ( Get-ADUser $cloneTarget ).Name ) ]."
+	$message += $msgTable.MQ4
+	$message += $msgTable.MQ5
+	$message += $msgTable.MQ6
+	$OutputEncoding = ( New-Object System.Text.UnicodeEncoding $False, $False ).psobject.BaseObject
+	$message | clip
+	Write-Host "$( $msgTable.WQCopy )"
+}
+
+WriteLog -LogText "$UserInput`r`n`t$( $msgTable.WLogOutputTitle ): $outputFile" | Out-Null
 EndScript
