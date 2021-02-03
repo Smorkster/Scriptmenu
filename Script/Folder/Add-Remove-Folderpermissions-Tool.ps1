@@ -1,6 +1,7 @@
 <#
 .Synopsis Add and remove folderpermissions, with GUI
 .Description Add/remove permissions for shared folders.
+.Author Someone
 #>
 
 ####################  Operational functions  ####################
@@ -21,20 +22,20 @@ function CheckUser
 	{
 		return "Group"
 	}
-	elseif ( $EKG = Get-ADGroup -LDAPFilter "(orgIdentity=$Id)" -Properties SamAccountName )
+	elseif ( $EKG = Get-ADGroup -LDAPFilter "($( $msgTable.StrEGroupIdName )=$( $msgTable.StrEGroupOrg )-$Id)" )
 	{
-		if ( $EKG.Count -eq 1 )
+		if ( $EKG.Count -gt 1 )
 		{
-			return "orgGroup"
+			return "EGroups"
 		}
 		else
 		{
-			return "orgGroups"
+			return "EGroup"
 		}
 	}
 	else
 	{
-		$Script:ErrorUsers += $Id
+		$syncHash.Data.ErrorUsers += $Id
 		return "NotFound"
 	}
 }
@@ -43,28 +44,28 @@ function CheckUser
 # Collect AD-groups for folders / app
 function CollectADGroups
 {
-	if ( $cbDisk.SelectedItem.Substring( 1, 2 ) -eq ":\" )
+	if ( $syncHash.DC.cbDisk[1].Substring( 1, 2 ) -eq ":\" )
 	{
-		switch ( $cbDisk.SelectedItem.Substring( 0, 1 ) )
+		switch ( $syncHash.DC.cbDisk[1].Substring( 0, 1 ) )
 		{
 			"G"
 			{
-				CollectADGroupsG -Entries $lbFoldersChosen.Items
+				CollectADGroupsG -Entries $syncHash.DC.lbFoldersChosen[0]
 			}
 			"R"
 			{
-				CollectADGroupsR -Entries $lbFoldersChosen.Items
+				CollectADGroupsR -Entries $syncHash.DC.lbFoldersChosen[0]
 			}
 			"S"
 			{
-				CollectADGroupsS -Entries $lbFoldersChosen.Items
+				CollectADGroupsS -Entries $syncHash.DC.lbFoldersChosen[0]
 			}
 		}
 	}
 	else
 	{
-		foreach ( $entry in $lbFoldersChosen.Items )
-		{ $Script:ADGroups += @{ "Id" = $entry } }
+		foreach ( $entry in $syncHash.DC.lbFoldersChosen[0] )
+		{ $syncHash.Data.ADGroups += @{ "Id" = $entry } }
 	}
 }
 
@@ -77,43 +78,50 @@ function CollectADGroupsG
 	)
 	$loopCounter = 0
 
-	$Customer = ( ( $cbDisk.SelectedItem -split "\\" )[1] )
+	$Customer = ( ( $syncHash.DC.cbDisk[1] -split "\\" )[1] )
 	foreach ( $entry in $Entries )
 	{
-		$Window.Title = "Fetching AD-groups for G:-folders $( [Math]::Floor( $loopCounter / $entries.Count * 100 ) )"
+		SetWinTitle -Text $msgTable.StrTitleProgressGroups -Progress $loopCounter -Max $Entries.Count
 
-		$FolderName = $cbDisk.SelectedValue.ToString() + "\" + $entry
+		$FolderName = $syncHash.DC.cbDisk[1].ToString() + "\" + $entry
+		$entry = $entry -replace " ", "_"
 		try
 		{
-			$WriteGroup = Get-ADGroup "$( $Customer )_File_AD$( $Customer )$( if ( $Customer -eq "OrgA" ) { "02" } else { "01" } )_Grp_$entry_User_C" | Select-Object -ExpandProperty SamAccountName
+			$WriteGroup = Get-ADGroup ( Invoke-Expression $msgTable.CodeGetGGroupWrite1 )
 		}
 		catch
 		{
 			try
 			{
-				$WriteGroup = Get-ADGroup "$( ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | Where-Object { ( $_.FileSystemRights -eq "Modify, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | Select-Object -ExpandProperty IdentityReference ).Value -replace "AD\\" ).Substring( 0, ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | Where-Object { ( $_.FileSystemRights -eq "Modify, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | Select-Object -ExpandProperty IdentityReference ).Value -replace "AD\\" ).Length - 2 ) )_User_C" | Select-Object -ExpandProperty SamAccountName
+				$WriteGroup = Get-ADGroup ( Invoke-Expression $msgTable.CodeGetGGroupWrite2 )
 			}
 			catch
-			{ $WriteGroup = $null }
+			{
+				WriteErrorLog -LogText "CollectADGroupsG WriteGroup:`n`t$_`n`t$FolderName`n`t$entry"
+				$WriteGroup = $null
+			}
 		}
 
 		try
 		{
-			$ReadGroup = Get-ADGroup "$( $Customer )_File_AD$( $Customer )$( if ( $Customer -eq "OrgA" ) { "02" } else { "01" } )_Grp_$entry_User_R" | Select-Object -ExpandProperty SamAccountName
+			$ReadGroup = Get-ADGroup ( Invoke-Expression $msgTable.CodeGetGGroupRead1 )
 		}
 		catch
 		{
 			try
 			{
-				$ReadGroup = Get-ADGroup "$( ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | Where-Object { ( $_.FileSystemRights -eq "ReadAndExecute, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | Select-Object -ExpandProperty IdentityReference ).Value -replace "AD\\" ).Substring( 0, ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | Where-Object { ( $_.FileSystemRights -eq "ReadAndExecute, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | Select-Object -ExpandProperty IdentityReference ).Value -replace "AD\\" ).Length - 2 ) )_User_R" | Select-Object -ExpandProperty SamAccountName
+				$ReadGroup = Get-ADGroup ( Invoke-Expression $msgTable.CodeGetGGroupRead2 )
 			}
 			catch
-			{ $ReadGroup = $null }
+			{
+				WriteErrorLog -LogText "CollectADGroupsG ReadGroup:`n`t$_`n`t$FolderName`n`t$entry"
+				$ReadGroup = $null
+			}
 		}
 		if ( $WriteGroup -and $ReadGroup )
-		{ $Script:ADGroups += @{ "Id" = $FolderName; "Write" = $WriteGroup; "Read" = $ReadGroup } }
+		{ $syncHash.Data.ADGroups += @{ "Id" = $FolderName; "Write" = $WriteGroup.SamAccountName; "Read" = $ReadGroup.SamAccountName } }
 		else
-		{ $Script:ErrorGroups += $FolderName}
+		{ $syncHash.Data.ErrorGroups += $FolderName }
 
 		$loopCounter++
 	}
@@ -128,71 +136,78 @@ function CollectADGroupsR
 	)
 	$loopCounter = 0
 
-	$Customer = ( ( $cbDisk.SelectedItem -split "\\" )[1] )
-	foreach ( $entry in $entries )
+	$Customer = ( ( $syncHash.DC.cbDisk[1] -split "\\" )[1] )
+	foreach ( $entry in $Entries )
 	{
-		$Window.Title = "Fetching AD-groups for R:-folders $( [Math]::Floor( $loopCounter / $entries.Count * 100 ) )"
+		SetWinTitle -Text ( Invoke-Expression $msgTable.StrTitleProgressGroups ) -Progress $loopCounter -Max $Entries.Count
 
-		$FolderName = $cbDisk.SelectedValue.ToString() + "\" + $entry
+		$FolderName = $syncHash.DC.cbDisk[1].ToString() + "\" + $entry
+		$entry = $entry -replace " ", "_"
 		try
 		{
-			$WriteGroup = Get-ADGroup "$( $Customer )_File_$( if ( $Customer -in "OrgA","OrgB" ) { "adServ1" } else { "adServ2" } )_$( $entry )_C" | Select-Object -ExpandProperty SamAccountName
+			$WriteGroup = Get-ADGroup ( Invoke-Expression $msgTable.CodeGetRGroupWrite1 )
 		}
 		catch
 		{
 			try
 			{
-				$WriteGroup = Get-ADGroup "$( $Customer )_File_$( if ( $Customer -in "OrgA", "OrgB" ) { "adServ1" } else { "adServ2" } )_App_$( $entry )_C" | Select-Object -ExpandProperty SamAccountName
+				$WriteGroup = Get-ADGroup ( Invoke-Expression $msgTable.CodeGetRGroupWrite2 )
 			}
 			catch
 			{
 				try
 				{
-					$WriteGroup = Get-ADGroup "$( $Customer )_File_AD$( $Customer )$( if ( $Customer -eq "OrgA" ) { "02" } else { "01" } )_App_$( $entry )_C" | Select-Object -ExpandProperty SamAccountName
+					$WriteGroup = Get-ADGroup ( Invoke-Expression $msgTable.CodeGetRGroupWrite3 )
 				}
 				catch
 				{
 					try
 					{
-						$WriteGroup = Get-ADGroup ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | Where-Object { ( $_.FileSystemRights -eq "Modify, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | Select-Object -ExpandProperty IdentityReference ).Value -replace "AD\\" ) | Select-Object -ExpandProperty SamAccountName
+						$WriteGroup = Get-ADGroup ( Invoke-Expression $msgTable.CodeGetRGroupWrite4 )
 					}
 					catch
-					{ $WriteGroup = $null }
+					{
+						WriteErrorLog -LogText "CollectADGroupsR WriteGroup:`n`t$_`n`t$FolderName`n`t$entry"
+						$WriteGroup = $null
+					}
 				}
 			}
 		}
 
 		try
 		{
-			$ReadGroup = Get-ADGroup "$( $Customer )_File_$( if ( $Customer -in "OrgA", "OrgB" ) { "adServ1" } else { "adServ2" } )_$( $entry )_R" | Select-Object -ExpandProperty SamAccountName
+			$ReadGroup = Get-ADGroup ( Invoke-Expression $msgTable.CodeGetRGroupRead1 )
 		}
 		catch
 		{
 			try
 			{
-				$ReadGroup = Get-ADGroup "$( $Customer )_File_$( if ( $Customer -in "OrgA", "OrgB" ) { "adServ1" } else { "adServ2" } )_App_$( $entry )_R" | Select-Object -ExpandProperty SamAccountName
+				$ReadGroup = Get-ADGroup ( Invoke-Expression $msgTable.CodeGetRGroupRead2 )
 			}
 			catch
 			{
 				try
 				{
-					$ReadGroup = Get-ADGroup "$( $Customer )_File_AD$( $Customer )$( if ( $Customer -eq "OrgA" ) { "02" } else { "01" } )_App_$( $entry )_R" | Select-Object -ExpandProperty SamAccountName
+					$ReadGroup = Get-ADGroup ( Invoke-Expression $msgTable.CodeGetRGroupRead3 )
 				}
 				catch
 				{
 					try
 					{
-						$ReadGroup = Get-ADGroup ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | Where-Object { ( $_.FileSystemRights -eq "Read, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | Select-Object -ExpandProperty IdentityReference ).Value -replace "AD\\" ) | Select-Object -ExpandProperty SamAccountName
+						$ReadGroup = Get-ADGroup ( Invoke-Expression $msgTable.CodeGetRGroupRead4 )
 					}
 					catch
-					{ $ReadGroup = $null }
+					{
+						WriteErrorLog -LogText "CollectADGroupsR ReadGroup:`n`t$_`n`t$FolderName`n`t$entry"
+						$ReadGroup = $null
+					}
 				}
 			}
 		}
 		if ( $WriteGroup -and $ReadGroup )
-		{ $Script:ADGroups += @{ "Id" = $FolderName; "Write" = $WriteGroup; "Read" = $ReadGroup } }
+		{ $syncHash.Data.ADGroups += @{ "Id" = $FolderName; "Write" = $WriteGroup.SamAccountName; "Read" = $ReadGroup.SamAccountName } }
 		else
-		{ $Script:ErrorGroups += $FolderName }
+		{ $syncHash.Data.ErrorGroups += $FolderName }
 
 		$loopCounter++
 	}
@@ -207,43 +222,50 @@ function CollectADGroupsS
 	)
 	$loopCounter = 0
 
-	$Customer = ( ( $cbDisk.SelectedItem -split "\\" )[1] )
+	$Customer = ( ( $syncHash.DC.cbDisk[1] -split "\\" )[1] )
 	foreach ( $entry in $entries )
 	{
-		$Window.Title = "Fetching AD-groups for S:-folders $( [Math]::Floor( $loopCounter / $entries.Count * 100 ) )"
+		SetWinTitle -Text ( Invoke-Expression $msgTable.StrTitleProgressGroups ) -Progress $loopCounter -Max $entries.Count
 
-		$FolderName = $cbDisk.SelectedValue.ToString() + "\" + $entry
+		$FolderName = $syncHash.DC.cbDisk[1].ToString() + "\" + $entry
+		$entry = $entry -replace " ", "_"
 		try
 		{
-			$WriteGroup = Get-ADGroup "$( ( $FolderName -split "\\" )[1] )_File_AD$( $Customer )01_Gem_$( ( $FolderName -split "\\" )[2] )_$( ( ( $FolderName -split "\\" )[3] ) -replace " ","_" -replace "å","a" -replace "ä","a" -replace "ö","o" -replace "è","e" )_Ext_C" | Select-Object -ExpandProperty SamAccountName
+			$WriteGroup = Get-ADGroup ( Invoke-Expression $msgTable.CodeGetSGroupWrite1 )
 		}
 		catch
 		{
 			try
 			{
-				$WriteGroup = Get-ADGroup "$( ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | Where-Object { ( $_.FileSystemRights -eq "Modify, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | Select-Object -ExpandProperty IdentityReference ).Value -replace "AD\\" ).Substring( 0, ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | Where-Object { ( $_.FileSystemRights -eq "Modify, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | Select-Object -ExpandProperty IdentityReference ).Value -replace "AD\\" ).Length-2 ) )_Ext_C" | Select-Object -ExpandProperty SamAccountName
+				$WriteGroup = Get-ADGroup ( Invoke-Expression $msgTable.CodeGetSGroupWrite2 )
 			}
 			catch
-			{ $WriteGroup = $null }
+			{
+				WriteErrorLog -LogText "CollectADGroupsS WriteGroup:`n`t$_`n`t$FolderName`n`t$entry"
+				$WriteGroup = $null
+			}
 		}
 
 		try
 		{
-			$ReadGroup = Get-ADGroup "$( ( $FolderName -split "\\" )[1] )_File_AD$( $Customer )01_Gem_$( ( $FolderName -split "\\" )[2] )_$( ( ( $FolderName -split "\\" )[3] ) -replace " ","_" -replace "å","a" -replace "ä","a" -replace "ö","o" -replace "è","e" )_Ext_R" | Select-Object -ExpandProperty SamAccountName
+			$ReadGroup = Get-ADGroup ( Invoke-Expression $msgTable.CodeGetSGroupRead1 )
 		}
 		catch
 		{
 			try
 			{
-				$ReadGroup = Get-ADGroup "$( ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | Where-Object { ( $_.FileSystemRights -eq "ReadAndExecute, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | Select-Object -ExpandProperty IdentityReference ).Value -replace "AD\\" ).Substring( 0, ( ( ( Get-Acl $FolderName -ErrorAction Stop ).Access | Where-Object { ( $_.FileSystemRights -eq "ReadAndExecute, Synchronize" ) -and ( $_.IsInherited -eq $false ) } | Select-Object -ExpandProperty IdentityReference ).Value -replace "AD\\" ).Length - 2 ) )_Ext_R" | Select-Object -ExpandProperty SamAccountName
+				$ReadGroup = Get-ADGroup ( Invoke-Expression $msgTable.CodeGetSGroupRead2 )
 			}
 			catch
-			{ $ReadGroup = $null }
+			{
+				WriteErrorLog -LogText "CollectADGroupsS ReadGroup:`n`t$_`n`t$FolderName`n`t$entry"
+				$ReadGroup = $null
+			}
 		}
 		if ( $WriteGroup -and $ReadGroup )
-		{ $Script:ADGroups += @{ "Id" = $FolderName; "Write" = $WriteGroup; "Read" = $ReadGroup } }
+		{ $syncHash.Data.ADGroups += @{ "Id" = $FolderName; "Write" = $WriteGroup.SamAccountName; "Read" = $ReadGroup.SamAccountName } }
 		else
-		{ $Script:ErrorGroups += $FolderName}
+		{ $syncHash.Data.ErrorGroups += $FolderName}
 
 		$loopCounter++
 	}
@@ -253,23 +275,23 @@ function CollectADGroupsS
 # Collect input from textboxes
 function CollectEntries
 {
-	if ( ( $LineCount = $txtUsersForWritePermission.LineCount ) -gt 0 )
+	if ( ( $LineCount = $syncHash.txtUsersForWritePermission.LineCount ) -gt 0 )
 	{
 		$lines = @()
-		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $txtUsersForWritePermission.GetLineText( $i ) ).Split( ";""," ) | ForEach-Object { $lines += ( $_ ).Trim() } }
-		CollectUsers -entries ( $lines | Where-Object { $_ -ne "" } ) -PermissionType "Write"
+		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $syncHash.txtUsersForWritePermission.GetLineText( $i ) ).Split( ";""," ) | foreach { $lines += ( $_ ).Trim() } }
+		CollectUsers -entries ( $lines | where { $_ -ne "" } ) -PermissionType "Write"
 	}
-	if ( ( $LineCount = $txtUsersForReadPermission.LineCount ) -gt 0 )
+	if ( ( $LineCount = $syncHash.txtUsersForReadPermission.LineCount ) -gt 0 )
 	{
 		$lines = @()
-		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $txtUsersForReadPermission.GetLineText( $i ) ).Split( ";""," ) | ForEach-Object { $lines += ( $_ ).Trim() } }
-		CollectUsers -entries ( $lines | Where-Object { $_ -ne "" } ) -PermissionType "Read"
+		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $syncHash.txtUsersForReadPermission.GetLineText( $i ) ).Split( ";""," ) | foreach { $lines += ( $_ ).Trim() } }
+		CollectUsers -entries ( $lines | where { $_ -ne "" } ) -PermissionType "Read"
 	}
-	if ( ( $LineCount = $txtUsersForRemovePermission.LineCount ) -gt 0 )
+	if ( ( $LineCount = $syncHash.txtUsersForRemovePermission.LineCount ) -gt 0 )
 	{
 		$lines = @()
-		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $txtUsersForRemovePermission.GetLineText( $i ) ).Split( ";""," ) | ForEach-Object { $lines += ( $_ ).Trim() } }
-		CollectUsers -entries ( $lines | Where-Object { $_ -ne "" } ) -PermissionType "Remove"
+		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $syncHash.txtUsersForRemovePermission.GetLineText( $i ) ).Split( ";""," ) | foreach { $lines += ( $_ ).Trim() } }
+		CollectUsers -entries ( $lines | where { $_ -ne "" } ) -PermissionType "Remove"
 	}
 }
 
@@ -286,53 +308,54 @@ function CollectUsers
 	switch ( $PermissionType )
 	{
 		"Write"
-		{ $Script:WriteUsers = @() }
+		{ $syncHash.Data.WriteUsers = @() }
 		"Read"
-		{ $Script:ReadUsers = @() }
+		{ $syncHash.Data.ReadUsers = @() }
 		"Remove"
-		{ $Script:RemoveUsers = @() }
+		{ $syncHash.Data.RemoveUsers = @() }
 	}
 
 	foreach ( $entry in $entries )
 	{
-		$Window.Title = "Getting users for $PermissionType-permission $( [Math]::Floor( $loopCounter / $entries.Count * 100 ) )"
-		$User = CheckUser -Id $entry
-		if ( $User -eq "NotFound" )
+		SetWinTitle -Text "$( $msgTable.StrStartPrep ) '$PermissionType'" -Progress $loopCounter -Max $entries.Count
+		$UserType = CheckUser -Id $entry
+		if ( $UserType -eq "NotFound" )
 		{
-			$Script:ErrorUsers += @{ "Id" = $entry }
+			$syncHash.Data.ErrorUsers += @{ "Id" = $entry }
 		}
 		else
 		{
 			$o = $null
-			$AD = $null
-			switch ( $User )
+			$ADObj = $null
+			switch ( $UserType )
 			{
-				"User"
-				{ $AD = Get-ADUser -Identity $entry }
-				"Group"
-				{ $AD = Get-ADGroup -Identity $entry }
-				"EKGroup"
-				{ $AD = Get-ADGroup -LDAPFilter "(orgIdentity=$entry)" -Properties SamAccountName }
+				"User" { $ADObj = Get-ADUser -Identity $entry }
+				"Group" { $ADObj = Get-ADGroup -Identity $entry -Properties $msgTable.StrEGroupIdName, $msgTable.StrEGroupDn }
+				{ $_ -match "^EGroup" } { $ADObj = Get-ADGroup -LDAPFilter "($( $msgTable.StrEGroupIdName )=$( $msgTable.StrEGroupOrg )-$entry)" -Properties $msgTable.StrEGroupIdName, $msgTable.StrEGroupDn }
 			}
-			foreach ( $u in $AD )
+			foreach ( $u in $ADObj )
 			{
-				$o = @{ "Id" = $entry.ToString().ToUpper(); "AD" = $u; "Type" = $UserType -replace "OrgGroups", "OrgGroup" }
-				if ( ( $Script:WriteUsers | Where-Object { $_.Id -eq $o.Id } ) -or
-					( $Script:ReadUsers | Where-Object { $_.Id -eq $o.Id } ) -or
-					( $Script:RemoveUsers | Where-Object { $_.Id -eq $o.Id } ) )
+				if ( $u.ObjectClass -eq "User" )
+				{ $name = $u.Name }
+				else
+				{ $name = "$( ( $u.$( $msgTable.StrEGroupDn ) -replace "," -split "ou=" )[1] ) ($( ( $u.$( $msgTable.StrEGroupIdName ) -split "-" )[1] ))" }
+				$o = @{ "Id" = $entry.ToString().ToUpper(); "AD" = $u; "Type" = $UserType -replace "EGroups", "EGroup"; "Name" = $name }
+				if ( ( $syncHash.Data.WriteUsers | where { $_.Id -eq $o.Id } ) -or
+					( $syncHash.Data.ReadUsers | where { $_.Id -eq $o.Id } ) -or
+					( $syncHash.Data.RemoveUsers | where { $_.Id -eq $o.Id } ) )
 				{
-					$Script:Duplicates += $o.Id
+					$syncHash.Data.Duplicates += $o.Id
 				}
 				else
 				{
 					switch ( $PermissionType )
 					{
 						"Write"
-							{ $Script:WriteUsers += $o }
+							{ $syncHash.Data.WriteUsers += $o }
 						"Read"
-							{ $Script:ReadUsers += $o }
+							{ $syncHash.Data.ReadUsers += $o }
 						"Remove"
-							{ $Script:RemoveUsers += $o }
+							{ $syncHash.Data.RemoveUsers += $o }
 					}
 				}
 			}
@@ -345,39 +368,35 @@ function CollectUsers
 # Creates text for logoutput
 function CreateLogText
 {
-	$LogText = ""
-	$LogText += "$( Get-Date -Format "yyyy-MM-dd HH:mm:ss" )"
-	$Script:ADGroups.Id | ForEach-Object { $LogText += "`n$_" }
-	if ( $Script:WriteUsers )
+	$LogText = "$( Get-Date -Format "yyyy-MM-dd HH:mm:ss" )"
+	$syncHash.Data.ADGroups.Id | foreach { $LogText += "`n$_" }
+	if ( $syncHash.Data.WriteUsers )
 	{
-		if ( $cbDisk.SelectedItem.Substring( 1, 2 ) -eq ":\" )
-		{ $LogText += "`nRead-/write permission" }
-		else
-		{ $LogText += "`nNew permission" }
-		$Script:WriteUsers.AD | ForEach-Object { $LogText += "`n`t$( $_.Name )" }
+		$LogText += "`n$( $msgTable.StrPermReadWrite )"
+		$syncHash.Data.WriteUsers | foreach { $LogText += "`n`t$( $_.Name )" }
 	}
 
-	if ( $Script:ReadUsers )
+	if ( $syncHash.Data.ReadUsers )
 	{
-		$LogText += "`nRead permission"
-		$Script:ReadUsers.AD | ForEach-Object { $LogText += "`n`t$( $_.Name )" } }
+		$LogText += "`n$( $msgTable.StrPermRead )"
+		$syncHash.Data.ReadUsers | foreach { $LogText += "`n`t$( $_.Name )" } }
 
-	if ( $Script:RemoveUsers )
+	if ( $syncHash.Data.RemoveUsers )
 	{
-		$LogText += "`nRemove permission"
-		$Script:RemoveUsers.AD | ForEach-Object { $LogText += "`n`t$( $_.Name )" }
+		$LogText += "`n$( $msgTable.StrPermRemove )"
+		$syncHash.Data.RemoveUsers | foreach { $LogText += "`n`t$( $_.Name )" }
 	}
 
-	if ( $Script:ErrorUsers )
+	if ( $syncHash.Data.ErrorUsers )
 	{
-		$LogText += "`nFound no account for:"
-		$Script:ErrorUsers.Id | ForEach-Object { $LogText += "`n`t$_" }
+		$LogText += "`n$( $msgTable.StrFinNoAccounts )"
+		$syncHash.Data.ErrorUsers | foreach { $LogText += "`n`t$_" }
 	}
 
-	if ( $Script:ErrorGroups )
+	if ( $syncHash.Data.ErrorGroups )
 	{
-		$LogText += "`nFound no AD-group for:"
-		$Script:ErrorGroups | ForEach-Object { $LogText += "`n`t$_" }
+		$LogText += "`n$( $msgTable.StrFinNoAdGroups )"
+		$syncHash.Data.ErrorGroups | foreach { $LogText += "`n`t$_" }
 	}
 
 	$LogText += "`n------------------------------"
@@ -388,37 +407,32 @@ function CreateLogText
 # Create message
 function CreateMessage
 {
-	$Message = @()
-	$Message += "Hello!`n`nFor these $Script:GroupType"
-	$Script:ADGroups.Id | ForEach-Object { $Message += "`t$_" }
-	$Message += "following permission changes have been made"
-	if ( $Script:WriteUsers )
+	$Message = @( $msgTable.StrFinIntro )
+	$syncHash.Data.ADGroups.Id | foreach { $Message += "`t$_" }
+	if ( $syncHash.Data.WriteUsers )
 	{
-		if ( $cbDisk.SelectedItem.Substring( 1, 2 ) -eq ":\" )
-		{ $Message += "`Created read/write permission for:" }
-		else
-		{ $Message += "`nCreated permission for:" }
-		$Script:WriteUsers.AD | ForEach-Object { $Message += "`t$( $_.Name )" }
+		$Message += "`n$( $msgTable.StrFinPermWrite ):"
+		$syncHash.Data.WriteUsers | foreach { $Message += "`t$( $_.Name )" }
 	}
-	if ( $Script:ReadUsers )
+	if ( $syncHash.Data.ReadUsers )
 	{
-		$Message += "`nCreated read permission for:"
-		$Script:ReadUsers.AD | ForEach-Object { $Message += "`t$( $_.Name )" }
+		$Message += "`n$( $msgTable.StrFinPermRead ):"
+		$syncHash.Data.ReadUsers | foreach { $Message += "`t$( $_.Name )" }
 	}
-	if ( $Script:RemoveUsers )
+	if ( $syncHash.Data.RemoveUsers )
 	{
-		$Message += "`nRemoved permission for:"
-		$Script:RemoveUsers.AD | ForEach-Object { $Message += "`t$( $_.Name )" }
+		$Message += "`n$( $msgTable.StrFinPermRem ):"
+		$syncHash.Data.RemoveUsers | foreach { $Message += "`t$( $_.Name )" }
 	}
-	if ( $Script:ErrorUsers )
+	if ( $syncHash.Data.ErrorUsers )
 	{
-		$Message += "`nFound no account for these given values:"
-		$Script:ErrorUsers.Id | ForEach-Object { $Message += "`t$_" }
+		$Message += "`n$( $msgTable.StrFinNoAccounts ):"
+		$syncHash.Data.ErrorUsers | foreach { $Message += "`t$_" }
 	}
-	if ( $Script:ErrorGroups )
+	if ( $syncHash.Data.ErrorGroups )
 	{
-		$Message += "`nFound no permissiongroups for these folders:"
-		$Script:ErrorGroups | ForEach-Object { $Message += "`t$_" }
+		$Message += "`n$( $msgTable.StrFinNoAdGroups ):"
+		$syncHash.Data.ErrorGroups | foreach { $Message += "`t$_" }
 	}
 	$Message += $Script:Signatur
 	$OutputEncoding = ( New-Object System.Text.UnicodeEncoding $False, $False ).psobject.BaseObject
@@ -429,13 +443,13 @@ function CreateMessage
 # Initiate scriptwide variables
 function ResetVariables
 {
-	$Script:ADGroups = @()
-	$Script:Duplicates = @()
-	$Script:ErrorUsers = @()
-	$Script:ErrorGroups = @()
-	$Script:WriteUsers = @()
-	$Script:ReadUsers = @()
-	$Script:RemoveUsers = @()
+	$syncHash.Data.ADGroups = @()
+	$syncHash.Data.Duplicates = @()
+	$syncHash.Data.ErrorUsers = @()
+	$syncHash.Data.ErrorGroups = @()
+	$syncHash.Data.WriteUsers = @()
+	$syncHash.Data.ReadUsers = @()
+	$syncHash.Data.RemoveUsers = @()
 }
 
 ##########################
@@ -445,55 +459,41 @@ function PerformPermissions
 	CollectEntries
 	CollectADGroups
 
-	if ( $Script:Duplicates )
+	if ( $syncHash.Data.Duplicates )
 	{
-		ShowMessageBox -Text "There are values for more than one permission type.`nCorrect the listings and try again.`n$( $Script:Duplicates | Select-Object -Unique )" -Title "Duplicates" -Icon "Stop"
+		ShowMessageBox -Text "$( $msgTable.StrConfirmDups )`n$( $syncHash.Data.Duplicates | select -Unique )" -Title $msgTable.StrConfirmDupsTitle -Icon "Stop"
 	}
 	else
 	{
-		$Continue = ShowMessageBox -Text "Do you for $( @( $Script:ADGroups ).Count ) $( $Script:GroupType ) perform $( @( $Script:WriteUsers ).Count + @( $Script:ReadUsers ).Count + @( $Script:RemoveUsers ).Count ) changes?$( if ( $Script:ErrorGroups -or $Script:ErrorUsers ) { "`nSome values have no AD-object." } )" -Title "Continue?" -Button "OKCancel"
+		$Continue = ShowMessageBox -Text "$( $msgTable.StrConfirm1 ) $( @( $syncHash.Data.ADGroups ).Count ) $( $msgTable.StrConfirm2) $( @( $syncHash.Data.WriteUsers ).Count + @( $syncHash.Data.ReadUsers ).Count + @( $syncHash.Data.RemoveUsers ).Count ) $( $msgTable.StrConfirm3 )?$( if ( $syncHash.Data.ErrorGroups -or $syncHash.Data.ErrorUsers ) { "`n$( $msgTable.StrConfirmErr )" } )" -Title $msgTable.StrConfirmTitle -Button "OKCancel"
 		if ( $Continue -eq "OK" )
 		{
 			$loopCounter = 0
-			foreach ( $Group in $Script:ADGroups )
+			foreach ( $Group in $syncHash.Data.ADGroups )
 			{
-				$Window.Title = "Applying grouppermissions $( [Math]::Floor( $loopCounter / $Script:ADGroups.Count * 100 ) )"
-				if ( $Script:WriteUsers )
+				SetWinTitle -Text $msgTable.StrStart -Progress $loopCounter -Max $syncHash.Data.ADGroups.Count
+				if ( $syncHash.Data.WriteUsers )
 				{
-					if ( $cbDisk.SelectedItem.Substring( 1, 2 ) -eq ":\" )
+					if ( $Group.Write )
 					{
-						if ( $Group.Write )
-						{
-							Add-ADGroupMember -Identity $Group.Write -Members $Script:WriteUsers.Id -Confirm:$false
-						}
-					}
-					else
-					{
-						Add-ADGroupMember -Identity $Group.Id -Members $Script:WriteUsers.Id -Confirm:$false
+						Add-ADGroupMember -Identity $Group.Write -Members $syncHash.Data.WriteUsers.AD.DistinguishedName -Confirm:$false
 					}
 				}
 
-				if ( $Script:ReadUsers )
+				if ( $syncHash.Data.ReadUsers )
 				{
 					if ( $Group.Read )
 					{
-						Add-ADGroupMember -Identity $Group.Read -Members $Script:ReadUsers.Id -Confirm:$false 
+						Add-ADGroupMember -Identity $Group.Read -Members $syncHash.Data.ReadUsers.AD.DistinguishedName -Confirm:$false 
 					}
 				}
 
-				if ( $Script:RemoveUsers )
+				if ( $syncHash.Data.RemoveUsers )
 				{
-					if ( $cbDisk.SelectedItem.Substring( 1, 2 ) -eq ":\" )
+					if ( $Group.Write -and $Group.Read )
 					{
-						if ( $Group.Write -and $Group.Read )
-						{
-							Remove-ADGroupMember -Identity $Group.Write -Members $Script:RemoveUsers.Id -Confirm:$false
-							Remove-ADGroupMember -Identity $Group.Read -Members $Script:RemoveUsers.Id -Confirm:$false
-						}
-					}
-					else
-					{
-						Remove-ADGroupMember -Identity $Group.Id -Members $Script:RemoveUsers.Id -Confirm:$false
+						Remove-ADGroupMember -Identity $Group.Write -Members $syncHash.Data.RemoveUsers.AD.DistinguishedName -Confirm:$false
+						Remove-ADGroupMember -Identity $Group.Read -Members $syncHash.Data.RemoveUsers.AD.DistinguishedName -Confirm:$false
 					}
 				}
 				$loopCounter++
@@ -502,9 +502,9 @@ function PerformPermissions
 			CreateLogText
 			WriteToLogFile
 			CreateMessage
-			ShowMessageBox -Text "Performed $( @( $Script:ADGroups ).Count * ( @( $Script:WriteUsers ).Count + @( $Script:ReadUsers ).Count + @( $Script:RemoveUsers ).Count ) ) changes.`nA message have been copied to the clipboard" -Title "Done"
+			ShowMessageBox -Text "$( @( $syncHash.Data.ADGroups ).Count * ( @( $syncHash.Data.WriteUsers ).Count + @( $syncHash.Data.ReadUsers ).Count + @( $syncHash.Data.RemoveUsers ).Count ) ) $( $msgTable.StrFinished1 ).`n$( $msgTable.StrFinished2 )" -Title "Klar"
 			UndoInput
-			$Window.Title = $Title
+			SetWinTitle -Text $msgTable.StrTitle
 		}
 	}
 	ResetVariables
@@ -517,133 +517,86 @@ function SetUserSettings
 	try
 	{
 		$a = Get-ADPrincipalGroupMembership $env:USERNAME
-		if ( $a.SamAccountName -match "Role_Operations" )
+		if ( $a.SamAccountName -match $msgTable.StrOpGroup )
 		{
-			$Script:LogFilePath = "\\domain\\Results\FolderTool"
-			$Script:ErrorLogFilePath = "$LogFilePath\Errorlogs\$env:USERNAME-Errorlog.txt"
+			$syncHash.LogFilePath = $msgTable.StrOpLogPath
+			$syncHash.ErrorLogFilePath = "$( $msgTable.StrOpLogPath )$( $msgTable.StrOpErrLogFile )$( $env:USERNAME ).log"
 
-			$Script:HandledFolders = $OperationsHandledFolders
-			$Script:Signatur += "`nBest regards`n`nOperations"
+			$syncHash.HandledFolders = $syncHash.Data.OperationsHandledFolders
+			$syncHash.Signatur += "`n`n$( $msgTable.StrSignOp )"
 		}
-		elseif ( $a.SamAccountName -match "Role_Servicedesk" )
+		elseif ( $a.SamAccountName -match $msgTable.StrSDGroup )
 		{
-			$Script:ErrorLogFilePath = ( ( Get-Item $PSScriptRoot ).Parent.FullName) + "\ErrorLogs\" + ( Get-Item $PSCommandPath ).BaseName + "\" + $env:USERNAME + " ErrorLog.txt"
-			$Script:LogFilePath = ( ( Get-Item $PSScriptRoot ).Parent.FullName) + "\Log\" + $( [datetime]::Now.Year ) + "\" + [datetime]::Now.Month + "\" + ( Get-Item $PSCommandPath ).BaseName + "\"
+			$syncHash.ErrorLogFilePath = ( ( Get-Item $PSScriptRoot ).Parent.FullName ) + "\ErrorLogs\" + ( Get-Item $PSCommandPath ).BaseName + "\" + $env:USERNAME + " ErrorLog.txt"
+			$syncHash.LogFilePath = ( ( Get-Item $PSScriptRoot ).Parent.FullName) + "\Log\" + $( [datetime]::Now.Year ) + "\" + [datetime]::Now.Month + "\" + ( Get-Item $PSCommandPath ).BaseName + "\"
 
-			$Script:HandledFolders = $ServicedeskHandledFolders
-			$Script:Signatur += "`nBest regards`n`nServicedesk"
+			$syncHash.HandledFolders = $syncHash.Data.ServicedeskHandledFolders
+			$syncHash.Signatur += "`n`n$( $msgTable.StrSignSD )"
 		}
 		else
 		{ throw }
 	}
 	catch
 	{
-		ShowMessageBox -MessageText "You don't have the propper permissions to run this script." -Title "Permissionproblem" -Icon "Stop"
+		ShowMessageBox -MessageText $msgTable.StrNoPerm -Title $msgTable.StrNoPermTitle -Icon "Stop"
+		WriteErrorLog -LogText "SetUserSettings:`n$_"
 		Exit
 	}
+}
+
+#######################
+# Sets the window title
+function SetWinTitle
+{
+	param ( $Text, $Progress, $Max )
+
+	if ( $Progress )
+	{
+		$Text += " $( [Math]::Floor( $Progress / $Max * 100 ) )%"
+	}
+	$syncHash.DC.Window[0] = $Text
 }
 
 ######################################
 # Fill combobox list with disk-folders
 function UpdateDiskList
 {
-	Get-ChildItem2 "G:\" -Directory | Where-Object { $_.FullName -in $Script:HandledFolders } | Select-Object -ExpandProperty FullName | ForEach-Object { [void] $cbDisk.Items.Add( $_ ) }
-	Get-ChildItem2 "S:\" -Directory | Where-Object { $_.FullName -in $Script:HandledFolders } | Select-Object -ExpandProperty FullName | ForEach-Object { [void] $cbDisk.Items.Add( $_ ) }
-	Get-ChildItem2 "R:\" -Directory | Where-Object { $_.FullName -in $Script:HandledFolders } | Select-Object -ExpandProperty FullName | ForEach-Object { [void] $cbDisk.Items.Add( $_ ) }
-
-	[void] $cbDisk.Items.Add( "App1" )
-	[void] $cbDisk.Items.Add( "App2" )
-	[void] $cbDisk.Items.Add( "App3" )
-	[void] $cbDisk.Items.Add( "App4" )
+	"G:\", "S:\", "R:\" | Get-ChildItem2 -Directory | where { $_.FullName -in $syncHash.HandledFolders } | select -ExpandProperty FullName | foreach { [void] $syncHash.DC.cbDisk[0].Add( $_ ) }
+	SetWinTitle -Text $msgTable.StrTitle
 }
 
-#########################
-# Get folders / appgroups
+#############
+# Get folders
 function UpdateFolderList
 {
-	$Window.Title = "Fetching folders..."
-	$lbFoldersChosen.Items.Clear()
-	$Script:Folder = @()
-	if ( $cbDisk.SelectedItem.Substring( 1, 2 ) -eq ":\" )
-	{
-		$Script:GroupType = "folders"
-		$lblUsersForWritePermission.Content = "Read / write permissions"
-		$ReadLabel.SharedSizeGroup = "Label"
-		$ReadDist.Height = 3
-		$ReadTxtb.Height = "*"
-		$txtUsersForReadPermission.IsEnabled = $true
-		$lblFoldersChosen.Content = "Chosen folders"
+	SetWinTitle -Text $msgTable.StrGetFolders
+	$syncHash.DC.lbFoldersChosen[0].Clear()
+	$syncHash.Folder = @()
 
-		if ( $cbDisk.SelectedItem.Substring( 0, 1 ) -eq "S" )
+	if ( $syncHash.DC.cbDisk[1].Length -gt 0 )
+	{
+		if ( $syncHash.DC.cbDisk[1][0] -eq "S" )
 		{
-			$Script:Folders = Get-ChildItem $cbDisk.SelectedItem -Directory | Select-Object -ExpandProperty FullName | ForEach-Object { ( Get-ChildItem2 $_ -Directory | Select-Object -ExpandProperty FullName ) -replace ( [System.Text.RegularExpressions.Regex]::Escape( "$( $cbDisk.SelectedItem )\" ) ) | Sort-Object }
+			$syncHash.Folders = ( ( Get-ChildItem $syncHash.DC.cbDisk[1] -Directory ).FullName | Get-ChildItem ).FullName.Replace( "$( $syncHash.DC.cbDisk[1] )\", "" ) | sort
 		}
 		else
 		{
-			$Script:Folders = Get-ChildItem $cbDisk.SelectedItem -Directory | Where-Object { $_.FullName -notin $ExceptionFolders } | Select-Object -ExpandProperty Name | Sort-Object
+			$syncHash.Folders = Get-ChildItem $syncHash.DC.cbDisk[1] -Directory | where { $_.FullName -notin $syncHash.Data.ExceptionFolders } | select -ExpandProperty Name | sort
 		}
-
-		$txtFolderSearch.Focus()
+		$syncHash.txtFolderSearch.Focus()
+		UpdateFolderListItems
 	}
-	else
-	{
-		$lblUsersForWritePermission.Content = "Add permission"
-		$ReadLabel.SharedSizeGroup = "Del"
-		$ReadLabel.Height = 0
-		$ReadDist.Height = 0
-		$ReadTxtb.Height = 0
-		$txtUsersForReadPermission.IsEnabled = $false
-		$lblFoldersChosen.Content = "Chosen app-groups"
-
-		switch ( $cbDisk.SelectedItem )
-		{
-			"App1"
-			{
-				$Script:GroupType = "App1-groups"
-				$AppFilter = "(Name=Org2_App1*)"
-				$Exclude = $null
-			}
-			"App2"
-			{
-				$Script:GroupType = "App2-groups"
-				$AppFilter = "(|(Name=Org3_Mig_App1*)(Name=Org3_Acc_App1*))"
-				$Exclude = $null
-			}
-			"App3"
-			{
-				$Script:GroupType = "App3-groups"
-				$AppFilter = "(&(Name=Org3_Acc_App3*_Users)(!(Name=*DNSReg*)))"
-				$Exclude = @( "DNSReg", "Acceptans" )
-				$split = "_"
-				$index = 3
-			}
-			"App4"
-			{
-				$Script:GroupType = "App4-groups"
-				$AppFilter = "(&(Name=App4*)(!(Name=*_Editor)))"
-				$Exclude = @( "ALB", "ARM", "DOS", "HKN", "HP", "Innovation", "IoU", "IT", "PGS", "SMB" )
-				$split = "_"
-				$index = 2
-			}
-		}
-		if ( $Exclude )
-		{ $Script:Folders = Get-ADGroup -LDAPFilter $AppFilter | Where-Object { $Exclude -notcontains $_.Name.Split( $split )[$index] } | Select-Object -ExpandProperty Name }
-		else
-		{ $Script:Folders = Get-ADGroup -LDAPFilter "$AppFilter" | Select-Object -ExpandProperty Name | Sort-Object }
-	}
-
-	UpdateFolderListItems
-	$Window.Title = $Script:Title
+	SetWinTitle -Text $msgTable.StrTitle
 }
 
 ######################
 # Fill list of folders
 function UpdateFolderListItems
 {
-	$lbFolderList.Items.Clear()
-	foreach ( $Folder in ( $Script:Folders | Where-Object { $lbFoldersChosen.Items -notcontains $_ } ) )
+	$syncHash.DC.lbFolderList[0].Clear()
+	foreach ( $Folder in ( $syncHash.Folders | where { $syncHash.DC.lbFoldersChosen[0] -notcontains $_ } ) )
 	{
-		[void] $lbFolderList.Items.Add( $Folder )
+		[void] $syncHash.DC.lbFolderList[0].Add( $Folder )
 	}
 }
 
@@ -653,24 +606,13 @@ function WriteToLogFile
 {
 	# One line per group/user
 	$LogText = @()
-	foreach ( $group in $Script:ADGroups )
+	foreach ( $group in $syncHash.Data.ADGroups )
 	{
-		foreach ( $u in $Script:WriteUsers )
-		{
-			if ( $cbDisk.SelectedItem.Substring( 1, 2 ) -eq ":\" ) { $LogText += "$( $u.Id ) > Add '$( $group.Write )'" }
-			else { $LogText += "$( $u.Id ) > Add '$( $group.Id )'" }
-		}
-		foreach ( $u in $Script:ReadUsers )
-		{
-			$LogText += "$( $u.Id ) > Add '$( $group.Read )'"
-		}
-		foreach ( $u in $Script:RemoveUsers )
-		{
-			if ( $cbDisk.SelectedItem.Substring( 1, 2 ) -eq ":\" ) { $LogText += "$( $u.Id ) > Remove '$( $group.Write )' & '$( $group.Read )'" }
-			else { $LogText += "$( $u.Id ) > Remove '$( $group.Id )'" }
-		}
+		foreach ( $u in $syncHash.Data.WriteUsers ) { $LogText += "$( $u.Id ) > Add '$( $group.Write )'" }
+		foreach ( $u in $syncHash.Data.ReadUsers ) { $LogText += "$( $u.Id ) > Add '$( $group.Read )'" }
+		foreach ( $u in $syncHash.Data.RemoveUsers ) { $LogText += "$( $u.Id ) > Remove '$( $group.Write )' & '$( $group.Read )'" }
 	}
-	$LogText | ForEach-Object { WriteLog -LogText $_ }
+	$LogText | foreach { WriteLog -LogText $_ | Out-Null }
 }
 
 ####################  End Operational functions  ####################
@@ -681,13 +623,13 @@ function WriteToLogFile
 # Some input is entered, check if necessary input is given, enabled button to perform
 function CheckReady
 {
-	if ( ( $lbFoldersChosen.Items.Count -gt 0 ) -and ( ( $txtUsersForWritePermission.Text.Length -ge 4 ) -or ( $txtUsersForReadPermission.Text.Length -ge 4 ) -or ( $txtUsersForRemovePermission.Text.Length -ge 4 ) ) )
+	if ( ( $syncHash.DC.lbFoldersChosen[0].Count -gt 0 ) -and ( ( $syncHash.txtUsersForWritePermission.Text.Length -ge 4 ) -or ( $syncHash.txtUsersForReadPermission.Text.Length -ge 4 ) -or ( $syncHash.txtUsersForRemovePermission.Text.Length -ge 4 ) ) )
 	{
-		$btnPerform.IsEnabled = $true
+		$syncHash.DC.btnPerform[0] = $true
 	}
 	else
 	{
-		$btnPerform.IsEnabled = $false
+		$syncHash.DC.btnPerform[0] = $false
 	}
 }
 
@@ -695,43 +637,43 @@ function CheckReady
 # A selected folder is removed
 function FolderDeselected
 {
-	$lbFolderList.Items.Add( $lbFoldersChosen.SelectedItem )
-	$lbFoldersChosen.Items.Remove( $lbFoldersChosen.SelectedItem )
+	$syncHash.DC.lbFolderList[0].Add( $syncHash.DC.lbFoldersChosen[2] )
+	$syncHash.DC.lbFoldersChosen[0].Remove( $syncHash.DC.lbFoldersChosen[2] )
 	CheckReady
 	UpdateFolderListItems
-	$txtFolderSearch.Text = ""
-	$txtFolderSearch.Focus()
+	$syncHash.txtFolderSearch.Text = ""
+	$syncHash.txtFolderSearch.Focus()
 }
 
 ###############################################
 # A folder is selected, move to lbFoldersChosen
 function FolderSelected
 {
-	$lbFoldersChosen.Items.Add( $lbFolderList.SelectedItem )
-	$lbFolderList.Items.Remove( $lbFolderList.SelectedItem )
+	$syncHash.DC.lbFoldersChosen[0].Add( $syncHash.DC.lbFolderList[2] )
+	$syncHash.DC.lbFolderList[0].Remove( $syncHash.DC.lbFolderList[2] )
 	CheckReady
 	UpdateFolderListItems
-	$txtFolderSearch.Text = ""
-	$txtFolderSearch.Focus()
+	$syncHash.txtFolderSearch.Text = ""
+	$syncHash.txtFolderSearch.Focus()
 }
 
 ##############################################
 # Search for any of item containing searchword
 function SearchListboxItem
 {
-	$list = $Script:Folders | Where-Object { $lbFoldersChosen.Items -notcontains $_ }
-	if ( $txtFolderSearch.Text.Length -eq 0 )
+	$list = $syncHash.Folders | where { $syncHash.DC.lbFoldersChosen[0] -notcontains $_ }
+	if ( $syncHash.txtFolderSearch.Text.Length -eq 0 )
 	{
-		$lbFolderList.SelectedIndex = -1
+		$syncHash.DC.lbFolderList[1] = -1
 	}
 	else
 	{
-		$list = $list | Where-Object { $_ -like "*$( $txtFolderSearch.Text.Replace( "\\", "\\\\" ) )*" }
+		$list = $list | where { $_ -like "*$( $syncHash.txtFolderSearch.Text.Replace( "\\", "\\\\" ) )*" }
 	}
-	$lbFolderList.Items.Clear()
+	$syncHash.DC.lbFolderList[0].Clear()
 	foreach ( $i in $list )
 	{
-		$lbFolderList.Items.Add( $i )
+		$syncHash.DC.lbFolderList[0].Add( $i )
 	}
 }
 
@@ -739,10 +681,10 @@ function SearchListboxItem
 # Clear all input
 function UndoInput
 {
-	$txtUsersForWritePermission.Text = ""
-	$txtUsersForReadPermission.Text = ""
-	$txtUsersForRemovePermission.Text = ""
-	$lbFoldersChosen.Items.Clear()
+	$syncHash.txtUsersForWritePermission.Text = ""
+	$syncHash.txtUsersForReadPermission.Text = ""
+	$syncHash.txtUsersForRemovePermission.Text = ""
+	$syncHash.DC.lbFoldersChosen[0].Clear()
 	UpdateFolderList
 }
 
@@ -754,38 +696,111 @@ function WriteToLog
 		$Text
 	)
 
-	$lbLog.Items.Insert( 0, $Text )
+	$syncHash.DC.lbLog[0].Insert( 0, $Text )
 }
 
 ####################  End Control functions  ####################
 
-########################################
-# Script start
-########################################
-Import-Module "$( $args[0] )\Modules\FileOps.psm1"
+######################################### Script start
+Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
+Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force
 
-####################  Create window  ####################
-$Window, $vars = CreateWindow
-$vars | ForEach-Object { Set-Variable -Name $_ -Value $Window.FindName( $_ ) -Scope script }
-####################  End Create window  ####################
+$controlProperties = New-Object Collections.ArrayList
+[void]$controlProperties.Add( @{ CName = "Window"
+	Props = @(
+		@{ PropName = "Title"; PropVal = $msgTable.StrTitle }
+	) } )
+[void]$controlProperties.Add( @{ CName = "MainGrid"
+	Props = @(
+		@{ PropName = "IsEnabled"; PropVal = $false }
+	) } )
+[void]$controlProperties.Add( @{ CName = "cbDisk"
+	Props = @(
+		@{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new( ) },
+		@{ PropName = "SelectedItem"; PropVal = "" }
+	) } )
+[void]$controlProperties.Add( @{ CName = "lbLog"
+	Props = @(
+		@{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new( ) }
+	) } )
+[void]$controlProperties.Add( @{ CName = "lbFoldersChosen"
+	Props = @(
+		@{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new( ) },
+		@{ PropName = "SelectedIndex"; PropVal = -1 },
+		@{ PropName = "SelectedItem"; PropVal = "" }
+	) } )
+[void]$controlProperties.Add( @{ CName = "lbFolderList"
+	Props = @(
+		@{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new( ) },
+		@{ PropName = "SelectedIndex"; PropVal = -1 },
+		@{ PropName = "SelectedItem"; PropVal = "" }
+	) } )
+[void]$controlProperties.Add( @{ CName = "btnPerform"
+	Props = @(
+		@{ PropName = "IsEnabled"; PropVal = $false }
+		@{ PropName = "Content"; PropVal = $msgTable.ContentbtnPerform }
+	) } )
+[void]$controlProperties.Add( @{ CName = "btnUndo"
+	Props = @(
+		@{ PropName = "Content"; PropVal = $msgTable.ContentbtnUndo }
+	) } )
+[void]$controlProperties.Add( @{ CName = "lblFoldersChosen"
+	Props = @(
+		@{ PropName = "Content"; PropVal = $msgTable.ContentFoldersChosen }
+	) } )
+[void]$controlProperties.Add( @{ CName = "lblFolderSearch"
+	Props = @(
+		@{ PropName = "Content"; PropVal = $msgTable.ContentlblFolderSearch }
+	) } )
+[void]$controlProperties.Add( @{ CName = "lblDisk"
+	Props = @(
+		@{ PropName = "Content"; PropVal = $msgTable.ContentlblDisk }
+	) } )
+[void]$controlProperties.Add( @{ CName = "lblFolderList"
+	Props = @(
+		@{ PropName = "Content"; PropVal = $msgTable.ContentlblFolderList }
+	) } )
+[void]$controlProperties.Add( @{ CName = "lblLog"
+	Props = @(
+		@{ PropName = "Content"; PropVal = $msgTable.ContentlblLog }
+	) } )
+[void]$controlProperties.Add( @{ CName = "lblUsersForWritePermission"
+	Props = @(
+		@{ PropName = "Content"; PropVal = $msgTable.ContentlblUsersForWritePermission }
+	) } )
+[void]$controlProperties.Add( @{ CName = "lblUsersForReadPermission"
+	Props = @(
+		@{ PropName = "Content"; PropVal = $msgTable.ContentlblUsersForReadPermission }
+	) } )
+[void]$controlProperties.Add( @{ CName = "lblUsersForRemovePermission"
+	Props = @(
+		@{ PropName = "Content"; PropVal = $msgTable.ContentlblUsersForRemovePermission }
+	) } )
+
+$syncHash = CreateWindowExt $controlProperties
+
+$syncHash.Data.ErrorLogFilePath = ""
+$syncHash.Data.HandledFolders = @()
+$syncHash.Data.LogFilePath = ""
+$syncHash.Data.Signatur = $msgTable.StrSign
 
 ####################  Control event functions  ####################
-$btnPerform.Add_Click( { PerformPermissions } )
-$btnUndo.Add_Click( { UndoInput } )
-$cbDisk.Add_DropDownClosed( { if ( $cbDisk.SelectedItem -ne $null ) { UpdateFolderList } } )
-$txtFolderSearch.Add_TextChanged( { SearchListboxItem } )
-$lbFolderList.Add_MouseDoubleClick( { FolderSelected } )
-$lbFoldersChosen.Add_MouseDoubleClick( { FolderDeselected } )
-$txtUsersForWritePermission.Add_TextChanged( { CheckReady } )
-$txtUsersForReadPermission.Add_TextChanged( { CheckReady } )
-$txtUsersForRemovePermission.Add_TextChanged( { CheckReady } )
-$Window.Add_ContentRendered( { $Window.Title = "Förbereder..."; $Window.Top = 20; $Window.Activate(); SetUserSettings; UpdateDiskList; $Window.Title = $Script:Title; $MainGrid.IsEnabled = $true } )
+$syncHash.btnPerform.Add_Click( { PerformPermissions } )
+$syncHash.btnUndo.Add_Click( { UndoInput } )
+$syncHash.cbDisk.Add_DropDownClosed( { if ( $syncHash.DC.cbDisk[1] -ne $null ) { UpdateFolderList } } )
+$syncHash.txtFolderSearch.Add_TextChanged( { SearchListboxItem } )
+$syncHash.lbFolderList.Add_MouseDoubleClick( { FolderSelected } )
+$syncHash.lbFoldersChosen.Add_MouseDoubleClick( { FolderDeselected } )
+$syncHash.txtUsersForWritePermission.Add_TextChanged( { CheckReady } )
+$syncHash.txtUsersForReadPermission.Add_TextChanged( { CheckReady } )
+$syncHash.txtUsersForRemovePermission.Add_TextChanged( { CheckReady } )
+$syncHash.Window.Add_ContentRendered( { SetWinTitle -Text $msgTable.StrPreping; $syncHash.Window.Top = 20; $syncHash.Window.Activate(); SetUserSettings; UpdateDiskList; $syncHash.DC.MainGrid[0] = $true } )
 ####################  End Control event functions  ####################
 
 ####################  Initialization  ####################
 
 # Folders depending on user AD-groups
-$OperationsHandledFolders =
+$syncHash.Data.OperationsHandledFolders =
 "G:\Org1",
 "G:\Org2",
 "G:\Org3",
@@ -804,7 +819,7 @@ $OperationsHandledFolders =
 #"S:\Org4",
 "S:\Org5"
 
-$ServicedeskHandledFolders =
+$syncHash.Data.ServicedeskHandledFolders =
 "G:\Org1",
 "G:\Org2",
 "G:\Org3",
@@ -824,16 +839,11 @@ $ServicedeskHandledFolders =
 #"S:\Org5"
 
 # Folders to exclude
-$ExceptionFolders = "R:\Org2\DFSFolderLink", "R:\Org4\DFSFolderLink"
+$syncHash.Data.ExceptionFolders = "R:\Org2\DFSFolderLink", "R:\Org4\DFSFolderLink"
 
-$Script:Title = "Add/remove folderpermissions"
-$Script:ErrorLogFilePath = ""
-$Script:HandledFolders = @()
-$Script:LogFilePath = ""
-$Script:Signatur = ""
 ResetVariables
 
 ####################  End Initialization  ####################
 
-[void] $Window.ShowDialog()
-$Window.Close()
+[void] $syncHash.Window.ShowDialog()
+$syncHash.Window.Close()
