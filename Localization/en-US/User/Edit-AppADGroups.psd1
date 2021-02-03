@@ -1,0 +1,37 @@
+﻿ConvertFrom-StringData @'
+ContentbtnPerform = Perform
+ContentbtnUndo = Cancel
+ContentlblApp = Select application
+ContentlblAppGroupList = Select the app group by double-clicking
+ContentlblGroupsChosen = Selected app groups
+ContentlblLog = Changes made
+ContentlblUsersAddPermission = Create permissions
+ContentlblUsersRemovePermission = Remove permissions
+ErrScriptPermissions = You do not have the necessary permissions to run this script
+QCont1 = Do you want to
+QCont2 = perform
+QCont3 = changes
+QContErr = Some users do not have AD accounts
+QContTitle = Continue
+StrOpGrp = Role_Operations
+StrOpLogPath = \\\\domain.test.com\\Results\\FolderTool
+StrSDGrp = Role_Servicedesk
+WDuplicates = There are duplicates of values in the lists. Correct these and run again
+WDuplicatesTitle = Duplicates
+WFinishMessage = changes made. A solution message has been copied to the clipboard
+WFinishMessageTitle = Done
+WGetADGroups = Loading app groups ...
+WGettingUser = Loading users ...
+WMessageIntro = Have made changes to the following groups below
+WNew = New permission
+WNewPassword = nytt lösenord
+WNoAccount = Could not find account for the following
+WPreparing = Preparing ...
+WProgressTitle = Applies group permissions
+WRemove = Remove permissions
+WSig3d = IT
+WSigGen = Sincerely
+WSigSD = IT, Servicedesk
+WSpecOrg = tiohundra
+WTitle = Remove / add app permissions
+'@

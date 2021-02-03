@@ -1,0 +1,37 @@
+﻿ConvertFrom-StringData @'
+ContentbtnPerform = Utför
+ContentbtnUndo = Avbryt
+ContentlblApp = Välj applikation
+ContentlblAppGroupList = Välj app-grupp genom att dubbelklicka
+ContentlblGroupsChosen = Valda app-grupper
+ContentlblLog = Utförda ändringar
+ContentlblUsersAddPermission = Skapa behörighet
+ContentlblUsersRemovePermission = Ta bort behörighet
+ErrScriptPermissions = Du saknar nödvändiga rättigheter för att köra detta skript
+QCont1 = Vill du för
+QCont2 = utföra
+QCont3 = ändringar
+QContErr = Vissa användare har inte AD-konton
+QContTitle = Fortsätta
+StrOpGrp = Role_Operations
+StrOpLogPath = \\\\domain.test.com\\Results\\FolderTool
+StrSDGrp = Role_Servicedesk
+WDuplicates = Det finns dubbletter av värden i listorna. Rätta till dessa och kör igen
+WDuplicatesTitle = Dubbletter
+WFinishMessage = ändringar gjorda. Ett lösningsmeddelande har kopierats till clipboard
+WFinishMessageTitle = Klar
+WGetADGroups = Hämtar app-grupper ...
+WGettingUser = Hämtar användare ...
+WMessageIntro = Har utfört nedan ändringar till följande grupper
+WNew = Ny behörighet
+WNewPassword = nytt lösenord
+WNoAccount = Hittade inget konto för följande
+WPreparing = Förbereder ...
+WProgressTitle = Tillämpar gruppbehörigheter
+WRemove = Ta bort behörighet
+WSig3d = IT
+WSigGen = Med vänliga hälsningar
+WSigSD = IT, Servicedesk
+WSpecOrg = org7
+WTitle = Ta bort/lägg till app-behörigheter
+'@
