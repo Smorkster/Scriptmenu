@@ -3,15 +3,15 @@
 .Description Creates permissions for multiple given AD-groups.
 #>
 
+Import-Module "$( $args[0] )\Modules\ConsoleOps.psm1" -Force
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
-$CaseNr = Read-Host "Casenumber (if any) "
-$User = Read-Host "UserId for the user to get the grouppermissions "
-
+$User = Read-Host $msgTable.QID
 if ( dsquery user -samid $User )
+
 {
-	Write-Host "Paste a list of groupnames to which the users should get permissions. The press Enter two times to continue."
-	$Groups = GetConsolePasteInput
+	Write-Host $msgTable.QIDList
+	$Groups = GetConsolePasteInput -Folders | where { $_ -ne "" }
 
 	$added = @()
 	$noPermission = @()
@@ -23,40 +23,47 @@ if ( dsquery user -samid $User )
 			if ( dsquery group -samid $group )
 			{
 				Add-ADGroupMember -Identity $group -Members $User
+				$t = "$( $msgTable.WAdded ) '$group'"
+				$added += $group
 			}
 			else
 			{
-				Write-Host "Found no AdD-group with the name '$group'"
+				$t =  "$( $msgTable.ErrNoADGroup ) '$group'"
 			}
 		}
 		catch
 		{
+			WriteErrorLog -LogText $_
 			if ( $_.Exception.Message -eq "Insufficient access rights to perform the operation" )
 			{
 				$noPermission += $group
+				$t = "$( $msgTable.ErrNoPermission ) '$group'"
 			}
 			else
 			{
 				$other += ,@( $group, $_.Exception.Message )
+				$t = "$( $msgTable.ErrOther ) '$group':`n`t$_.Exception.Message"
 			}
+		}
+		Write-Host $t
+	}
+
+	Write-Host "`n$( $msgTable.WAddedGroupCount ) $( ( Get-ADUser $User ).Name ): $( @( $added ).Count )."
+	if ( $noPermission.Count -gt 0 )
+	{
+		if ( ( Read-Host "$( $msgTable.QOtherPermissions ) ( Y / N ) " ) -eq "Y" )
+		{
+			"$( $msgTable.WQuestion ) $User :`n`n$noPermission" | clip
+			Write-Host $( $msgTable.WMessage )
 		}
 	}
 }
 else
 {
-	Write-Host "Found no AD-user with id '$User'"
-	$logText = "No account"
+	Write-Host "$( $msgTable.ErrNoAccount ) '$User'"
+	$logText = $msgTable.WErrMessage
 }
 
-Write-Host "Added $( @( $added ).Count ) groups for $( ( Get-ADUser $User ).Name )."
-if ( $noPermission.Count -gt 0 )
-{
-	if ( ( Read-Host "Some of the groups need other permissionlevels.`n`nCopy groupnames and question for task to Operations-group, to clipboard? ( Y / N ) " ) -eq "Y" )
-	{
-		"Need help adding $User as a user for these groups:`n`n$noPermission" | clip
-		Write-Host "Copied clipboard"
-	}
-}
 
-WriteLog -LogText "$CaseNr $User $( @( $added ).Count ) grupper"
+WriteLog -LogText "$User $( @( $added ).Count ) $( $msgTable.WLogGroupsCount )" | Out-Null
 EndScript
