@@ -2,6 +2,7 @@
 # Use this to import module:
 # Import-Module "$( $args[0] )\Modules\ConsoleOps.psm1" -Force
 
+param ( $culture = "sv-SE" )
 #####################################################
 # Initiates sleep with a progressbar and defined text
 function StartWait
@@ -24,20 +25,20 @@ function GetConsolePasteInput
 	do
 	{
 		if ( $Folders )
-		{ $Input = ( Read-Host ).Split( "`n""`n""`n""`r`n"","";" ) }
+		{ $Text = ( Read-Host ).Split( "`n""`n""`n""`r`n"","";", [System.StringSplitOptions]::RemoveEmptyEntries ) }
 		else
-		{ $Input = ( Read-Host ).Split( "`n"" `n""`n ""`r`n"","";"" "":""-""_""/""\""."" `r`n""`r`n "", ""; "": ""- ""_ ""/ ""\ "". ", [System.StringSplitOptions]::RemoveEmptyEntries ) }
+		{ $Text = ( Read-Host ).Split( "`n"" `n""`n ""`r`n"","";"" "":""-""_""/""\""."" `r`n""`r`n "", ""; "": ""- ""_ ""/ ""\ "". ", [System.StringSplitOptions]::RemoveEmptyEntries ) }
 
-		if ( $input -ne '' )
+		if ( $Text -ne '' )
 		{
-			$Users1 += $input
+			$Users1 += $Text
 		}
 		else
 		{
 			$Quit.SendKeys( ( $IntmsgTable.GetConsolePasteInput ) )
 			$Quit.SendKeys( "~" )
 		}
-	} until ( $input -eq ( $IntmsgTable.GetConsolePasteInput ) )
+	} until ( $Text -eq ( $IntmsgTable.GetConsolePasteInput ) )
 	$Users2 = $Users1 -ne ( $IntmsgTable.GetConsolePasteInput )
 
 	return $Users2
