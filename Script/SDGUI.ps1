@@ -246,7 +246,7 @@ function CreateComputerInput
 		Width = 200
 	}
 	$tb.Add_TextChanged( { if ( $this.Text.Length -gt 5 ) { $btnConnect.IsEnabled = $true } else { $btnConnect.IsEnabled = $false } } )
-	$tb.Add_KeyDown( { if ( $scriptArguments[1].Key -eq "Return" ) { StartWinRMOnRemoteComputer } } )
+	$tb.Add_KeyDown( { if ( $args[1].Key -eq "Return" ) { StartWinRMOnRemoteComputer } } )
 	Set-Variable -Name "tbComputerName" -Value $tb -Scope script
 
 	$b = [System.Windows.Controls.Button]@{
@@ -294,8 +294,8 @@ function CreateScriptGroup
 		{
 			# Check if user is member of a group required to allow running this script
 			# or if user is listed as allowed user
-			if ( ( ( $null -eq $file.Requires ) -or ( $file.Requires | ForEach-Object { if ( $_ -in $userGroups ) { $true } } ) ) -or `
-				( ( $null -eq $file.Requires ) -or ( $env:username -in $file.AllowedUsers ) ) )
+			if ( ( ( $null -eq $file.Requires ) -or ( $file.Requires | ForEach-Object { if ( $_ -in $userGroups ) { $true } } ) ) -and `
+				( ( $null -eq $file.AllowedUsers ) -or ( $env:USERNAME -in $file.AllowedUsers ) ) )
 			{
 				$wpScriptControls = New-Object System.Windows.Controls.WrapPanel
 				$button = [System.Windows.Controls.Button]@{ Content = "$( $msgTable.ContentBtnRun ) >"; ToolTip = $file.Path }
