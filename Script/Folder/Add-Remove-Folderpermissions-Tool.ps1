@@ -278,20 +278,20 @@ function CollectEntries
 	if ( ( $LineCount = $syncHash.txtUsersForWritePermission.LineCount ) -gt 0 )
 	{
 		$lines = @()
-		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $syncHash.txtUsersForWritePermission.GetLineText( $i ) ).Split( ";""," ) | foreach { $lines += ( $_ ).Trim() } }
-		CollectUsers -entries ( $lines | where { $_ -ne "" } ) -PermissionType "Write"
+		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $syncHash.txtUsersForWritePermission.GetLineText( $i ) ).Split( ";""," ) | ForEach-Object { $lines += ( $_ ).Trim() } }
+		CollectUsers -entries ( $lines | Where-Object { $_ -ne "" } ) -PermissionType "Write"
 	}
 	if ( ( $LineCount = $syncHash.txtUsersForReadPermission.LineCount ) -gt 0 )
 	{
 		$lines = @()
-		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $syncHash.txtUsersForReadPermission.GetLineText( $i ) ).Split( ";""," ) | foreach { $lines += ( $_ ).Trim() } }
-		CollectUsers -entries ( $lines | where { $_ -ne "" } ) -PermissionType "Read"
+		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $syncHash.txtUsersForReadPermission.GetLineText( $i ) ).Split( ";""," ) | ForEach-Object { $lines += ( $_ ).Trim() } }
+		CollectUsers -entries ( $lines | Where-Object { $_ -ne "" } ) -PermissionType "Read"
 	}
 	if ( ( $LineCount = $syncHash.txtUsersForRemovePermission.LineCount ) -gt 0 )
 	{
 		$lines = @()
-		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $syncHash.txtUsersForRemovePermission.GetLineText( $i ) ).Split( ";""," ) | foreach { $lines += ( $_ ).Trim() } }
-		CollectUsers -entries ( $lines | where { $_ -ne "" } ) -PermissionType "Remove"
+		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $syncHash.txtUsersForRemovePermission.GetLineText( $i ) ).Split( ";""," ) | ForEach-Object { $lines += ( $_ ).Trim() } }
+		CollectUsers -entries ( $lines | Where-Object { $_ -ne "" } ) -PermissionType "Remove"
 	}
 }
 
@@ -340,9 +340,9 @@ function CollectUsers
 				else
 				{ $name = "$( ( $u.$( $msgTable.StrEGroupDn ) -replace "," -split "ou=" )[1] ) ($( ( $u.$( $msgTable.StrEGroupIdName ) -split "-" )[1] ))" }
 				$o = @{ "Id" = $entry.ToString().ToUpper(); "AD" = $u; "Type" = $UserType -replace "EGroups", "EGroup"; "Name" = $name }
-				if ( ( $syncHash.Data.WriteUsers | where { $_.Id -eq $o.Id } ) -or
-					( $syncHash.Data.ReadUsers | where { $_.Id -eq $o.Id } ) -or
-					( $syncHash.Data.RemoveUsers | where { $_.Id -eq $o.Id } ) )
+				if ( ( $syncHash.Data.WriteUsers | Where-Object { $_.Id -eq $o.Id } ) -or
+					( $syncHash.Data.ReadUsers | Where-Object { $_.Id -eq $o.Id } ) -or
+					( $syncHash.Data.RemoveUsers | Where-Object { $_.Id -eq $o.Id } ) )
 				{
 					$syncHash.Data.Duplicates += $o.Id
 				}
@@ -369,34 +369,34 @@ function CollectUsers
 function CreateLogText
 {
 	$LogText = "$( Get-Date -Format "yyyy-MM-dd HH:mm:ss" )"
-	$syncHash.Data.ADGroups.Id | foreach { $LogText += "`n$_" }
+	$syncHash.Data.ADGroups.Id | ForEach-Object { $LogText += "`n$_" }
 	if ( $syncHash.Data.WriteUsers )
 	{
 		$LogText += "`n$( $msgTable.StrPermReadWrite )"
-		$syncHash.Data.WriteUsers | foreach { $LogText += "`n`t$( $_.Name )" }
+		$syncHash.Data.WriteUsers | ForEach-Object { $LogText += "`n`t$( $_.Name )" }
 	}
 
 	if ( $syncHash.Data.ReadUsers )
 	{
 		$LogText += "`n$( $msgTable.StrPermRead )"
-		$syncHash.Data.ReadUsers | foreach { $LogText += "`n`t$( $_.Name )" } }
+		$syncHash.Data.ReadUsers | ForEach-Object { $LogText += "`n`t$( $_.Name )" } }
 
 	if ( $syncHash.Data.RemoveUsers )
 	{
 		$LogText += "`n$( $msgTable.StrPermRemove )"
-		$syncHash.Data.RemoveUsers | foreach { $LogText += "`n`t$( $_.Name )" }
+		$syncHash.Data.RemoveUsers | ForEach-Object { $LogText += "`n`t$( $_.Name )" }
 	}
 
 	if ( $syncHash.Data.ErrorUsers )
 	{
 		$LogText += "`n$( $msgTable.StrFinNoAccounts )"
-		$syncHash.Data.ErrorUsers | foreach { $LogText += "`n`t$_" }
+		$syncHash.Data.ErrorUsers | ForEach-Object { $LogText += "`n`t$_" }
 	}
 
 	if ( $syncHash.Data.ErrorGroups )
 	{
 		$LogText += "`n$( $msgTable.StrFinNoAdGroups )"
-		$syncHash.Data.ErrorGroups | foreach { $LogText += "`n`t$_" }
+		$syncHash.Data.ErrorGroups | ForEach-Object { $LogText += "`n`t$_" }
 	}
 
 	$LogText += "`n------------------------------"
@@ -408,31 +408,31 @@ function CreateLogText
 function CreateMessage
 {
 	$Message = @( $msgTable.StrFinIntro )
-	$syncHash.Data.ADGroups.Id | foreach { $Message += "`t$_" }
+	$syncHash.Data.ADGroups.Id | ForEach-Object { $Message += "`t$_" }
 	if ( $syncHash.Data.WriteUsers )
 	{
 		$Message += "`n$( $msgTable.StrFinPermWrite ):"
-		$syncHash.Data.WriteUsers | foreach { $Message += "`t$( $_.Name )" }
+		$syncHash.Data.WriteUsers | ForEach-Object { $Message += "`t$( $_.Name )" }
 	}
 	if ( $syncHash.Data.ReadUsers )
 	{
 		$Message += "`n$( $msgTable.StrFinPermRead ):"
-		$syncHash.Data.ReadUsers | foreach { $Message += "`t$( $_.Name )" }
+		$syncHash.Data.ReadUsers | ForEach-Object { $Message += "`t$( $_.Name )" }
 	}
 	if ( $syncHash.Data.RemoveUsers )
 	{
 		$Message += "`n$( $msgTable.StrFinPermRem ):"
-		$syncHash.Data.RemoveUsers | foreach { $Message += "`t$( $_.Name )" }
+		$syncHash.Data.RemoveUsers | ForEach-Object { $Message += "`t$( $_.Name )" }
 	}
 	if ( $syncHash.Data.ErrorUsers )
 	{
 		$Message += "`n$( $msgTable.StrFinNoAccounts ):"
-		$syncHash.Data.ErrorUsers | foreach { $Message += "`t$_" }
+		$syncHash.Data.ErrorUsers | ForEach-Object { $Message += "`t$_" }
 	}
 	if ( $syncHash.Data.ErrorGroups )
 	{
 		$Message += "`n$( $msgTable.StrFinNoAdGroups ):"
-		$syncHash.Data.ErrorGroups | foreach { $Message += "`t$_" }
+		$syncHash.Data.ErrorGroups | ForEach-Object { $Message += "`t$_" }
 	}
 	$Message += $Script:Signatur
 	$OutputEncoding = ( New-Object System.Text.UnicodeEncoding $False, $False ).psobject.BaseObject
@@ -461,7 +461,7 @@ function PerformPermissions
 
 	if ( $syncHash.Data.Duplicates )
 	{
-		ShowMessageBox -Text "$( $msgTable.StrConfirmDups )`n$( $syncHash.Data.Duplicates | select -Unique )" -Title $msgTable.StrConfirmDupsTitle -Icon "Stop"
+		ShowMessageBox -Text "$( $msgTable.StrConfirmDups )`n$( $syncHash.Data.Duplicates | Select-Object -Unique )" -Title $msgTable.StrConfirmDupsTitle -Icon "Stop"
 	}
 	else
 	{
@@ -561,7 +561,7 @@ function SetWinTitle
 # Fill combobox list with disk-folders
 function UpdateDiskList
 {
-	"G:\", "S:\", "R:\" | Get-ChildItem2 -Directory | where { $_.FullName -in $syncHash.HandledFolders } | select -ExpandProperty FullName | foreach { [void] $syncHash.DC.cbDisk[0].Add( $_ ) }
+	"G:\", "S:\", "R:\" | Get-ChildItem2 -Directory | Where-Object { $_.FullName -in $syncHash.HandledFolders } | Select-Object -ExpandProperty FullName | ForEach-Object { [void] $syncHash.DC.cbDisk[0].Add( $_ ) }
 	SetWinTitle -Text $msgTable.StrTitle
 }
 
@@ -577,11 +577,11 @@ function UpdateFolderList
 	{
 		if ( $syncHash.DC.cbDisk[1][0] -eq "S" )
 		{
-			$syncHash.Folders = ( ( Get-ChildItem $syncHash.DC.cbDisk[1] -Directory ).FullName | Get-ChildItem ).FullName.Replace( "$( $syncHash.DC.cbDisk[1] )\", "" ) | sort
+			$syncHash.Folders = ( ( Get-ChildItem $syncHash.DC.cbDisk[1] -Directory ).FullName | Get-ChildItem ).FullName.Replace( "$( $syncHash.DC.cbDisk[1] )\", "" ) | Sort-Object
 		}
 		else
 		{
-			$syncHash.Folders = Get-ChildItem $syncHash.DC.cbDisk[1] -Directory | where { $_.FullName -notin $syncHash.Data.ExceptionFolders } | select -ExpandProperty Name | sort
+			$syncHash.Folders = Get-ChildItem $syncHash.DC.cbDisk[1] -Directory | Where-Object { $_.FullName -notin $syncHash.Data.ExceptionFolders } | Select-Object -ExpandProperty Name | Sort-Object
 		}
 		$syncHash.txtFolderSearch.Focus()
 		UpdateFolderListItems
@@ -594,7 +594,7 @@ function UpdateFolderList
 function UpdateFolderListItems
 {
 	$syncHash.DC.lbFolderList[0].Clear()
-	foreach ( $Folder in ( $syncHash.Folders | where { $syncHash.DC.lbFoldersChosen[0] -notcontains $_ } ) )
+	foreach ( $Folder in ( $syncHash.Folders | Where-Object { $syncHash.DC.lbFoldersChosen[0] -notcontains $_ } ) )
 	{
 		[void] $syncHash.DC.lbFolderList[0].Add( $Folder )
 	}
@@ -612,7 +612,7 @@ function WriteToLogFile
 		foreach ( $u in $syncHash.Data.ReadUsers ) { $LogText += "$( $u.Id ) > Add '$( $group.Read )'" }
 		foreach ( $u in $syncHash.Data.RemoveUsers ) { $LogText += "$( $u.Id ) > Remove '$( $group.Write )' & '$( $group.Read )'" }
 	}
-	$LogText | foreach { WriteLog -LogText $_ | Out-Null }
+	$LogText | ForEach-Object { WriteLog -LogText $_ | Out-Null }
 }
 
 ####################  End Operational functions  ####################
@@ -661,14 +661,14 @@ function FolderSelected
 # Search for any of item containing searchword
 function SearchListboxItem
 {
-	$list = $syncHash.Folders | where { $syncHash.DC.lbFoldersChosen[0] -notcontains $_ }
+	$list = $syncHash.Folders | Where-Object { $syncHash.DC.lbFoldersChosen[0] -notcontains $_ }
 	if ( $syncHash.txtFolderSearch.Text.Length -eq 0 )
 	{
 		$syncHash.DC.lbFolderList[1] = -1
 	}
 	else
 	{
-		$list = $list | where { $_ -like "*$( $syncHash.txtFolderSearch.Text.Replace( "\\", "\\\\" ) )*" }
+		$list = $list | Where-Object { $_ -like "*$( $syncHash.txtFolderSearch.Text.Replace( "\\", "\\\\" ) )*" }
 	}
 	$syncHash.DC.lbFolderList[0].Clear()
 	foreach ( $i in $list )
@@ -847,3 +847,4 @@ ResetVariables
 
 [void] $syncHash.Window.ShowDialog()
 $syncHash.Window.Close()
+#$global:syncHash = $syncHash
