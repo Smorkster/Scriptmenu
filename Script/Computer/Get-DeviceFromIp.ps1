@@ -5,11 +5,10 @@
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
-$CaseNr = Read-Host "Casenumber (if any) "
-$Destination = Read-Host "IP-address to translate"
+$Destination = Read-Host $msgTable.QIP
 
 $Unit = nslookup $Destination
 $Unit | Out-Host
 
-WriteLog -LogText "$CaseNr $Destination > $Unit"
+WriteLog -LogText "$Destination > $Unit" | Out-Null
 EndScript
