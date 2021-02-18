@@ -2,8 +2,10 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:sys="clr-namespace:System;assembly=mscorlib"
+    Name="Window"
     WindowState="Maximized"
-    Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}" Width="992">
+    Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+    Width="992">
     <Window.Resources>
         <sys:Boolean x:Key="Enable">true</sys:Boolean>
         <sys:Double x:Key="CW">130</sys:Double>
@@ -42,6 +44,10 @@
         <Style TargetType="{x:Type Button}">
             <Setter Property="IsEnabled" Value="{DynamicResource Enable}"/>
             <Setter Property="Padding" Value="5"/>
+        </Style>
+        <Style TargetType="{x:Type DatePickerTextBox}">
+            <Setter Property="Focusable" Value="False"/>
+			<Setter Property="IsHitTestVisible" Value="False"/>
         </Style>
         <Style TargetType="{x:Type RadioButton}">
             <Setter Property="Margin" Value="5"/>
@@ -104,63 +110,65 @@
                 <RowDefinition/>
             </Grid.RowDefinitions>
             <StackPanel Grid.Column="0" Grid.Row="0">
-                <Label Content="Both values are required:"/>
-                <StackPanel Orientation="Horizontal">
-                    <Label Content="Casenumber" Width="160"/>
-                    <TextBox x:Name="tbCaseNr"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <Label Content="UserId of user" Width="160"/>
-                    <TextBox x:Name="tbID"/>
-                </StackPanel>
-                <StackPanel>
-                    <RadioButton x:Name="rbLatest" Content="Search only for updates in the last two weeks" VerticalContentAlignment="Center" GroupName="grpDate" ToolTip="Gets the files that have been updated/changed in the last two weeks"/>
-                    <StackPanel Orientation="Horizontal" Margin="0">
-                        <RadioButton x:Name="rbPrevDate" Content="Search from this date:" VerticalContentAlignment="Center" GroupName="grpDate" ToolTip="Gets the files that have been updated/changed since the given date"/>
-                        <DatePicker Name="DatePickerStart" Width="150" IsEnabled="False"/>
-                    </StackPanel>
-                    <RadioButton x:Name="rbAll" Content="Search all files" VerticalContentAlignment="Center" GroupName="grpDate" ToolTip="Gets ALL files.`n`nWhen getting all files, the search will be done sequentualy, thus taking longer."/>
-                </StackPanel>
-                <Button x:Name="btnSearch" Content="Search"/>
+				<StackPanel Name="spInput">
+					<Label Name="lblValuesTitle"/>
+					<StackPanel Orientation="Horizontal">
+						<Label Name="lblCaseNrTitle" Width="160"/>
+						<TextBox Name="tbCaseNr"/>
+					</StackPanel>
+					<StackPanel Orientation="Horizontal">
+						<Label Name="lblIDTitle" Width="160"/>
+						<TextBox Name="tbID"/>
+					</StackPanel>
+					<StackPanel>
+						<RadioButton Name="rbLatest" VerticalContentAlignment="Center" GroupName="grpDate"/>
+						<StackPanel Orientation="Horizontal" Margin="0">
+							<RadioButton Name="rbPrevDate" VerticalContentAlignment="Center" GroupName="grpDate"/>
+							<DatePicker Name="DatePickerStart" Width="150" IsEnabled="False"/>
+						</StackPanel>
+						<RadioButton Name="rbAll" VerticalContentAlignment="Center" GroupName="grpDate"/>
+					</StackPanel>
+				</StackPanel>
+                <Button Name="btnSearch"/>
             </StackPanel>
-            <StackPanel Grid.Column="1" Grid.Row="0" x:Name="spInfo">
+            <StackPanel Grid.Column="1" Grid.Row="0" Name="spInfo">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0">
-                        <Label Content="User: "/>
-                        <Label x:Name="lblUser"/>
+                        <Label Name="lblUserTitle"/>
+                        <Label Name="lblUser"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0">
-                        <Label Content="Number of files:"/>
-                        <Label x:Name="lblFileCount"/>
+                        <Label Name="lblFileCountTitle"/>
+                        <Label Name="lblFileCount"/>
                     </StackPanel>
-                    <StackPanel x:Name="spSummary" Visibility="Hidden" Margin="0">
-                        <Label Content="Summary written to:" Margin="0"/>
-                        <Label x:Name="lblSummary"/>
-                        <Button x:Name="btnOpenSummary" Content="Open file"/>
+                    <StackPanel Name="spSummary" Visibility="Hidden" Margin="0">
+                        <Label Name="lblSummaryTitle" Margin="0"/>
+                        <Label Name="lblSummary"/>
+                        <Button Name="btnOpenSummary"/>
                     </StackPanel>
                 </StackPanel>
             </StackPanel>
-            <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" x:Name="TotalProgress"/>
+            <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" Name="TotalProgress"/>
         </Grid>
         <TabControl Grid.Row="1">
-            <TabItem Header="All files" x:Name="tiFiles">
+            <TabItem Name="tiFiles">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
-                    <Label Grid.Row="0" x:Name="lblFiles"/>
-                    <ListView Grid.Row="1" x:Name="lvAllFiles">
+                    <Label Grid.Row="0" Name="lblFiles"/>
+                    <ListView Grid.Row="1" Name="lvAllFiles">
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn DisplayMemberBinding="{Binding Name}" Width="{StaticResource ResourceKey=MCW}">
-                                    <GridViewColumnHeader Name="lvAN" Content="Name"/>
+                                    <GridViewColumnHeader Name="lvAN"/>
                                 </GridViewColumn>
                                 <GridViewColumn DisplayMemberBinding="{Binding Created}" Width="{StaticResource ResourceKey=CW}">
-                                    <GridViewColumnHeader Name="lvAC" Content="Created"/>
+                                    <GridViewColumnHeader Name="lvAC"/>
                                 </GridViewColumn>
                                 <GridViewColumn DisplayMemberBinding="{Binding Updated}" Width="{StaticResource ResourceKey=CW}">
-                                    <GridViewColumnHeader Name="lvAU" Content="Updated"/>
+                                    <GridViewColumnHeader Name="lvAU"/>
                                 </GridViewColumn>
                             </GridView>
                         </ListView.View>
@@ -170,24 +178,24 @@
                     </ListView>
                 </Grid>
             </TabItem>
-            <TabItem Header="Multiple fileextensions in H:" x:Name="tiMDH">
+            <TabItem Name="tiMDH">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="30"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
-                    <Label Grid.Row="0" x:Name="lblMDH" Content="Files in H-folder with multiple dots in filename (potentialy multiple fileextensions)"/>
-                    <ListView Grid.Row="1" x:Name="lvMultiDotsH">
+                    <Label Grid.Row="0" Name="lblMDH"/>
+                    <ListView Grid.Row="1" Name="lvMultiDotsH">
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn DisplayMemberBinding="{Binding Name}" Width="{StaticResource ResourceKey=MCW}">
-                                    <GridViewColumnHeader Name="lvHN" Content="Name"/>
+                                    <GridViewColumnHeader Name="lvHN" Content="{Binding ElementName=lvAN,Path=Content}"/>
                                 </GridViewColumn>
                                 <GridViewColumn DisplayMemberBinding="{Binding Created}" Width="{StaticResource ResourceKey=CW}">
-                                    <GridViewColumnHeader Name="lvHC" Content="Created"/>
+                                    <GridViewColumnHeader Name="lvHC" Content="{Binding ElementName=lvAC,Path=Content}"/>
                                 </GridViewColumn>
                                 <GridViewColumn DisplayMemberBinding="{Binding Updated}" Width="{StaticResource ResourceKey=CW}">
-                                    <GridViewColumnHeader Name="lvHU" Content="Updated"/>
+                                    <GridViewColumnHeader Name="lvHU" Content="{Binding ElementName=lvAD,Path=Content}"/>
                                 </GridViewColumn>
                             </GridView>
                         </ListView.View>
@@ -197,24 +205,24 @@
                     </ListView>
                 </Grid>
             </TabItem>
-            <TabItem Header="Multiple fileextensions in G:" x:Name="tiMDG">
+            <TabItem Name="tiMDG">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="30"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
-                    <Label Grid.Row="0" x:Name="lblMDG" Content="Files in H-folder with multiple dots in filename (potentialy multiple fileextensions)"/>
-                    <ListView Grid.Row="1" x:Name="lvMultiDotsG">
+                    <Label Grid.Row="0" Name="lblMDG"/>
+                    <ListView Grid.Row="1" Name="lvMultiDotsG">
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn DisplayMemberBinding="{Binding Name}" Width="{StaticResource ResourceKey=MCW}">
-                                    <GridViewColumnHeader Name="lvGN" Content="Name"/>
+                                    <GridViewColumnHeader Name="lvGN" Content="{Binding ElementName=lvAN,Path=Content}"/>
                                 </GridViewColumn>
                                 <GridViewColumn DisplayMemberBinding="{Binding Created}" Width="{StaticResource ResourceKey=CW}">
-                                    <GridViewColumnHeader Name="lvGC" Content="Created"/>
+                                    <GridViewColumnHeader Name="lvGC" Content="{Binding ElementName=lvAC,Path=Content}"/>
                                 </GridViewColumn>
                                 <GridViewColumn DisplayMemberBinding="{Binding Updated}" Width="{StaticResource ResourceKey=CW}">
-                                    <GridViewColumnHeader Name="lvGU" Content="Updated"/>
+                                    <GridViewColumnHeader Name="lvGU" Content="{Binding ElementName=lvAU,Path=Content}"/>
                                 </GridViewColumn>
                             </GridView>
                         </ListView.View>
@@ -224,16 +232,16 @@
                     </ListView>
                 </Grid>
             </TabItem>
-            <TabItem Header="Folders with other permissions" x:Name="tiO" Visibility="Visible">
+            <TabItem Name="tiO" Visibility="Visible">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="30"/>
                         <RowDefinition Height="30"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
-                    <Label Grid.Row="0" x:Name="lblO" Content="Folders you do not have permission for, escalate case to operations"/>
-                    <Button Grid.Row="1" x:Name="btnCreateQuestion" Content="Copy question for help, to operations"/>
-                    <TextBox Grid.Row="2" x:Name="txtQuestion" Width="Auto" VerticalContentAlignment="Top" AcceptsReturn="True"/>
+                    <Label Grid.Row="0" Name="lblO"/>
+                    <Button Grid.Row="1" Name="btnCreateQuestion"/>
+                    <TextBox Grid.Row="2" Name="txtQuestion" Width="Auto" VerticalContentAlignment="Top" AcceptsReturn="True"/>
                 </Grid>
             </TabItem>
         </TabControl>
