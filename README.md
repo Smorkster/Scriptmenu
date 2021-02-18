@@ -43,32 +43,33 @@ Pictures are placed in the *Pictures*-folder
 ## Other applications
 Applications to be used by scripts are placed in the *Apps*-folder
 
-## Additional modules
-Any new module for this suite are placed in the *Modules*-folder. They are then imported in the same way as mentioned above:
-`Import-Module "$( $args[0] )\Modules\<Module name>.psm1" -Force`
-
-===== Localization =====
+## Localization
 The FileOps module (see below) has functionality for embedding localization in scripts. Localization means that scripts can have text strings depending on the language installed in the operating system. That is, if the language in the operatingsystem is Swedish, "sv-SE" will be culture to import.
 A localization file MUST have the same name as the script file and have the file extension ".psd1". If the file name differs, the file will not be loaded.
 
 Scripts that use localization MUST have its localization-file placed as follows:
-  > In the "Localization" folder
-  > Folder with the name of the selected culture. The default for SDGUI is "sv-SE". If another culture is used for the strings, the culture name needs to be specified in the ArgumentList when importing the FileOps module, like so:
+  * In the "Localization" folder
+  * Folder with the name of the selected culture. The default for SDGUI is "sv-SE". If another culture is used for the strings, the culture name needs to be specified in the ArgumentList when importing the FileOps module, like so:
     `Import-Module "$( $args [0] )\Modules\<Module-name>.psm1" -Force -ArgumentList "sv-SE"`
-  > Folder structure according to the location of the script file.
+  * Folder structure according to the location of the script file.
+
 Example:
 If the script file "Test.ps1" is located in Script\Computer, there should be a file located according to:
   `Localization\sv-SE\Computer\Test.psd1`
 
-The file MUST start with:
+The file **MUST** start with:
 `ConvertFrom-StringData @ '`
-and the last line MUST be (with no space at the beginning):
+and the last line **MUST** be (with no space at the beginning):
 `'@`
 Each line in between is formulated according to:
 VariableName = Text to use
 
 Imported text is accessed through the hashtable `$msgTable` and is used as follows:
 `$msgTable.VariableName`
+
+## Additional modules
+Any new module for this suite are placed in the *Modules*-folder. They are then imported in the same way as mentioned above:
+`Import-Module "$( $args[0] )\Modules\<Module name>.psm1" -Force`
 
 ## Available modules
 There are some modules available for scripts to handle logging, get input from user, create WPF-windows and more. To be able to use these, put this code in the beginning of the script. One for each module to import.
