@@ -2,7 +2,7 @@
 # Use this to import module:
 # Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force
 
-#param ( $culture = "sv-SE" )
+param ( $culture = "sv-SE" )
 ################################################################################################################
 # Creates a PowerShell-objects, containing a WPF-window, based on XAML-file with same name as the calling script
 # Returns object and an array containing the names of each named control in the XAML-file
@@ -27,14 +27,13 @@ function CreateWindow
 		throw
 	}
 	$vars = @()
-	$xaml.SelectNodes( "//*[@Name]" ) | ForEach-Object {
+	$xaml.SelectNodes( "//*[@Name]" ) | Foreach-Object {
 		$vars += $_.Name
 	}
 
 	return $Window, $vars
 }
 
-#
 # Creates a synchronized hashtable containing:
 #	* Each named control, with its name from XAML-file, at "top-level", including main Window even if it is not named
 #	* Vars - Array with names of each named control
@@ -53,7 +52,7 @@ function CreateWindowExt
 	$syncHash.Output = ""
 	$syncHash.Window, $syncHash.Vars = CreateWindow
 
-	$syncHash.Vars | ForEach-Object {
+	$syncHash.Vars | Foreach-Object {
 		$syncHash.$_ = $syncHash.Window.FindName( $_ )
 		$Bindings.$_ = New-Object System.Collections.ObjectModel.ObservableCollection[object]
 		$syncHash.DC.$_ = New-Object System.Collections.ObjectModel.ObservableCollection[object]
@@ -63,11 +62,11 @@ function CreateWindowExt
 	{
 		$n = $control.CName
 		# Insert all predefines property values
-		$control.Props | ForEach-Object { $syncHash.DC.$n.Add( $_.PropVal ) }
+		$control.Props | Foreach-Object { $syncHash.DC.$n.Add( $_.PropVal ) }
 
 		# Create the bindingobjects
-		0..( $control.Props.Count - 1 ) | ForEach-Object { [void] $Bindings.$n.Add( ( New-Object System.Windows.Data.Binding -ArgumentList "[$_]" ) ) }
-		$Bindings.$n | ForEach-Object { $_.Mode = [System.Windows.Data.BindingMode]::TwoWay }
+		0..( $control.Props.Count - 1 ) | Foreach-Object { [void] $Bindings.$n.Add( ( New-Object System.Windows.Data.Binding -ArgumentList "[$_]" ) ) }
+		$Bindings.$n | Foreach-Object { $_.Mode = [System.Windows.Data.BindingMode]::TwoWay }
 		# Insert bindings to controls DataContext
 		$syncHash.$n.DataContext = $syncHash.DC.$n
 
@@ -82,9 +81,10 @@ function CreateWindowExt
 	return $syncHash
 }
 
-$nudate = Get-Date -Format "yyyy-MM-dd HH:mm"
 $RootDir = ( Get-Item $PSCommandPath ).Directory.Parent.FullName
+Import-LocalizedData -BindingVariable IntmsgTable -UICulture $culture -FileName "$( ( $PSCommandPath.Split( "\" ) | Select-Object -Last 1 ).Split( "." )[0] ).psd1" -BaseDirectory "$RootDir\Localization"
+
 try { $CallingScript = ( Get-Item $MyInvocation.PSCommandPath ) } catch {}
-try { $Host.UI.RawUI.WindowTitle = "Skript: $( ( ( Get-Item $MyInvocation.PSCommandPath ).FullName -split "Skript" )[1] )" } catch {}
+try { $Host.UI.RawUI.WindowTitle = "$( $IntmsgTable.ConsoleWinTitlePrefix ): $( ( ( Get-Item $MyInvocation.PSCommandPath ).FullName -split "Script" )[1] )" } catch {}
 
 Export-ModuleMember -Function *
