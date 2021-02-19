@@ -27,7 +27,7 @@ function CreateWindow
 		throw
 	}
 	$vars = @()
-	$xaml.SelectNodes( "//*[@Name]" ) | foreach {
+	$xaml.SelectNodes( "//*[@Name]" ) | ForEach-Object {
 		$vars += $_.Name
 	}
 
@@ -53,7 +53,7 @@ function CreateWindowExt
 	$syncHash.Output = ""
 	$syncHash.Window, $syncHash.Vars = CreateWindow
 
-	$syncHash.Vars | foreach {
+	$syncHash.Vars | ForEach-Object {
 		$syncHash.$_ = $syncHash.Window.FindName( $_ )
 		$Bindings.$_ = New-Object System.Collections.ObjectModel.ObservableCollection[object]
 		$syncHash.DC.$_ = New-Object System.Collections.ObjectModel.ObservableCollection[object]
@@ -63,11 +63,11 @@ function CreateWindowExt
 	{
 		$n = $control.CName
 		# Insert all predefines property values
-		$control.Props | foreach { $syncHash.DC.$n.Add( $_.PropVal ) }
+		$control.Props | ForEach-Object { $syncHash.DC.$n.Add( $_.PropVal ) }
 
 		# Create the bindingobjects
-		0..( $control.Props.Count - 1 ) | foreach { [void] $Bindings.$n.Add( ( New-Object System.Windows.Data.Binding -ArgumentList "[$_]" ) ) }
-		$Bindings.$n | foreach { $_.Mode = [System.Windows.Data.BindingMode]::TwoWay }
+		0..( $control.Props.Count - 1 ) | ForEach-Object { [void] $Bindings.$n.Add( ( New-Object System.Windows.Data.Binding -ArgumentList "[$_]" ) ) }
+		$Bindings.$n | ForEach-Object { $_.Mode = [System.Windows.Data.BindingMode]::TwoWay }
 		# Insert bindings to controls DataContext
 		$syncHash.$n.DataContext = $syncHash.DC.$n
 
