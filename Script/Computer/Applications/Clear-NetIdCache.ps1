@@ -1,31 +1,37 @@
 <#
-.Synopsis Clear NetID-cache one remote computer
-.Description Removes alla cache-files for NetID on given computer.
+.Synopsis Clear NetID-cache for one remote computer
+.Description Removes all cache-files for NetID on given computer.
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
+
 $ComputerName = $args[1]
 
-$CaseNr = Read-Host "Related casenumber (if any) "
 try
 {
 	Invoke-Command -ErrorAction Stop -ComputerName $ComputerName -ScriptBlock `
 	{
-		# Remove all items under C:\Windows\Temp containing iid
+		# Remove all items under C:\Windows\temp containing iid
 		Get-ChildItem -Path "C:\Windows\Temp\" -Include "*iid*" -Recurse | ForEach-Object `
 		{
 			Remove-Item $_ -Force -Recurse -ErrorAction SilentlyContinue
-			Write-Host -ForegroundColor Green "Removed $_ on Client: $Using:ComputerName"
 		}
 	}
 
-	# Write Output
-	Write-Host "NetID-cache is now cleared"
+	Write-Host $msgTable.StrDone
+}
+catch [System.Management.Automation.Remoting.PSRemotingTransportException]
+{
+	WriteErrorLog -LogText $_.Exception
+	Write-Host $msgTable.ErrConn -ForegroundColor Red
+	1..3 | ForEach-Object { Write-Host $msgTable."ErrConnRes$( $_ )" -ForegroundColor Red }
 }
 catch
 {
-	Write-Host $_.Exception.Message -ForegroundColor Red
+	WriteErrorLog -LogText $_.Exception
+	Write-Host $msgTable.ErrOther -ForegroundColor Red
+	Write-Host $_
 }
 
-WriteLog -LogText "$CaseNr $ComputerName"
+WriteLog -LogText "$ComputerName" | Out-Null
 EndScript
