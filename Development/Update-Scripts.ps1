@@ -21,9 +21,9 @@ function CheckForUpdates
 
 	foreach ( $devFile in $devFiles )
 	{
-		$prodFile = $prodFiles | where { $_.Name -eq $devFile.Name }
+		$prodFile = $prodFiles | Where-Object { $_.Name -eq $devFile.Name }
 
-		if ( $prodFile -eq $null )
+		if ( $null -eq $prodFile )
 		{
 			$updatedFiles.Add( @( $devFile, "" ) )
 		}
@@ -64,7 +64,7 @@ function CheckAll
 {
 	param( $Mark )
 
-	$spUpdateList.Children | where { $_.IsEnabled -and ( $_.Tag -ne $null ) } | foreach { $_.IsChecked = $Mark }
+	$spUpdateList.Children | Where-Object { $_.IsEnabled -and ( $null -ne $_.Tag ) } | ForEach-Object { $_.IsChecked = $Mark }
 }
 
 ######################################
@@ -83,7 +83,7 @@ function AddControlsForUpdatedFiles
 	foreach ( $update in $updatedFiles )
 	{
 		$cbUpdate = New-Object System.Windows.Controls.CheckBox
-		$cbUpdate.Add_MouseRightButtonDown( { $this.Tag.Split( "`n" ) | foreach { & 'C:\Program Files (x86)\Notepad++\notepad++.exe' $_ } } )
+		$cbUpdate.Add_MouseRightButtonDown( { $this.Tag.Split( "`n" ) | ForEach-Object { & 'C:\Program Files (x86)\Notepad++\notepad++.exe' $_ } } )
 		$cbUpdate.Name = ( $update[0].Name.Split( "\." ) )[0] -replace "-" -replace " "
 		$cbUpdate.Tag = "$( $update[0].FullName )`n$( $update[1].FullName )"
 		$devUpdated = Get-Date $update[0].LastWriteTime -Format 'yyyy-MM-dd HH:mm:ss'
@@ -98,9 +98,9 @@ function AddControlsForUpdatedFiles
 			$cbUpdate.Foreground = "Red"
 			$cbUpdate.ToolTip = "$( $IntmsgTable.StrDevTooltip )`n$( $cbUpdate.ToolTip )"
 		}
-		if ( $update[0].Name.EndsWith( "xaml" ) )
+		if ( $update[0].Name.EndsWith( "xaml" ) -or $update[0].Name.EndsWith( "psd1" ) )
 		{
-			if ( ( Get-ChildItem -Filter "$( $update[0].Name.Replace( "xaml", "ps1" ) )" -Recurse | Select-String ".Synopsis" ) -match $IntmsgTable.ScriptContentInDev )
+			if ( ( Get-ChildItem -Filter "$( $update[0].Name.Replace( "xaml", "ps1" ).Replace( "psd1", "ps1" ) )" -Recurse | Select-String ".Synopsis" ) -match $IntmsgTable.ScriptContentInDev )
 			{
 				$cbUpdate.FontWeight = "Bold"
 				$cbUpdate.Foreground = "Red"
@@ -113,10 +113,10 @@ function AddControlsForUpdatedFiles
 
 		$spUpdateList.AddChild( $cbUpdate )
 	}
-	$lblUpdateInfo.Content = "$( ( $spUpdateList.Children | where { $_.IsEnabled -and ( $_.Tag -ne $null ) } ).Count ) $( $IntmsgTable.StrSummaryUp )"
-	if ( ( $spUpdateList.Children | where { -not ( $_.IsEnabled ) -and ( $_.Tag -ne $null ) } ).Count -gt 0 )
+	$lblUpdateInfo.Content = "$( ( $spUpdateList.Children | Where-Object { $_.IsEnabled -and ( $null -ne $_.Tag ) } ).Count ) $( $IntmsgTable.StrSummaryUp )"
+	if ( ( $spUpdateList.Children | Where-Object { -not ( $_.IsEnabled ) -and ( $null -ne $_.Tag ) } ).Count -gt 0 )
 	{
-		$lblUpdateInfo.Content += "`n$( ( $spUpdateList.Children | where { -not ( $_.IsEnabled ) -and ( $_.Tag -ne $null ) } ).Count ) $( $IntmsgTable.StrSummaryDev )"
+		$lblUpdateInfo.Content += "`n$( ( $spUpdateList.Children | Where-Object { -not ( $_.IsEnabled ) -and ( $null -ne $_.Tag ) } ).Count ) $( $IntmsgTable.StrSummaryDev )"
 	}
 }
 
@@ -132,7 +132,7 @@ function AddControlsForUpdatedProdFiles
 		$l = New-Object System.Windows.Controls.Label
 		$l.Content = "$( $file[1].Name )`n`t$( $file[1].LastWriteTime.ToString() ) $( $IntmsgTable.StrUpInProd ).`n`t$( $file[0].LastWriteTime.ToString() ) $( $IntmsgTable.StrUpInDev )."
 		$l.Tag = $file
-		$l.Add_MouseRightButtonDown( { $this.Tag | foreach { & 'C:\Program Files (x86)\Notepad++\notepad++.exe' $_.FullName } } )
+		$l.Add_MouseRightButtonDown( { $this.Tag | ForEach-Object { & 'C:\Program Files (x86)\Notepad++\notepad++.exe' $_.FullName } } )
 		$spOtherUpdates.AddChild( $l )
 	}
 }
@@ -142,7 +142,7 @@ function AddControlsForUpdatedProdFiles
 # If no checkbox is checked, disable updatebutton and hide informationlabel
 function CheckChecked
 {
-	if ( ( $spUpdateList.Children | where { $_.IsChecked -and ( $_.Tag -ne $null ) } ).Count -gt 0 )
+	if ( ( $spUpdateList.Children | Where-Object { $_.IsChecked -and ( $null -ne $_.Tag ) } ).Count -gt 0 )
 	{
 		$btnUpdateScripts.IsEnabled = $true
 		$lblInfo.Content = $IntmsgTable.StrUpdateWarning
@@ -160,17 +160,17 @@ function UpdateScripts
 {
 	$loop = 1
 
-	$fileCheckboxes = $spUpdateList.Children | where { $_.IsChecked -and ( $_.Tag -ne $null ) }
+	$fileCheckboxes = $spUpdateList.Children | Where-Object { $_.IsChecked -and ( $null -ne $_.Tag ) }
 	foreach ( $fileCheckbox in $fileCheckboxes )
 	{
 		$updatedFile = Get-Item $fileCheckbox.Tag.Split( "`n" )[0]
-		if ( $fileCheckbox.Tag.Split( "`n" )[1] -eq $null ) { $updatedFileDestination = $fileCheckbox.Tag.Split( "`n" )[1] }
+		if ( $null -eq $fileCheckbox.Tag.Split( "`n" )[1] ) { $updatedFileDestination = $fileCheckbox.Tag.Split( "`n" )[1] }
 		else { $updatedFileDestination = $prodRoot + "\" + ( $updatedFile.FullName.Replace( "$devRoot\", "" ) ) }
 
 		$OFS = "`n"
 		if ( Test-Path $updatedFileDestination )
 		{
-			$name = $updatedFileDestination -split "\\" | select -Last 1
+			$name = $updatedFileDestination -split "\\" | Select-Object -Last 1
 			$updated = Get-Date ( Get-Item $updatedFileDestination ).LastWriteTime -Format "yyyy-MM-dd HH.mm.ss"
 			$extension = ( Get-Item $updatedFileDestination ).Extension
 			$OFS = "`n"
@@ -191,7 +191,7 @@ function UpdateScripts
 	if ( @( $Script.filesUpdatedInProd ).Count -gt 0 )
 	{
 		$LogText += "`n`t$( $IntmsgTable.StrSummaryUpInProd ): "
-		$LogText += [string]( $Script:filesUpdatedInProd | foreach { ( $_[0].FullName -split "development" )[1] } )
+		$LogText += [string]( $Script:filesUpdatedInProd | ForEach-Object { ( $_[0].FullName -split "development" )[1] } )
 	}
 	$LogFilePath = "$( ( Get-Item $PSCommandPath ).Directory.Parent.FullName )\Logs\$( [datetime]::Now.Year )\$( [datetime]::Now.Month )\Update-Scripts - log.txt"
 	if ( -not ( Test-Path $LogFilePath ) ) { New-Item -Path $LogFilePath -ItemType File -Force | Out-Null } # If logfile does not exist, create it
@@ -214,10 +214,10 @@ function UpdateScripts
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force
 $culture = "sv-SE"
-Import-LocalizedData -BindingVariable IntmsgTable -UICulture $culture -FileName "$( ( $PSCommandPath.Split( "\" ) | select -Last 1 ).Split( "." )[0] ).psd1" -BaseDirectory "..\Localization"
+Import-LocalizedData -BindingVariable IntmsgTable -UICulture $culture -FileName "$( ( $PSCommandPath.Split( "\" ) | Select-Object -Last 1 ).Split( "." )[0] ).psd1" -BaseDirectory "..\Localization"
 
 $Window, $vars = CreateWindow
-$vars | foreach { Set-Variable -Name $_ -Value $Window.FindName( $_ ) }
+$vars | ForEach-Object { Set-Variable -Name $_ -Value $Window.FindName( $_ ) }
 
 $Script:devRoot = ( Get-Item $PSCommandPath ).Directory.FullName
 $Script:prodRoot = ( Get-Item $PSCommandPath ).Directory.Parent.FullName
