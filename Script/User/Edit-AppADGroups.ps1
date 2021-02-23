@@ -1,5 +1,6 @@
 <#
 .Synopsis Edit AD-Groups for applications
+.Requires Role_Backoffice
 .Description Add/remove permissions for applications. These applications are governed by AD-groups. When the permissions are set, a message with summary is copied to the clipboard.
 #>
 
@@ -41,14 +42,14 @@ function CollectEntries
 	if ( ( $LineCount = $syncHash.txtUsersAddPermission.LineCount ) -gt 0 )
 	{
 		$lines = @()
-		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $syncHash.txtUsersAddPermission.GetLineText( $i ) ).Split( ";""," ) | foreach { $lines += ( $_ ).Trim() } }
-		CollectUsers -entries ( $lines | where { $_ -ne "" } ) -PermissionType "Add"
+		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $syncHash.txtUsersAddPermission.GetLineText( $i ) ).Split( ";""," ) | ForEach-Object { $lines += ( $_ ).Trim() } }
+		CollectUsers -entries ( $lines | Where-Object { $_ -ne "" } ) -PermissionType "Add"
 	}
 	if ( ( $LineCount = $syncHash.txtUsersRemovePermission.LineCount ) -gt 0 )
 	{
 		$lines = @()
-		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $syncHash.txtUsersRemovePermission.GetLineText( $i ) ).Split( ";""," ) | foreach { $lines += ( $_ ).Trim() } }
-		CollectUsers -entries ( $lines | where { $_ -ne "" } ) -PermissionType "Remove"
+		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $syncHash.txtUsersRemovePermission.GetLineText( $i ) ).Split( ";""," ) | ForEach-Object { $lines += ( $_ ).Trim() } }
+		CollectUsers -entries ( $lines | Where-Object { $_ -ne "" } ) -PermissionType "Remove"
 	}
 }
 
@@ -78,7 +79,7 @@ function CollectUsers
 		{
 			$object = $null
 			$object = @{ "Id" = $entry.ToString().ToUpper(); "AD" = ( Get-ADUser -Identity $entry -Properties otherMailbox ); "PW" = GeneratePassword }
-			if ( ( ( $syncHash.AddUsers | where { $_.Id -eq $object.Id } ).Count + ( $syncHash.RemoveUsers | where { $_.Id -eq $object.Id } ).Count ) -gt 1 )
+			if ( ( ( $syncHash.AddUsers | Where-Object { $_.Id -eq $object.Id } ).Count + ( $syncHash.RemoveUsers | Where-Object { $_.Id -eq $object.Id } ).Count ) -gt 1 )
 			{
 				$syncHash.Duplicates += $object.Id
 			}
@@ -103,23 +104,23 @@ function CreateLogText
 {
 	$LogText = ""
 	$LogText += "$( Get-Date -Format "yyyy-MM-dd HH:mm:ss" )"
-	$syncHash.lbGroupsChosen.Items | foreach { $LogText += "`n$_" }
+	$syncHash.lbGroupsChosen.Items | ForEach-Object { $LogText += "`n$_" }
 	if ( $syncHash.AddUsers )
 	{
 		$LogText += "`n$( $syncHash.Data.msgTable.WNew )"
-		$syncHash.AddUsers.AD | foreach { $LogText += "`n`t$( $_.Name )" }
+		$syncHash.AddUsers.AD | ForEach-Object { $LogText += "`n`t$( $_.Name )" }
 	}
 
 	if ( $syncHash.RemoveUsers )
 	{
 		$LogText += "`n@( $syncHash.Data.msgTable.WRemove )"
-		$syncHash.RemoveUsers.AD | foreach { $LogText += "`n`t$( $_.Name )" }
+		$syncHash.RemoveUsers.AD | ForEach-Object { $LogText += "`n`t$( $_.Name )" }
 	}
 
 	if ( $syncHash.ErrorUsers )
 	{
 		$LogText += "`n$( $syncHash.Data.msgTable.WNoAccount ):"
-		$syncHash.ErrorUsers.Id | foreach { $LogText += "`n`t$_" }
+		$syncHash.ErrorUsers.Id | ForEach-Object { $LogText += "`n`t$_" }
 	}
 
 	$LogText += "`n------------------------------"
@@ -132,21 +133,21 @@ function CreateMessage
 {
 	$Message = @()
 	$Message += "$( $syncHash.Data.msgTable.WMessageIntro ) $( $syncHash.GroupType )"
-	$syncHash.lbGroupsChosen.Items | foreach { $Message += "`t$_" }
+	$syncHash.lbGroupsChosen.Items | ForEach-Object { $Message += "`t$_" }
 	if ( $syncHash.AddUsers )
 	{
 		$Message += "`n$( $syncHash.Data.msgTable.WNew ):"
-		$syncHash.AddUsers | foreach { $Message += "`t$( $_.AD.Name )$( if ( $_.AD.otherMailbox -match $syncHash.Data.msgTable.WSpecOrg ) { "( $( $syncHash.Data.msgTable.WNewPassword ): $( $_.PW ) )" } )" }
+		$syncHash.AddUsers | ForEach-Object { $Message += "`t$( $_.AD.Name )$( if ( $_.AD.otherMailbox -match $syncHash.Data.msgTable.WSpecOrg ) { "( $( $syncHash.Data.msgTable.WNewPassword ): $( $_.PW ) )" } )" }
 	}
 	if ( $syncHash.RemoveUsers )
 	{
 		$Message += "`n$( $syncHash.Data.msgTable.WRemove ):"
-		$syncHash.RemoveUsers.AD | foreach { $Message += "`t$( $_.Name )" }
+		$syncHash.RemoveUsers.AD | ForEach-Object { $Message += "`t$( $_.Name )" }
 	}
 	if ( $syncHash.ErrorUsers )
 	{
 		$Message += "`n$( $syncHash.Data.msgTable.WNoAccount ):"
-		$syncHash.ErrorUsers.Id | foreach { $Message += "`t$_" }
+		$syncHash.ErrorUsers.Id | ForEach-Object { $Message += "`t$_" }
 	}
 	$Message += $syncHash.Signatur
 	$OutputEncoding = ( New-Object System.Text.UnicodeEncoding $False, $False ).psobject.BaseObject
@@ -161,7 +162,7 @@ function GeneratePassword
 	$p += Get-RandomCharacters -length 1 -characters 'ABCDEFGHKLMNPRSTUVWXYZ'
 	$p += Get-RandomCharacters -length 1 -characters '123456789'
 	$p += Get-RandomCharacters -length 5 -characters 'abcdefghikmnprstuvwxyzABCDEFGHKLMNPRSTUVWXYZ123456789'
-	$p = Scramble-String $p
+	$p = ScrambleString $p
 	return $p
 }
 
@@ -170,14 +171,14 @@ function GeneratePassword
 function Get-RandomCharacters
 {
 	param ( $length, $characters )
-	$random = 1..$length | foreach { Get-Random -Maximum $characters.Length }
+	$random = 1..$length | ForEach-Object { Get-Random -Maximum $characters.Length }
 	$private:ofs = ""
 	return [string]$characters[$random]
 }
 
 ########################################
 # Randomize order of charaters in string
-function Scramble-String
+function ScrambleString
 {
 	param ( [string]$inputString )
 	$characterArray = $inputString.ToCharArray()
@@ -190,7 +191,7 @@ function Scramble-String
 # Remove from selected list, add to grouplist
 function GroupDeselected
 {
-	if ( $syncHash.lbGroupsChosen.SelectedItem -ne $null )
+	if ( $null -ne $syncHash.lbGroupsChosen.SelectedItem )
 	{
 		$syncHash.lbAppGroupList.Items.Add( $syncHash.lbGroupsChosen.SelectedItem )
 		$syncHash.lbGroupsChosen.Items.Remove( $syncHash.lbGroupsChosen.SelectedItem )
@@ -204,7 +205,7 @@ function GroupDeselected
 # Remove from grouplist, add to selected list
 function GroupSelected
 {
-	if ( $syncHash.lbAppGroupList.SelectedItem -ne $null )
+	if ( $null -ne $syncHash.lbAppGroupList.SelectedItem )
 	{
 		$syncHash.lbGroupsChosen.Items.Add( $syncHash.lbAppGroupList.SelectedItem )
 		$syncHash.lbAppGroupList.Items.Remove( $syncHash.lbAppGroupList.SelectedItem )
@@ -221,7 +222,7 @@ function PerformPermissions
 
 	if ( $syncHash.Duplicates )
 	{
-		ShowMessageBox -Text "$( $syncHash.Data.msgTable.WDuplicates ):`n$( $syncHash.Duplicates | select -Unique )" -Title $syncHash.Data.msgTable.WDuplicatesTitle -Icon "Stop"
+		ShowMessageBox -Text "$( $syncHash.Data.msgTable.WDuplicates ):`n$( $syncHash.Duplicates | Select-Object -Unique )" -Title $syncHash.Data.msgTable.WDuplicatesTitle -Icon "Stop"
 	}
 	else
 	{
@@ -243,7 +244,7 @@ function PerformPermissions
 				}
 				$loopCounter++
 			}
-			foreach ( $u in ( $syncHash.AddUsers | where { $_.AD.otherMailbox -match $syncHash.Data.msgTable.WSpecOrg } ) )
+			foreach ( $u in ( $syncHash.AddUsers | Where-Object { $_.AD.otherMailbox -match $syncHash.Data.msgTable.WSpecOrg } ) )
 			{
 				Set-ADAccountPassword -Identity $u.AD -Reset -NewPassword ( ConvertTo-SecureString -AsPlainText $u.PW -Force )
 				Set-ADUser -Identity $u.AD -ChangePasswordAtLogon $false -Confirm:$false
@@ -302,37 +303,37 @@ function SetUserSettings
 # Add names for applications with AD-Groups
 function UpdateAppList
 {
-	$app = [System.Windows.Controls.ComboboxItem]@{	Content = "App1"
-		Tag = @{ AppFilter = "(&(Name=*App1*_Users)(!(Name=*DNSReg*)))"
+	$app = [System.Windows.Controls.ComboboxItem]@{	Content = "Citrix Distansanslutning"
+		Tag = @{ AppFilter = "(&(Name=Sll_Acc_ADCVPN*_Users)(!(Name=*DNSReg*)))"
 			Exclude = @( "DNSReg", "Acceptans" )
 			split = "_"
 			index = 3 } }
 	[void] $syncHash.cbApp.Items.Add( $app )
 
-	$app = [System.Windows.Controls.ComboboxItem]@{ Content ="App2"
-		Tag = @{ AppFilter = "(Name=*App2*)"
+	$app = [System.Windows.Controls.ComboboxItem]@{ Content ="DS Chefsforum"
+		Tag = @{ AppFilter = "(Name=Dan_Mig_webbChef*)"
 			Exclude = $null } }
 	[void] $syncHash.cbApp.Items.Add( $app )
 
-	$app = [System.Windows.Controls.ComboboxItem]@{ Content = "App3"
-		Tag = @{ AppFilter = "(Name=*App3*)"
-			Exclude = @( "AoS", "DOS", "HK", "ILOV", "Inkop", "Innovation" )
+	$app = [System.Windows.Controls.ComboboxItem]@{ Content = "Kar Tableau"
+		Tag = @{ AppFilter = "(Name=Kar_Tableau*)"
+			Exclude = @( "Akut", "AoS", "BoK", "DOS", "DS", "Halso", "HK", "ILOV", "Inkop", "Innovation", "ITPortfolj", "KULab", "Neuro", "OpChef", "PoU", "PUppf", "SMB", "SSVP", "ToRM", "UUR" )
 			split = "_"
 			index = 2 } }
 	[void] $syncHash.cbApp.Items.Add( $app )
 
-	$app = [System.Windows.Controls.ComboboxItem]@{ Content = "App4"
-		Tag = @{ AppFilter = "(Name=*App4*Remote_Usr)"
+	$app = [System.Windows.Controls.ComboboxItem]@{ Content = "Logisticaps / Clockworks"
+		Tag = @{ AppFilter = "(Name=*_Sys_Logistics_*Remote_Usr)"
 			Exclude = $null } }
 	[void] $syncHash.cbApp.Items.Add( $app )
 
-	$app = [System.Windows.Controls.ComboboxItem]@{ Content = "App5"
-		Tag = @{ AppFilter = "(Name=App5*)"
+	$app = [System.Windows.Controls.ComboboxItem]@{ Content = "QlikView Dan"
+		Tag = @{ AppFilter = "(Name=Dan_Acc_Qlik*)"
 			Exclude = $null } }
 	[void] $syncHash.cbApp.Items.Add( $app )
 
-	$app = [System.Windows.Controls.ComboboxItem]@{ Content = "App6"
-		Tag = @{ AppFilter = "(|(Name=Mig_App6*)(Name=App6*))"
+	$app = [System.Windows.Controls.ComboboxItem]@{ Content = "QlikView Sös"
+		Tag = @{ AppFilter = "(|(Name=Sos_Mig_Qlik*)(Name=Sos_Acc_Qlik*))"
 			Exclude = $null } }
 	[void] $syncHash.cbApp.Items.Add( $app )
 }
@@ -349,35 +350,35 @@ function UpdateAppGroupList
 
 	switch ( $item.Content )
 	{
-		"App1"
+		"Citrix Distansanslutning"
 		{
-			$syncHash.GroupType = "App1"
+			$syncHash.GroupType = "Citrix Distans-grupper"
 		}
-		"App2"
+		"DS Chefsforum"
 		{
-			$syncHash.GroupType = "App2"
+			$syncHash.GroupType = "Chefsforum-grupper"
 		}
-		"App3"
+		"Kar Tableau"
 		{
-			$syncHash.GroupType = "App3"
+			$syncHash.GroupType = "Tableau-grupper"
 		}
-		"App4"
+		"Logisticaps / Clockworks"
 		{
-			$syncHash.GroupType = "App4"
+			$syncHash.GroupType = "Logisticaps-grupper"
 		}
-		"App5"
+		"QlikView Dan"
 		{
-			$syncHash.GroupType = "App5"
+			$syncHash.GroupType = "QlikView-grupper"
 		}
-		"App6"
+		"QlikView Sös"
 		{
-			$syncHash.GroupType = "App6"
+			$syncHash.GroupType = "QlikView-grupper"
 		}
 	}
-	if ( $item.Tag.Exclude -eq $null )
-	{ $syncHash.GroupList = Get-ADGroup -LDAPFilter "$( $item.Tag.AppFilter )" | select -ExpandProperty Name | sort }
+	if ( $null -eq $item.Tag.Exclude )
+	{ $syncHash.GroupList = Get-ADGroup -LDAPFilter "$( $item.Tag.AppFilter )" | Select-Object -ExpandProperty Name | Sort-Object }
 	else
-	{ $syncHash.GroupList = Get-ADGroup -LDAPFilter "$( $item.Tag.AppFilter )" | where { $item.Tag.Exclude -notcontains $_.Name.Split( $item.Tag.split )[$item.Tag.index] } | select -ExpandProperty Name }
+	{ $syncHash.GroupList = Get-ADGroup -LDAPFilter "$( $item.Tag.AppFilter )" | Where-Object { $item.Tag.Exclude -notcontains $_.Name.Split( $item.Tag.split )[$item.Tag.index] } | Select-Object -ExpandProperty Name }
 
 	UpdateAppGroupListItems
 	$syncHash.Window.Title = $syncHash.Data.msgTable.WTitle
@@ -388,7 +389,7 @@ function UpdateAppGroupList
 function UpdateAppGroupListItems
 {
 	$syncHash.lbAppGroupList.Items.Clear()
-	foreach ( $item in ( $syncHash.GroupList | where { $syncHash.lbGroupsChosen.Items -notcontains $_ } ) )
+	foreach ( $item in ( $syncHash.GroupList | Where-Object { $syncHash.lbGroupsChosen.Items -notcontains $_ } ) )
 	{
 		[void] $syncHash.lbAppGroupList.Items.Add( $item )
 	}
@@ -435,7 +436,7 @@ function WriteToLogFile
 		}
 	}
 
-	$LogText | foreach { WriteLog -LogText $_ | Out-Null }
+	$LogText | ForEach-Object { WriteLog -LogText $_ | Out-Null }
 }
 
 ######################### Script start #########################

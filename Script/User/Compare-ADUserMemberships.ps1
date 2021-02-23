@@ -41,13 +41,13 @@ if ( $UsersIn.Count -gt 1 )
 	foreach ( $u in $UsersIn )
 	{
 		$user = New-Object -TypeName psobject
-		$user | Add-Member -MemberType NoteProperty -Name Groups -Value ( Get-ADPrincipalGroupMembership -Identity $u | select -ExpandProperty Name )
+		$user | Add-Member -MemberType NoteProperty -Name Groups -Value ( Get-ADPrincipalGroupMembership -Identity $u | Select-Object -ExpandProperty Name )
 		$user | Add-Member -MemberType NoteProperty -Name UserName -Value $u
 		$Users += $user
 		$AllGroups += $user.Groups
 	}
 
-	$AllGroups = $AllGroups | sort | select -Unique
+	$AllGroups = $AllGroups | Sort-Object | Select-Object -Unique
 
 	$groups = @()
 	foreach ( $g in $Allgroups )
@@ -65,7 +65,7 @@ if ( $UsersIn.Count -gt 1 )
 		$groups += $group
 	}
 
-	$users | select UserName
+	$users | Select-Object UserName
 	$file = @()
 	Write-Host "`n$( $msgTable.WGroups )`n------"
 	foreach ( $g in $groups )
@@ -82,7 +82,7 @@ if ( $UsersIn.Count -gt 1 )
 		else
 		{
 			$members = ""
-			$g.Users | foreach { $members += "$_ " }
+			$g.Users | ForEach-Object { $members += "$_ " }
 		}
 		Write-Host $members.Trim()
 		Add-Member -InputObject $row -MemberType NoteProperty -Name "Members" -Value $members.Trim()

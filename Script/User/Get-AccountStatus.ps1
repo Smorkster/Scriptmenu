@@ -15,14 +15,14 @@ function LookUpUser
 
 	try
 	{
-		$LookedUpUser = Get-ADUser $syncHash.tbID.Text –Properties pwdlastset, enabled, lockedout, description, accountExpires, msDS-UserPasswordExpiryTimeComputed | select Name, pwdlastset, enabled, lockedout, description, accountExpires, @{ Name = "ExpiryDate"; Expression = { [datetime]::FromFileTime( $_."msDS-UserPasswordExpiryTimeComputed" ) } }
+		$LookedUpUser = Get-ADUser $syncHash.tbID.Text –Properties pwdlastset, enabled, lockedout, description, accountExpires, msDS-UserPasswordExpiryTimeComputed | Select-Object Name, pwdlastset, enabled, lockedout, description, accountExpires, @{ Name = "ExpiryDate"; Expression = { [datetime]::FromFileTime( $_."msDS-UserPasswordExpiryTimeComputed" ) } }
 	}
 	catch
 	{
 		WriteErrorLog -LogText "$( $syncHash.tbID.Text ) - $( $msgTable.ErrLogExtendPassword )`r`n`t$( $_.Exception.Message )"
 	}
 
-	if ( $LookedUpUser -ne $null )
+	if ( $null -ne $LookedUpUser )
 	{
 		$syncHash.spOutput.Children.Clear()
 		Print -Text "$( $msgTable.WReadUser ) $( $LookedUpUser.Name )"
@@ -59,7 +59,7 @@ function LookUpUser
 				Print -Text $msgTable.WPasswordChange -Color "Red"
 				$status = $msgTable.WLPasswordChange
 			}
-			elseif ( $LookedUpUser.ExpiryDate -ne $null )
+			elseif ( $null -ne $LookedUpUser.ExpiryDate )
 			{
 				if ( $LookedUpUser.ExpiryDate -lt ( Get-Date ) )
 				{
