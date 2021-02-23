@@ -1,5 +1,6 @@
 <#
 .Synopsis Add AD-groups, pasted in console [BO]
+.Requires Role_Backoffice
 .Description Creates permissions for multiple given AD-groups.
 #>
 
@@ -11,7 +12,7 @@ if ( dsquery user -samid $User )
 
 {
 	Write-Host $msgTable.QIDList
-	$Groups = GetConsolePasteInput -Folders | where { $_ -ne "" }
+	$Groups = GetConsolePasteInput -Folders | Where-Object { $_ -ne "" }
 
 	$added = @()
 	$noPermission = @()
@@ -57,6 +58,7 @@ if ( dsquery user -samid $User )
 			Write-Host $( $msgTable.WMessage )
 		}
 	}
+	$logText = "$User $( @( $added ).Count ) $( $msgTable.WLogGroupsCount )"
 }
 else
 {
@@ -65,5 +67,5 @@ else
 }
 
 
-WriteLog -LogText "$User $( @( $added ).Count ) $( $msgTable.WLogGroupsCount )" | Out-Null
+WriteLog -LogText $logText | Out-Null
 EndScript
