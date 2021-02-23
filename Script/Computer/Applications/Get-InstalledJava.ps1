@@ -6,39 +6,37 @@
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $ComputerName = $args[1]
-
-$CaseNr = Read-Host "Related casenumber (if any) "
 $Computer = Get-ADComputer $ComputerName -Properties *
 
 if ( $gpos = $Computer.MemberOf | Where-Object { $_ -like "*Java*_I*" } )
 {
-	Write-Host "`nJava is installed:`n"
+	Write-Host "`n$( $msgTable.StrIsInstalled ):`n"
 	$gpos | ForEach-Object { ( ( $_ -split "=" )[1] -split "," )[0] }
-	$logText = "installed"
+	$logText = $msgTable.StrIsInstalledLog
 }
 else
 {
-	Write-Host "`nJava is not installed"
-	$logText = "not installed"
+	Write-Host "`n$( $msgTable.StrIsNotInstalled )"
+	$logText = StrIsNotInstalledLog
 }
 
-if ( ( Read-Host "Show computers at same department with Java installed? (Y/N)" ) -eq "Y" )
+if ( ( Read-Host $msgTable.QListOtherComp ) -eq "Y" )
 {
-	$logText +="`r`n`tOther computers at same department: "
-	if ( $sameLocation = Get-ADComputer -LDAPFilter "(depId=$( $Computer.depId ))" -Properties MemberOf | Select-Object @{ Name = "Name"; Expression = { $_.Name } }, @{ Name = "Java"; Expression = { ( ( ( ( $_.MemberOf | Where-Object { $_ -like "*Java*_I*" } ) -split "=" )[1] ) -split "," )[0] } } | Where-Object { $_.Java -ne "" } | Sort-Object Name )
+	$logText +="`r`n`t$( $msgTable.StrOtherCompLog ): "
+	if ( $sameLocation = Get-ADComputer -LDAPFilter "($( $msgTable.CodeDepPropName )=$( $Computer.( $msgTable.CodeDepPropName ) ))" -Properties MemberOf | Select-Object @{ Name = "Name"; Expression = { $_.Name } }, @{ Name = "Java"; Expression = { ( ( ( ( $_.MemberOf | Where-Object { $_ -like "*Java*_I*" } ) -split "=" )[1] ) -split "," )[0] } } | Where-Object { $_.Java -ne "" } | Sort-Object Name )
 	{
-		$sameLocation
+		$sameLocation | Sort-Object Name | Out-Host
 
 		$output = @()
 		$sameLocation | ForEach-Object { $output += "$( $_.Name ) $( $_.Java )`r`n" }
-		$outputFile = WriteOutput -Output "Computers at department '$( $Computer.depId )' with Java installed:`r`n$output"
+		$outputFile = WriteOutput -Output "$( $msgTable.StrOtherComp ) '$( $Computer.( $msgTable.CodeDepPropName ) )':`r`n$output"
 		$logText += $outputFile
 	}
 	else
 	{
-		$logText += "No computers"
+		$logText += $msgTable.StrNoOtherComp
 	}
 }
 
-WriteLog -LogText "$CaseNr $ComputerName, $logText"
+WriteLog -LogText "$ComputerName, $logText" | Out-Null
 EndScript
