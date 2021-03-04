@@ -1,13 +1,14 @@
 <Window
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="SDGUI"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
         MinWidth="550"
         SizeToContent="WidthAndHeight"
         Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanMinimize">
     <Window.Resources>
+        <sys:Boolean x:Key="WinRM">False</sys:Boolean>
         <Style TargetType="Button">
             <Setter Property="Padding" Value="5"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
