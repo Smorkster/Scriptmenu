@@ -1,0 +1,3 @@
+ConvertFrom-StringData @'
+StrStart = Hämtar information från datorn...
+'@

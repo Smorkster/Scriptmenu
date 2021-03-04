@@ -1,30 +1,30 @@
 <#
 .Synopsis List profiles on remote computer
 .Description List profiles on remote computer.
+.Depends WinRM
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $ComputerName = $args[1]
-$CaseNr = Read-Host "Related casenumber (if any) "
 
-$profileName = Invoke-Command -ComputerName $ComputerName -Scriptblock `
+$profiles = Invoke-Command -ComputerName $ComputerName -Scriptblock `
 {
-	#Creates a variable to hold the path for profiles in the registry
 	$HKLMprofile = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\"
 	$keys = Get-ChildItem $HKLMprofile -Name -Recurse -Include 'S-1-5-21-*'
-	$profileName = @()
 	foreach ( $key in $keys )
 	{
 		$key = Join-Path -Path $HKLMprofile -ChildPath $key
-		$profileName += ( Get-ItemProperty $key ).ProfileImagePath
+		@{ p = ( Get-ItemProperty $key ).ProfileImagePath ; t = ( Get-Item ( Get-ItemProperty $key ).ProfileImagePath ).CreationTime }
 	}
-	$profileName
 }
 
-Write-Host $profileName
+$profiles | Select-Object @{ Name = $msgTable.StrProfLoc; Expression = { $_.p } }, `
+	@{ Name = $msgTable.StrUser; Expression = { try { ( Get-ADUser ( $_.p -split "\\" )[-1] ).Name } catch { WriteErrorLog -LogText $_ } } }, `
+	@{ Name = $msgTable.StrAge; Expression = { ( [DateTime]::Now - $_.t ).Days } } | `
+	Sort-Object ( $msgTable.StrAge ) -Descending | Format-Table -AutoSize
 
-$outputFile = WriteOutput -Output $profileName
+$outputFile = WriteOutput -Output $profiles
 
-WriteLog -LogText "$CaseNr $ComputerName > $( $profileName.Count )`r`n`t$outputFile"
+WriteLog -LogText "$ComputerName > $( $profiles.Count )`r`n`t$outputFile" | Out-Null
 EndScript

@@ -1,6 +1,7 @@
 <#
 .Synopsis Show logged on users on remote computer
 .Description Show logged on users on given computer.
+.Depends WinRM
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

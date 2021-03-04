@@ -1,14 +1,14 @@
 <#
 .Synopsis Restart remote computer
 .Description Forces a reboot of given computer.
+.Depends WinRM
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $ComputerName = $args[1]
-$CaseNr = Read-Host "Related casenumber (if any) "
 
 Restart-Computer -ComputerName $ComputerName -Force -Wait -For PowerShell -Timeout 300 -Delay 2
 
-WriteLog -LogText "$CaseNr $ComputerName"
+WriteLog -LogText "$ComputerName" | Out-Null
 EndScript

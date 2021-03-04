@@ -1,6 +1,7 @@
 <#
 .Synopsis Force logout for all users on remote computer
 .Description Forces logout of all users on given computer.
+.Depends WinRM
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

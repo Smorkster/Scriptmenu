@@ -1,16 +1,16 @@
 <#
 .Synopsis Start application on remote computer
 .Description Start application on remote computer.
+.Depends WinRM
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $ComputerName = $args[1]
-$CaseNr = Read-Host "Related casenumber (if any) "
 
-$Program = Read-Host "Name application to be started"
+$Program = Read-Host "$( $msgTable.QApp )"
 
-Invoke-Command -ComputerName $ComputerName -Scriptblock { Start-Process $Using:Program }
+Invoke-Command -ComputerName $ComputerName -Scriptblock { start $Using:Program }
 
-WriteLog -LogText "$CaseNr $ComputerName $Program"
+WriteLog -LogText "$ComputerName $Program" | Out-Null
 EndScript

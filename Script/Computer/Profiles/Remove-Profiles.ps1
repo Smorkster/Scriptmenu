@@ -2,134 +2,156 @@
 .Synopsis Remove one or more profiles on remote computer
 .Description Remove one or more profiles on remote computer.
 .Requires Role_Servicedesk_Backoffice
-.Author Someone
+.Depends WinRM
 #>
 
 function Connect
 {
-	$syncHash.DC.DClvProfileList[0].Clear()
-	$syncHash.DC.DClbOutput[0].Clear()
+	$syncHash.Window.Dispatcher.Invoke( [action] {
+		$syncHash.DC.lvProfileList[0].Clear()
+		$syncHash.DC.lbOutput[0].Clear()
+	} )
 
-	if ( $syncHash.DC.DCbtnConnect[0] -eq "Connect to computer" )
+	if ( $syncHash.DC.btnConnect[0] -eq $syncHash.Data.msgTable.StrConnect )
 	{
 		if ( VerifyInput )
 		{
 			( [powershell]::Create().AddScript( { param ( $syncHash, $li )
-				$syncHash.DC.DCtxtCName[0] = $false
-				$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.DCProgress[1] = $true } )
-				$syncHash.DC.DCbtnLogOutAll[0] = $false
+				$syncHash.DC.txtCName[0] = $false
+				$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.Progress[1] = $true } )
+				$syncHash.DC.btnLogOutAll[0] = $false
 				$syncHash.Window.Dispatcher.Invoke( [action] {
-					$li.Content = "Check if $( $syncHash.Data.ComputerName ) is online and reachable"
-					$syncHash.DC.DClbOutput[0].Add( $li )
+					$li.Content = "$( $syncHash.Data.msgTable.StrCheckOnline ) $( $syncHash.Data.ComputerName )"
+					$syncHash.DC.lbOutput[0].Add( $li )
 				} )
 
 				try
 				{
 					Test-WSMan $syncHash.Data.ComputerName -ErrorAction Stop
-					$syncHash.Window.Dispatcher.Invoke( [action] { $li.Content += "`n`tIs online" } )
-					$n = ( quser /server:$( $syncHash.data.ComputerName ) | Select-Object -Skip 1 ).Count
+					$syncHash.Window.Dispatcher.Invoke( [action] { $li.Content += "`n`t$( $syncHash.Data.msgTable.StrOnline )" } )
+					$n = ( quser /server:$( $syncHash.data.ComputerName ) | select -Skip 1 ).Count
+					$c = "`n`t$( $n ) $( $syncHash.Data.msgTable.StrUsersLoginSessions )"
 					if ( $n -gt 0 )
 					{
-						$syncHash.Window.Dispatcher.Invoke( [action] { $li.Content += "`n`t$( $n ) users have loginsessions.`n`tLog out all before you continue." } )
-						$syncHash.DC.DCbtnLogOutAll[1] = "Log out all users"
+						$c += "`n`t$( $syncHash.Data.msgTable.StrUsersLoginSessionsLogOut )"
+						$syncHash.DC.btnLogOutAll[1] = $syncHash.Data.msgTable.ContentLogoutUsers
 					}
 					else
 					{
-						$syncHash.Window.Dispatcher.Invoke( [action] { $li.Content += "`n`t0 users have loginsessions." } )
-						$syncHash.DC.DCbtnLogOutAll[1] = "Get profiles"
+						$syncHash.DC.btnLogOutAll[1] = $syncHash.Data.msgTable.ContentGetProfiles
 					}
-					$syncHash.DC.DCbtnLogOutAll[0] = $true
-					$syncHash.DC.DCbtnConnect[0] = "Reset"
+					$syncHash.Window.Dispatcher.Invoke( [action] { $li.Content += $c } )
+					$syncHash.DC.btnLogOutAll[0] = $true
+					$syncHash.DC.btnConnect[0] = $syncHash.Data.msgTable.ContentBtnReset
 				}
 				catch
 				{
+					& $syncHash.WriteErrorLog $_
 					$syncHash.Window.Dispatcher.Invoke( [action] {
-						$li.Content += "`n`tIs NOT online"
+						$li.Content += "`n`t$( $syncHash.Data.msgTable.StrOffline )"
 						$li.Background = "#FFFF0000"
 						$li.FontWeight = "Bold"
 					} )
-					$syncHash.DC.DCtxtCName[0] = $true
+					$syncHash.DC.txtCName[0] = $true
 				}
-				$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.DCProgress[1] = $false } )
+				$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.Progress[1] = $false } )
 			} ).AddArgument( $syncHash ).AddArgument( [System.Windows.Controls.ListBoxItem]@{ Content = "" } ) ).BeginInvoke()
 		}
 	}
 	else
 	{
-		$syncHash.DC.DCbtnLogOutAll[0] = $false
-		$syncHash.DC.DCbtnMarkAll[0] = $false
-		$syncHash.DC.DCbtnRemoveMarked[0] = $false
-		$syncHash.DC.DCtxtCName[0] = $true
+		$syncHash.DC.btnLogOutAll[0] = $false
+		$syncHash.DC.btnSelectAll[0] = $false
+		$syncHash.DC.btnRemoveSelected[0] = $false
+		$syncHash.DC.lvProfileList[1] = $false
+		$syncHash.DC.txtCName[0] = $true
 
-		$syncHash.DC.DCbtnConnect[0] = "Connect to computer"
+		$syncHash.DC.btnConnect[0] = $syncHash.Data.msgTable.StrConnect
 	}
 }
 
 function DeleteProfiles
 {
-	$syncHash.DC.DClvProfileList[1] = $true
+	$syncHash.DC.lvProfileList[1] = $true
 
+	$syncHash.DC.lbOutput[0].Add( [System.Windows.Controls.ListBoxItem]@{ Content = $syncHash.Data.msgTable.StrStart } )
 	$RunspacePool = [runspacefactory]::CreateRunspacePool( 1, 1 )
 	$RunspacePool.CleanupInterval = New-TimeSpan -Minutes 1
 	$RunspacePool.Open()
 	$syncHash.jobs = New-Object System.Collections.ArrayList
-	$syncHash.logText = "$( $syncHash.Data.ComputerName ), $( $syncHash.lvProfileList.SelectedItems.Count ) profiles"
-	$syncHash.Output = "Removed $( $syncHash.lvProfileList.SelectedItems.Count ) profiles on computer $( $syncHash.Data.ComputerName ):"
+	$syncHash.logText = "$( $syncHash.Data.ComputerName ), $( $syncHash.lvProfileList.SelectedItems.Count ) $( $syncHash.Data.msgTable.StrProfiles )"
+	$syncHash.Output = "$( $syncHash.lvProfileList.SelectedItems.Count ) $( $syncHash.Data.msgTable.StrOutputSummary ) $( $syncHash.Data.ComputerName ):"
 	foreach ( $user in ( $syncHash.lvProfileList.SelectedItems ) )
 	{
 		$li = [System.Windows.Controls.ListBoxItem]@{ Content = $user.Name }
 		$ps = [powershell]::Create()
 		$ps.RunspacePool = $RunspacePool
 		[void] $ps.AddScript( { param ( $syncHash, $li, $user )
-			$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.DClbOutput[0].Add( $li ) } )
+			$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.lbOutput[0].Add( $li ) } )
 			# region FileBackup
 			$syncHash.Window.Dispatcher.Invoke( [action] {
-				$li.Content += "`n`tStarting backup for ($( $user.P ))... "
+				$li.Content += "`n`t$( $syncHash.Data.msgTable.StrStartBackup ) ($( $user.P ))... "
 			} )
+
 			$out = Invoke-Command -ComputerName $syncHash.Data.ComputerName -ScriptBlock `
 			{
-				param ( $id, $Name )
-				try { New-Item -Path "C:\Users" -Name Old -ItemType Directory -ErrorAction Stop } catch {}
+				param ( $id, $Name, $BackupFilePrefix )
+				try
+				{
+					try { New-Item -Path "C:\Users" -Name Old -ItemType Directory -ErrorAction Stop } catch {}
 
-				# Directories
-				"C:\Users\$id",
-				"C:\Users\$id\AppData\Roaming\Microsoft\Office",
-				"C:\Users\$id\AppData\Roaming\Microsoft\Signatures",
-				"C:\Users\$id\AppData\Roaming\Microsoft\Sticky Notes" | ForEach-Object {
-					Get-ChildItem $_ -Recurse | Copy-Item -Destination { $_.FullName -replace "$id", "Old\$id" }
-				}
+					# Directories to backup
+					"C:\Users\$id",
+					"C:\Users\$id\AppData\Roaming\Microsoft\Office",
+					"C:\Users\$id\AppData\Roaming\Microsoft\Signatures",
+					"C:\Users\$id\AppData\Roaming\Microsoft\Sticky Notes",
+					"C:\Users\$id\Favorites" | foreach {
+						Get-ChildItem $_ -Recurse -ErrorAction SilentlyContinue | Copy-Item -Destination { $_.FullName -replace "$id", "Old\$id" }
+					}
 
-				#Files
-				"C:\Users\$id\AppData\Local\Google\Chrome\User Data\Default\Bookmarks",
-				"C:\Users\$id\AppData\Roaming\Microsoft\OneNote\16.0\Preferences.dat" | ForEach-Object {
-					New-Item -Path { ( $_ -replace "$id", "Old\$id" -split "\\" | Select-Object -SkipLast 1 ) -join "\" } `
-							-Name { $_ -split "\\" | Select-Object -Last 1 } `
-							-ItemType File `
-							-Force `
-							-Value ( Get-Content -Path $_ )
-				}
+					# Specific files to backup
+					"C:\Users\$id\AppData\Local\Google\Chrome\User Data\Default\Bookmarks",
+					"C:\Users\$id\AppData\Roaming\Microsoft\OneNote\16.0\Preferences.dat" | foreach {
+						if ( Test-Path $_ )
+						{
+							New-Item -Path ( [IO.Path]::GetDirectoryName( $_ ) -replace "$id", "Old\$id" ) `
+								-Name ( [IO.Path]::GetFileName( $_ ) ) `
+								-ItemType File `
+								-Force `
+								-Value { Get-Content -Path $_ }
+						}
+					}
 
-				$zipDest = "C:\Users\Old\$Name Profilebackup, created $( ( Get-Date ).ToShortDateString() ).zip"
-				$earlierBackups = Get-ChildItem -Path "C:\Users\Old" | Where-Object { $_.Name -match $id }
-				$earlierBackups | Where-Object { $_.LastWriteTime -lt ( Get-Date ).AddDays( -30 ) } | Remove-Item
+					# Create zip-backup
+					$zipDest = "C:\Users\Old\$BackupFilePrefix $Name, $( ( Get-Date ).ToShortDateString() ).zip"
+					Compress-Archive -Path C:\Users\Old\$id -DestinationPath $zipDest -CompressionLevel Optimal
+					Remove-Item C:\Users\Old\$id -Recurse -Force
 
-				Compress-Archive -Path C:\Users\Old\$id -DestinationPath $zipDest -CompressionLevel Optimal
-				Remove-Item C:\Users\Old\$id -Recurse
-				[pscustomobject]@{ ZIP = $zipDest ; Org = "C:\Users\$id" }
-			} -ArgumentList $user.ID, $user.Name
-			$syncHash.Window.Dispatcher.Invoke( [action] { $li.Content += "Done" } )
+					# Remove earlier backups
+					Get-ChildItem -Path "C:\Users\Old" | where { $_.Name -match $id -and $_.LastWriteTime -lt ( Get-Date ).AddDays( -30 ) } | Remove-Item2 -Recurse
+
+					[pscustomobject]@{ ZIP = $zipDest ; Org = "C:\Users\$id" }
+				} catch { $_ }
+			} -ArgumentList $user.ID, $user.Name, $syncHash.Data.msgTable.StrBackupFileName
+			$syncHash.Window.Dispatcher.Invoke( [action] { $li.Content += $syncHash.Data.msgTable.StrDone } )
 			# endregion FileBackup
 
 			# region RemoveProfile
-			$syncHash.Window.Dispatcher.Invoke( [action] { $li.Content += "`n`tDeletes profile and files ($( $user.ID ))... " } )
-			Get-CimInstance -ComputerName $syncHash.Data.ComputerName -Class Win32_UserProfile | Where-Object { $_.LocalPath.Split( '\' )[-1] -eq $user.ID } | Remove-CimInstance
-			$syncHash.Window.Dispatcher.Invoke( [action] { $li.Content += "Klar" } )
+			$syncHash.Window.Dispatcher.Invoke( [action] { $li.Content += "`n`t$( $syncHash.Data.msgTable.StrRemoves ) ($( $user.ID ))... " } )
+			Get-CimInstance -ComputerName $syncHash.Data.ComputerName -Class Win32_UserProfile | where { $_.LocalPath.Split( '\' )[-1] -eq $user.ID } | Remove-CimInstance
+			$syncHash.Window.Dispatcher.Invoke( [action] { $li.Content += $syncHash.Data.msgTable.StrDone } )
 			# endregion RemoveProfile
 
-			$syncHash.DC.DClvProfileList[0] = $syncHash.DC.DClvProfileList[0] | Where-Object { $_.ID -ne $user.ID }
-			$syncHash.Output += "`n`n$( $user.Name )`n`tProfile location: $( $out.Org )`n`tZIP-backup: $( $out.ZIP )"
+			$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.lvProfileList[0].Remove( $user ) } )
 
-			$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.DCProgress[0] = [double] ( ( ( ( $syncHash.jobs.H.IsCompleted -eq $true ).Count + 1 ) / $syncHash.jobs.Count ) * 100 ) } )
+			if ( $out -is [System.Management.Automation.ErrorRecord] )
+			{ & $syncHash.WriteErrorLog "$( $syncHash.Data.ComputerName ) - $( $out.Exception.Message )`n`t$( $out.InvocationInfo.PositionMessage )" }
+			else
+			{ $syncHash.Output += "`n`n$( $user.Name )`n`t$( $syncHash.Data.msgTable.StrProfLoc ) : $( $out.Org )`n`t$( $syncHash.Data.msgTable.StrBackupFileName ): $( $out.ZIP )" }
+
+			$syncHash.Window.Dispatcher.Invoke( [action] {
+				$syncHash.DC.Progress[0] = [double] ( ( ( ( $syncHash.jobs.H.IsCompleted -eq $true ).Count + 1 ) / $syncHash.jobs.Count ) * 100 )
+			} )
 		} ).AddArgument( $syncHash ).AddArgument( $li ).AddArgument( $user )
 		[void] $syncHash.jobs.Add( [pscustomobject]@{ P = $ps ; H = $ps.BeginInvoke() } )
 	}
@@ -139,181 +161,223 @@ function DeleteProfiles
 # Log off all users from remote computer
 function LogoffRemote
 {
-	if ( $syncHash.DC.DCbtnLogOutAll[1] -eq "Log out all users" )
+	if ( $syncHash.DC.btnLogOutAll[1] -eq $syncHash.Data.msgTable.ContentLogoutUsers )
 	{
-		$userlogins = quser /server:$( $syncHash.data.ComputerName ) | Select-Object -Skip 1 | ForEach-Object { 
+		$userlogins = quser /server:$( $syncHash.Data.ComputerName ) | select -Skip 1 | foreach { 
 			[pscustomobject]@{
-				UserID = ( $_ -split " +" )[1]
+				UserID = ( Get-ADUser ( $_ -split " +" )[1] ).Name
 				SessionID = $( if ( ( $_ -split " +" ).Count -eq 8 ) { ( $_ -split " +" )[3] } else { ( $_ -split " +" )[2] } )
 			}
 		}
-		$li = [System.Windows.Controls.ListBoxItem]@{ Content = "" }
+
+		$syncHash.Window.Dispatcher.Invoke( [action] {
+			$syncHash.DC.lbOutput[0].Add( [System.Windows.Controls.ListBoxItem]@{ Content = $syncHash.Data.msgTable.StrInfoLogout } )
+		} )
+		SendToast -Message "$( $syncHash.Data.msgTable.StrMessageLogout )" -ComputerName $syncHash.Data.ComputerName
+		Start-Sleep -Seconds 10
+		$userlogins | foreach { logoff $_.SessionID /server:$( $syncHash.Data.ComputerName ) }
 
 		$syncHash.Window.Dispatcher.Invoke( [action] {
 			$ofs = "`n`t"
-			$li.Content = "$( $userlogins.Count ) users logged out`n`t$( [string]( $userlogins.UserID | Get-ADUser | Select-Object -ExpandProperty Name | Sort-Object ) )"
-			$syncHash.DC.DClbOutput[0].Add( $li )
+			$syncHash.DC.lbOutput[0].Add( [System.Windows.Controls.ListBoxItem]@{ Content = "$( @( $userlogins ).Count ) $( $syncHash.Data.msgTable.StrLoggedOutUsers )`n`t$( [string]( $userlogins.UserID ) )" } )
 		} )
 	}
 
-	Get-CimInstance -ComputerName $( $syncHash.Data.ComputerName ) -ClassName Win32_UserProfile | Where-Object { -not $_.Special -and $_.LocalPath -notmatch "default" -and -not [string]::IsNullOrEmpty( $_.LocalPath ) } | ForEach-Object {
+	Get-CimInstance -ComputerName $( $syncHash.Data.ComputerName ) -ClassName Win32_UserProfile | where { ( -not $_.Special ) `
+			-and ( $_.LocalPath -notmatch "default" ) `
+			-and ( $_.LocalPath -notmatch $env:USERNAME ) `
+			-and ( -not [string]::IsNullOrEmpty( $_.LocalPath ) ) } | foreach {
 		[pscustomobject]@{
 			P = $_.LocalPath
 			ID = ( $_.LocalPath -split "\\" )[2].ToUpper()
 			Name = ( Get-ADUser ( $_.LocalPath -split "\\" )[2] ).Name
 			LastUsed = $_.LastUseTime.ToShortDateString()
 		}
-	} | Sort-Object Name | ForEach-Object { $syncHash.DC.DClvProfileList[0].Add( $_ ) }
-	if ( $syncHash.DC.DClvProfileList[0].Count -gt 0 )
+	} | sort Name | foreach { $syncHash.DC.lvProfileList[0].Add( $_ ) }
+	if ( $syncHash.DC.lvProfileList[0].Count -gt 0 )
 	{
-		$syncHash.DC.DCbtnMarkAll[0] = $true
+		$syncHash.DC.btnSelectAll[0] = $true
+		$syncHash.DC.lvProfileList[1] = $true
+	}
+	else
+	{
+		$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.lbOutput[0].Add( [System.Windows.Controls.ListBoxItem]@{ Content = $msgTable.StrNoProfiles } ) } )
+		$syncHash.DC.lvProfileList[1] = $false
 	}
 
-	$syncHash.DC.DCbtnLogOutAll[0] = $false
-	$syncHash.DC.DCbtnRemoveMarked[0] = $false
-	$syncHash.DC.DClvProfileList[1] = $true
+	$syncHash.DC.btnLogOutAll[0] = $false
+	$syncHash.DC.btnRemoveSelected[0] = $false
 }
 
 function VerifyInput
 {
-	$c1 = $true
-	if ( $syncHash.Data.ComputerName -match "(org1|org2)(d|l)s\d{7}" )
+	$c1 = $false
+	if ( $syncHash.Data.ComputerName -match $syncHash.Data.msgTable.CodeComputerMatch )
 	{
-		if ( $role = Get-ADComputer $syncHash.Data.ComputerName -Properties Memberof | Select-Object -ExpandProperty MemberOf | Where-Object { $_ -match "_Wrk_.+PC," } )
+		try
 		{
-			$role | ForEach-Object { if ( $_ -notmatch "(Exp|Admin)" ) { $c1 = $false } }
+			$role = Get-ADComputer $syncHash.Data.ComputerName -Properties Memberof | select -ExpandProperty MemberOf | where { $_ -match "_Wrk_.+PC," }
+			$role | foreach { if ( $_ -match $syncHash.Data.msgTable.CodeRoleMatch ) { $c1 = $true } }
 			if ( -not $c1 )
 			{
-				$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.DClbOutput[0].Add( ( [System.Windows.Controls.ListBoxItem]@{ Content = "Computer does not have the correct role. One or more of these roles demands special handling by IT-Service.`nComputer have these roles:`n`t$( $ofs = "`n`t"; $role | ForEach-Object { ( ( $_ -split "=" )[1] -split "," )[0] } )"; Background = "#FFFF0000" } ) ) } )
+				$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.lbOutput[0].Add( ( [System.Windows.Controls.ListBoxItem]@{ Content = "$( $syncHash.Data.msgTable.StrWrongRole )`n`t$( $ofs = "`n`t"; $role | foreach { ( ( $_ -split "=" )[1] -split "," )[0] } )"; Background = "#FFFF0000" } ) ) } )
 			}
 		}
+		catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException]
+		{
+			WriteErrorLog -LogText $_
+			$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.lbOutput[0].Add( ( [System.Windows.Controls.ListBoxItem]@{ Content = $syncHash.Data.msgTable.StrNameNotInAd; Background = "#FFFF0000" } ) ) } )
+		}
+		catch
+		{
+			WriteErrorLog -LogText $_
+			$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.lbOutput[0].Add( ( [System.Windows.Controls.ListBoxItem]@{ Content = "$( $syncHash.Data.msgTable.StrAdError)`n$_"; Background = "#FFFF0000" } ) ) } )
+		}
 	}
-	elseif ( $syncHash.Data.ComputerName -match "^(org3|org5)" )
+	elseif ( $syncHash.Data.ComputerName -match $syncHash.Data.msgTable.CodeComputerMismatch )
 	{
-		$c1 = $false
-		$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.DClbOutput[0].Add( ( [System.Windows.Controls.ListBoxItem]@{ Content = "Deletion of profiles are only done on computers for Org1 and Org2. This computer belongs to other organisation, so their IT-Service can help."; Background = "#FFFF0000" } ) ) } )
+		$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.lbOutput[0].Add( ( [System.Windows.Controls.ListBoxItem]@{ Content = $syncHash.Data.msgTable.StrWrongOrg; Background = "#FFFF0000" } ) ) } )
 	}
 	else
 	{
-		$c1 = $false
-		$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.DClbOutput[0].Add( ( [System.Windows.Controls.ListBoxItem]@{ Content = "Computername is not valid and can't be verified in AD"; Background = "#FFFF0000" } ) ) } )
+		$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.lbOutput[0].Add( ( [System.Windows.Controls.ListBoxItem]@{ Content = $syncHash.Data.msgTable.StrWrongName; Background = "#FFFF0000" } ) ) } )
 	}
 
 	return $c1
 }
 
 ########################### Script start
-Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
+$BaseDir = $args[0]
+Import-Module "$BaseDir\Modules\FileOps.psm1" -Force
+Import-Module "$BaseDir\Modules\GUIOps.psm1" -Force
+Import-Module "$BaseDir\Modules\RemoteOps.psm1" -Force
 
-$syncHash = [hashtable]::Synchronized( @{} )
-$syncHash.Bindings = [hashtable]( @{} )
-$syncHash.Data = [hashtable]( @{} )
-$syncHash.DC = [hashtable]( @{} )
-$syncHash.Output = ""
-$syncHash.Vars = @()
-$syncHash.Window, $vars = CreateWindow
-$vars | ForEach-Object {
-	$syncHash.$_ = $syncHash.Window.FindName( $_ )
-	$syncHash.Vars += $_
-	$syncHash.Bindings."Bindings$_" = New-Object System.Collections.ObjectModel.ObservableCollection[object]
-	$syncHash.DC."DC$_" = New-Object System.Collections.ObjectModel.ObservableCollection[object]
-}
+$controlProperties = New-Object Collections.ArrayList
+[void]$controlProperties.Add( @{ CName = "Progress"
+	Props = @(
+		@{ PropName = "Value"; PropVal = [double] 0 }
+		@{ PropName = "IsIndeterminate"; PropVal = $false }
+	) } )
+[void]$controlProperties.Add( @{ CName = "spComputer"
+	Props = @(
+		@{ PropName = "IsEnabled"; PropVal = $true }
+		@{ PropName = "Visibility"; PropVal = [System.Windows.Visibility]::Visible }
+	) } )
+[void]$controlProperties.Add( @{ CName = "lbOutput"
+	Props = @(
+		@{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new( ) }
+	) } )
+[void]$controlProperties.Add( @{ CName = "lvProfileList"
+	Props = @(
+		@{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new( ) }
+		@{ PropName = "IsEnabled"; PropVal = $false }
+	) } )
+[void]$controlProperties.Add( @{ CName = "txtCName"
+	Props = @(
+		@{ PropName = "IsEnabled"; PropVal = $true }
+	) } )
+[void]$controlProperties.Add( @{ CName = "btnRemoveSelected"
+	Props = @(
+		@{ PropName = "IsEnabled"; PropVal = $false }
+		@{ PropName = "Content"; PropVal = $msgTable.ContentRemoveSelected }
+	) } )
+[void]$controlProperties.Add( @{ CName = "btnSelectAll"
+	Props = @(
+		@{ PropName = "IsEnabled"; PropVal = $false }
+		@{ PropName = "Content"; PropVal = $msgTable.ContentSelectAll }
+	) } )
+[void]$controlProperties.Add( @{ CName = "btnLogOutAll"
+	Props = @(
+		@{ PropName = "IsEnabled"; PropVal = $false }
+		@{ PropName = "Content"; PropVal = $msgTable.ContentLogoutUsers }
+	) } )
+[void]$controlProperties.Add( @{ CName = "btnConnect"
+	Props = @(
+		@{ PropName = "Content"; PropVal = $msgTable.StrConnect }
+	) } )
+[void]$controlProperties.Add( @{ CName = "lblComputerName"
+	Props = @(
+		@{ PropName = "Content"; PropVal = $msgTable.ContentlblComputerName }
+	) } )
+[void]$controlProperties.Add( @{ CName = "gwcID"
+	Props = @(
+		@{ PropName = "Content"; PropVal = $msgTable.ContentgwcID }
+	) } )
+[void]$controlProperties.Add( @{ CName = "gwcName"
+	Props = @(
+		@{ PropName = "Content"; PropVal = $msgTable.ContentgwcName }
+	) } )
+[void]$controlProperties.Add( @{ CName = "gwcLastUse"
+	Props = @(
+		@{ PropName = "Content"; PropVal = $msgTable.ContentgwcLastUse }
+	) } )
 
-$syncHash.DC.DCProgress.Add( 0.0 ) # 0 Value
-$syncHash.DC.DCProgress.Add( $false ) # 1 IsIndeterminate
+$syncHash = CreateWindowExt $controlProperties
 
-$syncHash.DC.DCspComputer.Add( $true ) # 0 IsEnabled
-$syncHash.DC.DCspComputer.Add( [System.Windows.Visibility]::Visible ) # 1 Visibility
+$syncHash.WriteLog = { 
+	$p = "$BaseDir\Logs\$( ( Get-Date ).Year )\$( ( Get-Date ).Month )\$( ( ( Split-Path $PSCommandPath -Leaf ) -split "\." )[0] ) - log.txt"
+	if ( -not ( Test-Path $p ) ) { New-Item -Path $p -ItemType File -Force }
+	Add-Content -Value "$( Get-Date -f "yyyy-MM-dd HH:mm:ss" ) $( $env:USERNAME ) => $( $args[0] )" -Path $f.FullName }
+$syncHash.WriteOutput = {
+	$f = New-Item -Path "$BaseDir\Output\$( $env:USERNAME )" -Name "$( ( ( Split-Path $PSCommandPath -Leaf ) -split "\." )[0] ), $( Get-Date -Format "yyyy-MM-dd HH.mm.ss" ).txt" -ItemType File -Force
+	Add-Content -Value "$( Get-Date -f "yyyy-MM-dd HH:mm:ss" ) $( $env:USERNAME ) => $( $args[0] )" -Path $f.FullName }
+$syncHash.WriteErrorLog = {
+	$f = New-Item -Path "$BaseDir\ErrorLogs\$( ( Get-Date ).Year )\$( ( Get-Date ).Month )" -Name "$( ( ( Split-Path $PSCommandPath -Leaf ) -split "\." )[0] ) - ErrorLog $( Get-Date -Format "yyyy-MM-dd HH.mm.ss" ).txt" -ItemType File -Force
+	Add-Content -Value "$( Get-Date -f "yyyy-MM-dd HH:mm:ss" ) $( $env:USERNAME ) => $( $args[0] )" -Path $f.FullName }
 
-$syncHash.DC.DClbOutput.Add( ( New-Object System.Collections.ObjectModel.ObservableCollection[object] ) ) # 0 ItemsSource
-
-$syncHash.DC.DClvProfileList.Add( ( New-Object System.Collections.ObjectModel.ObservableCollection[object] ) ) # 0 ItemsSource
-$syncHash.DC.DClvProfileList.Add( $false ) # 1 IsEnabled
-
-$syncHash.DC.DCtxtCName.Add( $true ) # 0 IsEnabled
-
-$syncHash.DC.DCbtnRemoveMarked.Add( $false ) # 0 IsEnabled
-
-$syncHash.DC.DCbtnMarkAll.Add( $false ) # 0 IsEnabled
-$syncHash.DC.DCbtnMarkAll.Add( "Markera alla" ) # 1 Content
-
-$syncHash.DC.DCbtnLogOutAll.Add( $false ) # 0 IsEnabled
-$syncHash.DC.DCbtnLogOutAll.Add( "Logga ut alla användare" ) # 1 Content
-
-$syncHash.DC.DCbtnConnect.Add( "Connect to computer" ) # 0 Content
-
-foreach ( $v in $syncHash.Vars )
-{
-	0..( $syncHash.DC."DC$v".Count - 1 ) | ForEach-Object { [void] $syncHash.Bindings."Bindings$v".Add( ( New-Object System.Windows.Data.Binding -ArgumentList "[$_]" ) ) }
-	$syncHash.Bindings."Bindings$v" | ForEach-Object { $_.Mode = [System.Windows.Data.BindingMode]::TwoWay }
-	$syncHash.$v.DataContext = $syncHash.DC."DC$v"
-}
-
-[void][System.Windows.Data.BindingOperations]::SetBinding( $syncHash.Progress, [System.Windows.Controls.ProgressBar]::ValueProperty, $syncHash.Bindings.BindingsProgress[0] )
-[void][System.Windows.Data.BindingOperations]::SetBinding( $syncHash.Progress, [System.Windows.Controls.ProgressBar]::IsIndeterminateProperty, $syncHash.Bindings.BindingsProgress[1] )
-[void][System.Windows.Data.BindingOperations]::SetBinding( $syncHash.spComputer, [System.Windows.Controls.StackPanel]::IsEnabledProperty, $syncHash.Bindings.BindingsspComputer[0] )
-[void][System.Windows.Data.BindingOperations]::SetBinding( $syncHash.spComputer, [System.Windows.Controls.StackPanel]::VisibilityProperty, $syncHash.Bindings.BindingsspComputer[1] )
-[void][System.Windows.Data.BindingOperations]::SetBinding( $syncHash.txtCName, [System.Windows.Controls.TextBox]::IsEnabledProperty, $syncHash.Bindings.BindingstxtCName[0] )
-[void][System.Windows.Data.BindingOperations]::SetBinding( $syncHash.btnConnect, [System.Windows.Controls.Button]::ContentProperty, $syncHash.Bindings.BindingsbtnConnect[0] )
-[void][System.Windows.Data.BindingOperations]::SetBinding( $syncHash.btnLogOutAll, [System.Windows.Controls.Button]::IsEnabledProperty, $syncHash.Bindings.BindingsbtnLogOutAll[0] )
-[void][System.Windows.Data.BindingOperations]::SetBinding( $syncHash.btnLogOutAll, [System.Windows.Controls.Button]::ContentProperty, $syncHash.Bindings.BindingsbtnLogOutAll[1] )
-[void][System.Windows.Data.BindingOperations]::SetBinding( $syncHash.btnMarkAll, [System.Windows.Controls.Button]::IsEnabledProperty, $syncHash.Bindings.BindingsbtnMarkAll[0] )
-[void][System.Windows.Data.BindingOperations]::SetBinding( $syncHash.btnMarkAll, [System.Windows.Controls.Button]::ContentProperty, $syncHash.Bindings.BindingsbtnMarkAll[1] )
-[void][System.Windows.Data.BindingOperations]::SetBinding( $syncHash.btnRemoveMarked, [System.Windows.Controls.Button]::IsEnabledProperty, $syncHash.Bindings.BindingsbtnRemoveMarked[0] )
-[void][System.Windows.Data.BindingOperations]::SetBinding( $syncHash.lvProfileList, [System.Windows.Controls.ListView]::ItemsSourceProperty, $syncHash.Bindings.BindingslvProfileList[0] )
-[void][System.Windows.Data.BindingOperations]::SetBinding( $syncHash.lvProfileList, [System.Windows.Controls.ListView]::IsEnabledProperty, $syncHash.Bindings.BindingslvProfileList[1] )
-[void][System.Windows.Data.BindingOperations]::SetBinding( $syncHash.lbOutput, [System.Windows.Controls.ListBox]::ItemsSourceProperty, $syncHash.Bindings.BindingslbOutput[0] )
-
+$syncHash.Data.msgTable = $msgTable
 $syncHash.btnConnect.Add_Click( { Connect } )
 
-$syncHash.btnMarkAll.Add_Click( {
-	if ( $syncHash.DC.DCbtnMarkAll[1] -eq "Select all" )
+$syncHash.btnSelectAll.Add_Click( {
+	if ( $syncHash.DC.btnSelectAll[1] -eq $syncHash.Data.msgTable.ContentSelectAll )
 	{
 		$syncHash.lvProfileList.SelectAll()
-		$syncHash.DC.DCbtnMarkAll[1] = "Deselect all"
+		$syncHash.DC.btnSelectAll[1] = $syncHash.Data.msgTable.ContentDeselectAll
 	}
 	else
 	{
 		$syncHash.lvProfileList.UnselectAll()
-		$syncHash.DC.DCbtnMarkAll[1] = "Select all"
+		$syncHash.DC.btnSelectAll[1] = $syncHash.Data.msgTable.ContentSelectAll
 	}
 } )
 
-$syncHash.btnRemoveMarked.Add_Click( { DeleteProfiles } )
+$syncHash.btnRemoveSelected.Add_Click( { DeleteProfiles } )
 $syncHash.btnLogOutAll.Add_Click( { LogoffRemote } )
 
 $syncHash.lvProfileList.Add_SelectionChanged( {
 	if ( $syncHash.lvProfileList.SelectedItems.Count -eq 0 )
 	{
-		$syncHash.DC.DCbtnRemoveMarked[0] = $false
+		$syncHash.DC.btnRemoveSelected[0] = $false
 	}
 	else
 	{
-		$syncHash.DC.DCbtnRemoveMarked[0] = $true
+		$syncHash.DC.btnRemoveSelected[0] = $true
 	}
 } )
 
 $syncHash.Progress.Add_ValueChanged( {
-	if ( $this.Value -eq 100 )
+	if ( $this.Value -ge 100 )
 	{
-		$syncHash.logText += "`n`tSummary: $( WriteOutput -Output $( $syncHash.Output ) )"
+		$syncHash.logText += "`n`t$( WriteOutput -Output $( $syncHash.Output ) )"
 		$logFile = WriteLog -LogText $syncHash.logText
-		$syncHash.DC.DClvProfileList[1] = $true
+		$syncHash.DC.lvProfileList[1] = $true
 
-		$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.DCProgress[0] = [double] ( 0 ) } )
+		$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.Progress[0] = [double] ( 0 ) } )
 	}
 } )
 
 $syncHash.txtCName.Add_TextChanged( {
-	$syncHash.Data.ComputerName = $syncHash.txtCName.Text
+	$syncHash.Data.ComputerName = $syncHash.txtCName.Text.Trim()
 } )
+$syncHash.txtCName.Add_KeyDown( { if ( $args[1].Key -eq "Return" ) { Connect } } )
 
 $syncHash.Window.Add_ContentRendered( {
-	$syncHash.Window.Top = 80; $syncHash.Window.Activate()
+	$syncHash.Window.Top = 80
+	$syncHash.Window.Activate()
+	$syncHash.txtCName.Focus()
 } )
 
 $syncHash.Data.ComputerName = $syncHash.txtCName.Text = $args[1]
 
 [void] $syncHash.Window.ShowDialog()
 $syncHash.Window.Close()
-#$global:syncHash = $syncHash

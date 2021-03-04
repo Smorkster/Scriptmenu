@@ -1,32 +1,32 @@
 <#
 .Synopsis Helps handle 'Waiting for userlogin'
 .Description Clears tasklist for CCMEXEC. This may help errormessage "Waiting for userlogin".
+.Depends WinRM
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $ComputerName = $args[1]
-$CaseNr = Read-Host "Related casenumber (if any) "
 
 Invoke-Command -ComputerName $ComputerName -ScriptBlock `
 {
-	$CITask = Get-WmiObject -Query "select * from CCM_CITask where TaskState != ' PendingSoftReboot' AND TaskState != 'PendingHardReboot' AND TaskState != 'InProgress'" -Namespace root\ccm\CITasks
+	$CITask = Get-WmiObject -Query "SELECT * FROM CCM_CITask WHERE TaskState != ' PendingSoftReboot' AND TaskState != 'PendingHardReboot' AND TaskState != 'InProgress'" -Namespace root\ccm\CITasks
 	if ( $CITask -ne $NULL )
 	{
 		$CITask | Remove-WmiObject -Whatif
 		$CITask | Remove-WmiObject
-		Write-Host "CCM_CITask is now cleared"
+		$ret = $using:msgTable.StrCleared
 	}
 	else
 	{
-		Write-Host "List for CCM_CITask is empty. Nothing to do."
+		$ret = $using:msgTable.StrEmpty
 	}
 
 	Start-Sleep -Seconds 10
 	Restart-Service -Name CcmExec -Force
 }
 
-Write-Host "You can now ask the user to reboot the computer."
+Write-Host "$( $msgTable.StrDone )"
 
-WriteLog -LogText "$CaseNr $ComputerName"
+WriteLog -LogText "$ComputerName" | Out-Null
 EndScript

@@ -1,14 +1,14 @@
 <#
 .Synopsis Show networkrouting from remote computer to given address
 .Description Show networkrouting from remote computer to given address.
+.Depends WinRM
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $ComputerName = $args[1]
-$CaseNr = Read-Host "Related casenumber (if any) "
 
-$Destination = Read-Host "Target IP-address"
+$Destination = Read-Host "$( $msgTable.QTargetIP )"
 
 $Trace = Invoke-Command -Computername $ComputerName -Scriptblock { tracert $Destination }
 
@@ -16,5 +16,5 @@ $outputFile = WriteOutput -Output $Trace
 
 Start-Process notepad $outputFile -Wait
 
-WriteLog -LogText "$CaseNr $ComputerName`r`n`t$outputFile"
+WriteLog -LogText "$ComputerName`r`n`t$outputFile" | Out-Null
 EndScript

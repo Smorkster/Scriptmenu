@@ -1,21 +1,20 @@
 <#
 .Synopsis Send message to remote computer
 .Description Sends a message to the given computer.
+.Depends WinRM
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
 $ComputerName = $args[1]
 
-$CaseNr = Read-Host "Related casenumber (if any) "
-$Message = Read-Host "Write message"
+$Message = Read-Host "$( $msgTable.StrMessage )"
 
-Invoke-Command -ComputerName $ComputerName -Args $Message -ScriptBlock `
-{
+Invoke-Command -computername $ComputerName -Args $Message -ScriptBlock ` {
 	Param( $Message )
-	$CmdMessage = { C:\Windows\system32\msg.exe * "$Message" }
+	$CmdMessage = { C:\windows\system32\msg.exe * "$Message" }
 	$CmdMessage | Invoke-Expression
 }
 
-WriteLog -LogText "$CaseNr $ComputerName > '$Message'"
+WriteLog -LogText "$ComputerName > '$Message'" | Out-Null
 EndScript
