@@ -5,34 +5,32 @@
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
-# Set global TimeOut for session to one hour
-[System.Net.ServicePointManager]::MaxServicePointIdleTime = 3600000
-
-$CaseNr = Read-Host "Related casenumber (if any) "
-Write-Host "`n`nNotepad opens, enter users`n"
-$UsersIn = GetUserInput -DefaultText "Write user-ids, one per row"
+Write-Host "$( $msgTable.StrTitle )`n"
+Write-Host "`n`n$( $msgTable.StrNotepad )`n"
+$UsersIn = GetUserInput -DefaultText $msgTable.StrNotepadTitle
 
 $OutputFiles = @()
 Start-Sleep -Seconds 1
 
-foreach( $User in $UsersIn )
+foreach ( $User in $UsersIn )
 {
 	$Read = @()
 	$Change = @()
 	$Full = @()
 	$Other = @()
 
-	Write-Host "`n`n*****************************`nFetching all groups for $User. This might take a while."
+	Write-Host "`n`n*****************************`n$( $msgTable.StrOpTitle ) $User."
 	$dn = ( Get-ADUser $User ).DistinguishedName
-	$Groups1 = Get-ADGroup -LDAPFilter ( "(member:1.2.840.113556.1.4.1941:={0})" -f $dn )  | Select-Object -ExpandProperty Name | Sort-Object Name
+	$Groups1 = Get-ADGroup -LDAPFilter ( "(member:1.2.840.113556.1.4.1941:={0})" -f $dn ) | Select-Object -ExpandProperty Name | Sort-Object Name
 
-	# Sort and create list only containing File-groups without "_User_". (I.e. those ending with _F, _C eller _R)
-	$Groups2 = $Groups1 -like "*_File_*"
+	# Sort groups and create list of groups whos name contains '_Fil_' but not '_User_' (this being groupname ending in _F, _C or _R)
+	$Groups2 = $Groups1 -like "*_Fil_*"
 	$Groups3 = $Groups2 -inotlike "*_User_*"
 
+	# Run for each groups in $Groups3
 	foreach( $Group in $Groups3 )
 	{
-		# Rewrite groupnames as searchable strings.
+		# Creates groupnames and transforms into proper pathway. First If handles permissions outside G, R and S
 		if ( $Group -notcontains "*_Grp_*" -or "*_Gem_*" -or "*_App_*" )
 		{
 			$X = $Group.Substring( 8 )
@@ -40,13 +38,13 @@ foreach( $User in $UsersIn )
 			$Y = $X.Substring( $X.IndexOf( '_' ) )
 			if ( ( $Group.Substring( $Group.LastIndexOf( '_' ) ) -notcontains "_R" -or "_C" -or "_F" ) )
 			{
-				$Folder = $Y.Substring( 1, $Y.Length -1 )
+				$Mapp = $Y.Substring( 1, $Y.Length -1 )
 			}
 			else
 			{
-				$Folder = $Y.Substring( 1, $Y.Length -3 )
+				$Mapp = $Y.Substring( 1, $Y.Length -3 )
 			}
-			$Path = "\\$Server\$Folder"
+			$Path = "\\$Server\$Mapp"
 		}
 		else
 		{
@@ -62,7 +60,7 @@ foreach( $User in $UsersIn )
 			{
 				$Type = "App_"
 			}
-			$Customer = $Group.SubString( 0, 3 )
+			$Kund = $Group.SubString( 0, 3 )
 			$X = $Group.Substring( $Group.LastIndexOf( 'Grp_' ) )
 			if ( ( $Group.Substring( $Group.LastIndexOf( '_' ) ) -eq "_R" -or "_C" -or "_F" ) )
 			{
@@ -73,11 +71,11 @@ foreach( $User in $UsersIn )
 				$Y = ""
 			}
 			$Z = $X.Replace( "Grp_", "" )
-			$Folder = $Z.Replace( "$Y", "" )
-			$Path = "G:\$Customer\$Folder"
+			$Mapp = $Z.Replace( "$Y", "" )
+			$Path = "G:\$Kund\$Mapp"
 		}
 
-		# Depending on the ending of groupname, put pathway in correct array. Default is for groups without F, C or R at the end.
+		# Depending of name-suffix pathway is sorted to correct array.
 		switch ( $Group.Substring( $Group.LastIndexOf( '_' ) ) )
 		{
 			"_R" { $Read += "$Path`r`n" }
@@ -87,39 +85,41 @@ foreach( $User in $UsersIn )
 		}
 	}
 
-	# Remove pathways created due to groups giving readpermission on DFS-links
+	# Remove pathway created due to groups giving read-permission for DFS-links
 	$Read = $Read | Where-Object { $_ -Notlike "*\R" } | Where-Object { $_ -Notlike "*\Ext" }
 	$Other = $Other | Where-Object { $_ -Notlike "*\R" } | Where-Object { $_ -Notlike "*\Ext" }
 
-	# Sort and remove any douplets from each array
+	# Sort and remove duplicates in each array
 	$Read = $Read | Sort-Object | Select-Object -Unique
 	$Change = $Change | Sort-Object | Select-Object -Unique
 	$Full = $Full | Sort-Object | Select-Object -Unique
 	$Other = $Other | Sort-Object | Where-Object { $Read -notcontains $_ } | Where-Object { $Change -notcontains $_ } | Where-Object { $Full -notcontains $_ } | Select-Object -Unique
 
-	$outputInfo = "OBS!!!`r`nThere might be some errors in these lists. '_' can be spaces in actual pathway.`r`nFoldernames for permissions outside G, R and S can be wrong or don't exist.`r`nSome shares can be old and don't exist anymore."
-	$outputInfo += "`r`n`r`n$User have Read permission for these folders:`r`n"
+	$outputInfo = "$( $msgTable.StrOutInfo1 )`r`n$( $msgTable.StrOutInfo2 )`r`n$( $msgTable.StrOutInfo3)"
+	$outputInfo += "`r`n`r`n$User $( $msgTable.StrOutTitle )`r`n"
+	$outputInfo += "`r`n`r`n$( $msgTable.StrOutTitleRead ):`r`n"
 	$outputInfo += $Read
-	$outputInfo += "`r`n`r`n$User have Change permission for these folders:`r`n"
+	$outputInfo += "`r`n`r`n$( $msgTable.StrOutTitleChange ):`r`n"
 	$outputInfo += $Change
-	$outputInfo += "`r`n`r`n$User have Full permission for these folders:`r`n"
+	$outputInfo += "`r`n`r`n$( $msgTable.StrOutTitleFull ):`r`n"
 	$outputInfo += $Full
-	$outputInfo += "`r`n`r`n$User have unknown permission for these folders:`r`n"
+	$outputInfo += "`r`n`r`n$( $msgTable.StrOutTitleUnknown ):`r`n"
 	$outputInfo += $Other
 
-	# Exportera behörigheter till en textfil
+	# Export to textfile
 	Write-Host $outputInfo
 
 	$outputFile = WriteOutput -FileNameAddition $User -Output $outputInfo
-	Write-Host "A list of permissions for $User have been written to:`n$outputFile"
+	Write-Host "$( $msgTable.StrOutPath )`n$outputFile"
 	$OutputFiles += $outputFile
 }
 
-WriteLog -LogText "$CaseNr $UsersIn"
+WriteLog -LogText "$UsersIn" | Out-Null
 
 foreach ( $file in $OutputFiles )
 {
 	Start-Process notepad $file
 }
 
+Write-Host "$( $msgTable.StrEnd )"
 EndScript

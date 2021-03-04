@@ -5,13 +5,12 @@
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 
-Write-Host "Listing alla members (users, computers, printers etc)`n"
+Write-Host "$( $msgTable.StrTitle )`n"
 
-$CaseNr = Read-Host "Related casenumber (if any) "
-$Name = Read-Host "Groupname to search for "
+$grpName = Read-Host "$( $msgTable.QGName ) "
 
-Get-ADGroupMember -Identity $Name | ForEach-Object { $members += "$_.ObjectClass`t$_.Name`r`n" }
+Get-ADGroupMember -Identity $grpName | Foreach-Object { $members += "$_.ObjectClass`t$_.Name`r`n" }
 
-WriteOutput -Output "Group $Name :`r`n$members"
-WriteLog -LogText "$CaseNr $Input`r`n`t$outputFile"
+WriteOutput -Output "Grupp $grpName :`r`n$members"
+WriteLog -LogText "$grpName`r`n`t$outputFile" | Out-Null
 EndScript

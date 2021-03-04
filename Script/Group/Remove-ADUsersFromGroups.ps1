@@ -3,26 +3,27 @@
 .Description Remove multiple users from one or more AD-groups.
 #>
 
+Import-Module "$( $args[0] )\Modules\ConsoleOps.psm1" -Force
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 Import-Module ActiveDirectory
 
 $output = ""
 
-$CaseNr = Read-Host "Related casenumber (if any) "
-Write-Host "Name one or more groups where users is to be removed (type Enter twice to finish)"
+Write-Host "`n $( $msgTable.StrTitle ) `n" -ForegroundColor Cyan
+Write-Host "`n`n$( $msgTable.QGroups )"
 $Groups = GetConsolePasteInput
 
 Start-Sleep -Seconds 1
-Write-Host "Name one or more users whos permissions are to be removed"
+Write-Host "`n`n$( $msgTable.QUsers )"
 $Users = GetConsolePasteInput
 
 foreach ( $GroupId in $Groups )
 {
-	# Get group and its members
+	# Get group and its users
 	$Group = Get-ADGroup $GroupId
-	$GroupMembers = $Group | Get-ADGroupMember | Select-Object -ExpandProperty SamAccountName
-	Write-Host "Fetching members for $Group `n" -ForegroundColor Cyan
-	# Array for removal
+	$GroupMembers = $Group | Get-ADGroupMember | select -ExpandProperty SamAccountName
+	Write-Host "$( $msgTable.StrGettingUsers ) $Group `n" -ForegroundColor Cyan
+
 	$UserRemoval = @()
 	$AllUsers = @()
 	$nRow = ""
@@ -31,33 +32,34 @@ foreach ( $GroupId in $Groups )
 	foreach ( $UserId in $Users )
 	{
 		$AllUsers += $UserId
-		# If user exists in the group, add it to array
-		if ( $GroupMembers -contains $UserId )
+		# If list contains user, add user to array for removal
+		if ( ( $GroupMembers -contains $UserId ) )
 		{
 			$UserRemoval += Get-ADUser $UserId
 		}
 	}
 
-	Write-Host "`nRemove users from group $( $Group.Name ): `n" -ForegroundColor Cyan
+	# Remove user from groups, based on array
+	Write-Host "`n$( $msgTable.StrRemoveUser ) $( $Group.Name ): `n" -ForegroundColor Cyan
 
-	$output += "`r`nGroupname: $Group`r`n`t"
+	$output += "`r`nGruppnamn: $Group`r`n`t"
 	$UserRemoval | Remove-ADPrincipalGroupMembership -MemberOf $Group -Confirm:$false
 	foreach ( $User in $UserRemoval )
 	{
 		Write-Host "$User " -ForegroundColor Green -NoNewline
 		$Row += "$User, "
 	}
-	$AllUsers | ForEach-Object { if ( $UserRemoval.SamAccountName -notcontains $_ ) { $nRow += "$nRow " } }
+	$AllUsers | foreach { if ( $UserRemoval.SamAccountName -notcontains $_ ) { $nRow += "$nRow " } }
 	if ( $nRow -ne "" )
 	{
-		Write-Host "These were not members and were not removed:`n$nRow"
+		Write-Host "$( $msgTable.StrNotMembers ):`n$nRow"
 	}
 	$output += $Row.Substring( 0, $Row.Length - 2 )
 	$output += "`r`n-------------------------------------------------"
 }
 
 $outputFile = WriteOutput -Output $output.Trim()
-Write-Host "Output written to file '$outputFile'"
+Write-Host "$( $msgTable.StrSummaryPath ) '$outputFile'"
 
-WriteLog -LogText "$CaseNr $( $AllUsers.Count ) users, $( $Groups.Count )`r`n`t$outputFile"
+WriteLog -LogText "$( $AllUsers.Count ) $( $msgTable.StrUsers ), $( $Groups.Count )`r`n`t$outputFile" | Out-Null
 EndScript

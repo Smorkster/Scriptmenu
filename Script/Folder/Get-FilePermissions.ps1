@@ -18,19 +18,23 @@ function GetMember
 		try
 		{
 			$groupMembers = Get-ADGroup $member -Properties members
-			$groupMembers.members | ForEach-Object { GetMember $_ }
+			$groupMembers.members | foreach { GetMember $_ }
 		}
-		catch { return $null }
+		catch
+		{
+			WriteErrorLog -LogText "GetMember:`n$_"
+			return $null
+		}
 	}
 }
 
-$CaseNr = Read-Host "Casenumber (if any) "
-$File = Read-Host "Pathway for file"
+Write-Host " $( $msgTable.StrTitle )"
+$File = Read-Host "$( $msgTable.QPath )"
 
-$output = "Permissiongroups and its members for file:`n$File"
+$output = "$( $msgTable.StrOutTitle ):`n$File"
 $FileSystemRights = @{}
 $PermissionList = Get-Acl $File | Select-Object -ExpandProperty Access | Select-Object -Property @{ Name = "IdentityReference"; Expression = { ( [string]$_.IdentityReference -split "\\" )[1] } }, FileSystemRights
-$PermissionList | Group-Object FileSystemRights | ForEach-Object { $FileSystemRights += @{ $_.Name = New-Object System.Collections.ArrayList } }
+$PermissionList | Group-Object FileSystemRights | Foreach-Object { $FileSystemRights += @{ $_.Name = New-Object System.Collections.ArrayList } }
 
 foreach ( $rightsType in $FileSystemRights.Keys )
 {
@@ -40,12 +44,13 @@ foreach ( $rightsType in $FileSystemRights.Keys )
 	foreach ( $holder in $rightsHolder )
 	{
 		$member = GetMember $holder.IdentityReference
-		if ( $null -ne $member )
-		{ $member | Where-Object { $_ -match "\(" } | ForEach-Object { $toutput += $_ } }
+		if ( $member -ne $null )
+		{ $member | Where-Object { $_ -match "\(" } | Foreach-Object { $toutput += $_ } }
 	}
-	$toutput | Select-Object -Unique | Sort-Object | ForEach-Object { $output += "$_`n" }
+	$toutput | Select-Object -Unique | Sort-Object | Foreach-Object { $output += "$_`n" }
 }
 
 $outputfile = WriteOutput -Output $output
-WriteLog -LogText "$File`n`tSummary: $outputfile"
+WriteLog -LogText "$File`n`t$( $msgTable.StrLogSum ): $outputfile" | Out-Null
+Write-Host "$( $msgTable.StrSumPath ) $outputfile"
 EndScript
