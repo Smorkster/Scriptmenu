@@ -16,14 +16,20 @@ New files must follow these rules:
 * Fileextension .ps1
 * No spaces in filename
 * The script must contain these lines, at the beginning:
-  <#
-		.Synopsis - A short description of what script does [Necessary]
-		.Description - A longer, more detailed description of the script. This will be shown as a tooltip for controls for the script [Necessary]
-		.Requires - A list of AD-groups the user must be member of. If the user is not a member, this script will not be available. If this is not specified, the script will be available for all users. Groupnames are separated by commas (',')
-		.AllowedUsers - List of users allowed to run the script. This can be used if the user/-s are not member of required AD-group, or if only specific users should be able to use the script. Usernames are separated by commas (',')
-		.Author - Who has created the script, i.e. who is responsible
-		#>
-	* To be able to use logging, availabe functions for handling files or other common uses, there are modules available. These are imported with:
+```powershell
+<#
+.Synopsis - A short description of what script does [Necessary]
+.Description - A longer, more detailed description of the script. This will be shown as a tooltip for controls for the script [Necessary]
+.Author - Who has created the script, i.e. who is responsible
+#>
+```
+* A script can limit who gets access to run it, by adding one or more of these to the help-section:
+* **.Requires** - A list of AD-groups the user must be member of. If the user is not a member, this script will not be available. If this is not specified, the script will be available for all users. Groupnames are separated by commas (',')
+* **.AllowedUsers** - List of users allowed to run the script. This can be used if the user/-s are not member of required AD-group, or if only specific users should be able to use the script. Usernames are separated by commas (',')
+* If a script uses any technology that can first be check if present before start, use `.Depends` in the help-section. A list of technologies that are checked, se "Dependencies" below.
+  * `.Depends WinRM`
+
+* To be able to use logging, availabe functions for handling files or other common uses, there are modules available. These are imported with:
     `Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force`
 
 When scripts are started from the GUI, it is initiated with an argument for the root-folder (i.e. *Scriptmenu*-folder). This argument is contained in `$args[0]`.
@@ -33,12 +39,23 @@ Any scripts in the *Computer*-folder will also get computername entered in the t
 All folders in the *Script*-folder, will get a tab in the tabcontrol. If a folder contains any subfolder, that in turn will give another tabcontrol, within that tab and also contain tabs for each folder.
 Foldernames must not contain any space. If a foldername should have more than one name, each word should be capitalized. SDGUI will then add a space between the words to then be shown in the tabitem-header.
 
-### *Computer*-folder
+### Special folders
+#### *Computer*-folder
 Script directly in the *Computer*-folder is visible by default.
 Any script in a subfolder is hidden by default and will be made visible if the computer entered in textbox, is online and reachable. These are shown after a check made from the "Fetch info"-button.
 
+#### *O365*-folder
+Script directly in the *O365*-folder is visible by default.
+Scripts located in any subfolder are made visible after connecting to Office365 online services. These scripts can only use the connection if they are not started in a separate PowerShell window. Therefore, they will be started through Invoke-Command and therefore need to manage visibility themselves or use GUI windows.
+
 ## Pictures
 Pictures are placed in the *Pictures*-folder
+
+## Dependencies
+A script can use technology that is not guaranteed to be available at startup, e.g. WinRM to work with remote computer. This can be specified in the help section at the beginning of the script. SDGUI checks if the technology is available and will then make the button to start the script, available or not. To create this dependency, enter ".Depends <technology>" in the help section. Only one technology per script can be used.
+
+The following techniques can be checked at the moment:
+* WinRM - Used for remote management of remote computer, e.g. Get-Process or Invoke-Command
 
 ## Other applications
 Applications to be used by scripts are placed in the *Apps*-folder
