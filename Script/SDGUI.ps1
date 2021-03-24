@@ -1,7 +1,6 @@
 <#
 .Synopsis Main script
 .Description Main script for collecting and accessing script
-.Author Someone
 #>
 
 ####################################################
@@ -96,16 +95,16 @@ function ConnectO365
 	try
 	{
 		$azureAdAccount = Connect-AzureAD -ErrorAction Stop
-		$lblAzureAD.Background = "LightGreen"
+		$statusAzureAD.Fill = "LightGreen"
 	}
-	catch { $lblAzureAD.Background = "LightCoral" }
+	catch { $statusAzureAD.Fill = "LightCoral" }
 
 	try
 	{
 		Connect-ExchangeOnline -UserPrincipalName $azureAdAccount.Account.Id -ErrorAction Stop
-		$lblExchange.Background = "LightGreen"
+		$statusExchange.Fill = "LightGreen"
 	}
-	catch { $lblExchange.Background = "LightCoral" }
+	catch { $statusExchange.Fill = "LightCoral" }
 
 	if ( ( Get-AzureADCurrentSessionInfo ) -or ( Get-PSSession -Name Exchange* ) )
 	{
@@ -329,14 +328,18 @@ function CreateO365Input
 	}
 	$lpad = "5,0,5,0"
 	$l = [System.Windows.Controls.Label]@{ Content = $msgTable.ContentLblO365Connected; Margin = "0,0,10,0" }
-	$bo = [System.Windows.Controls.Border]@{ CornerRadius = 3; BorderBrush = "Black"; BorderThickness = 1 }
-	$cb1 = [System.Windows.Controls.Label]@{ Content = "ExchangeOnline"; Background = "Red"; VerticalContentAlignment = "Center"; Padding = $lpad }
-	$bo.Child = $cb1
-	Set-Variable -Name "lblExchange" -Value $cb1 -Scope script
-	$bo2 = [System.Windows.Controls.Border]@{ CornerRadius = 3; BorderBrush = "Black"; BorderThickness = 1; Margin = "5,0,0,0" }
-	$cb2 = [System.Windows.Controls.Label]@{ Content = "AzureAD"; Background = "Red"; VerticalContentAlignment = "Center"; Padding = $lpad }
-	$bo2.Child = $cb2
-	Set-Variable -Name "lblAzureAD" -Value $cb2 -Scope script
+	$bo = [System.Windows.Controls.StackPanel]@{ Orientation = "Horizontal" }
+	$e1 = [System.Windows.Shapes.Ellipse]@{ Fill = "LightCoral"; Height = 15; Width = 15; Stroke = "Black" }
+	$cb1 = [System.Windows.Controls.Label]@{ Content = "ExchangeOnline"; VerticalContentAlignment = "Center"; Padding = $lpad }
+	$bo.AddChild( $e1 )
+	$bo.AddChild( $cb1 )
+	Set-Variable -Name "statusExchange" -Value $e1 -Scope script
+	$bo2 = [System.Windows.Controls.StackPanel]@{ Orientation = "Horizontal" }
+	$e2 = [System.Windows.Shapes.Ellipse]@{ Fill = "LightCoral"; Height = 15; Width = 15; Stroke = "Black" }
+	$cb2 = [System.Windows.Controls.Label]@{ Content = "AzureAD"; VerticalContentAlignment = "Center"; Padding = $lpad }
+	$bo2.AddChild( $e2 )
+	$bo2.AddChild( $cb2 )
+	Set-Variable -Name "statusAzureAD" -Value $e2 -Scope script
 	$checkersSP.AddChild( $l )
 	$checkersSP.AddChild( $bo )
 	$checkersSP.AddChild( $bo2 )
@@ -394,7 +397,7 @@ function CreateScriptGroup
 					$label = [System.Windows.Controls.Label]@{ Content = $file.Synopsis; ToolTip = [string]$file.Description.Replace( ". ", ".`n" ) }
 					$label.Name = "lbl$( $file.Name -replace "\W" )"
 
-					if ( $file.Depends -in ( $Window.Resources.Keys | Where-Object { $_.IsPublic -eq $null } ) )
+					if ( $file.Depends -in ( $Window.Resources.Keys | Where-Object { $null -eq $_.IsPublic } ) )
 					{ $wpScriptControls.SetResourceReference( [System.Windows.Controls.WrapPanel]::IsEnabledProperty, $file.Depends ) }
 
 					if ( $file.Synopsis -match "$( $msgTable.ScriptContentInDev )" )
