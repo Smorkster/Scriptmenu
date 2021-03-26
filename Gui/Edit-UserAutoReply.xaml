@@ -1,0 +1,53 @@
+<Window
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        SizeToContent="Height"
+        ResizeMode="NoResize"
+        Width="520" MaxWidth="520">
+    <Window.Resources>
+        <Style TargetType="{x:Type ComboBox}">
+            <Setter Property="Margin" Value="10,0,0,0"/>
+            <Setter Property="Width" Value="50"/>
+        </Style>
+        <Style TargetType="{x:Type DatePicker}">
+            <Setter Property="Width" Value="120"/>
+        </Style>
+    </Window.Resources>
+    <StackPanel>
+        <StackPanel Orientation="Horizontal">
+            <Label x:Name="lblId"/>
+            <TextBox x:Name="tbId" Width="50" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+            <Button x:Name="btnId" Margin="5,0,0,0" Padding="5"/>
+        </StackPanel>
+        <Label x:Name="lblNoUser"/>
+        <StackPanel x:Name="spUser" Margin="5">
+            <StackPanel>
+                <Button x:Name="btnSet"/>
+                <TextBlock x:Name="tbSummary" TextWrapping="Wrap" Margin="5"/>
+                <CheckBox x:Name="cbActivate" Margin="5"/>
+            </StackPanel>
+            <StackPanel x:Name="spAutoReply">
+                <Label x:Name="lblAutoReply"/>
+                <TextBox x:Name="tbAutoReply" Height="100" Width="500"/>
+                <CheckBox x:Name="cbScheduled"/>
+                <StackPanel x:Name="spScheduled">
+                    <Label x:Name="lblStart"/>
+                    <StackPanel Orientation="Horizontal">
+                        <DatePicker x:Name="dpStart"/>
+                        <ComboBox x:Name="cbStartHour"/>
+                        <ComboBox x:Name="cbStartMinute"/>
+                    </StackPanel>
+                    <Label x:Name="lblEnd"/>
+                    <RadioButton x:Name="rbEndManually" GroupName="EndGroup" Margin="5"/>
+                    <RadioButton x:Name="rbEndTime" GroupName="EndGroup" Margin="5">
+                    </RadioButton>
+                    <StackPanel x:Name="spSetEndTime" Orientation="Horizontal">
+                        <DatePicker x:Name="dpEnd"/>
+                        <ComboBox x:Name="cbEndHour"/>
+                        <ComboBox x:Name="cbEndMinute"/>
+                    </StackPanel>
+                </StackPanel>
+            </StackPanel>
+        </StackPanel>
+    </StackPanel>
+</Window>
