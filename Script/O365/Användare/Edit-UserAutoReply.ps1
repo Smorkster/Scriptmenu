@@ -106,7 +106,7 @@ $controls = New-Object System.Collections.ArrayList
 
 $syncHash = CreateWindowExt $controls
 $syncHash.Data.msgTable = $msgTable
-$syncHash.Data.admin = Get-EXOMailbox -Identity ( Get-PSSession -Id 1 ).Runspace.OriginalConnectionInfo.Credential.UserName
+$syncHash.Data.admin = Get-EXOMailbox -Identity ( Get-PSSession -Name "Exchange*" ).Runspace.OriginalConnectionInfo.Credential.UserName
 
 00..23 | Foreach-Object {
 	if ( $_ -lt 10 ) { $i = "0$_" } else { $i = $_ }
@@ -187,8 +187,9 @@ $syncHash.btnId.Add_Click( {
 	}
 } )
 $syncHash.btnSet.Add_Click( {
-	UpdateSummary -Text $syncHash.Data.msgTable.StrSetting
 	$syncHash.DC.spUser[1] = $false
+	WriteLog -LogText $syncHash.DC.tbSummary[0]
+	UpdateSummary -Text $syncHash.Data.msgTable.StrSetting
 	Add-MailboxPermission -Identity $syncHash.Data.user.PrimarySmtpAddress -User $syncHash.Data.admin.PrimarySmtpAddress -AccessRights FullAccess -WarningAction SilentlyContinue > $null
 
 	if ( $syncHash.DC.cbActivate[1] ) # Activate
@@ -205,7 +206,7 @@ $syncHash.btnSet.Add_Click( {
 			else # Without an end date
 			{
 				$End = [datetime]::Parse( $syncHash.Data.End ).ToUniversalTime().AddYears( 5 )
-				Set-MailboxAutoReplyConfiguration -Identity $syncHash.Data.user.PrimarySmtpAddress -AutoReplyState Scheduled -StartTime $Start -EndTime -InternalMessage $syncHash.tbAutoReply.Text -ExternalMessage $syncHash.tbAutoReply.Text -Confirm:$false -ExternalAudience All
+				Set-MailboxAutoReplyConfiguration -Identity $syncHash.Data.user.PrimarySmtpAddress -AutoReplyState Scheduled -StartTime $Start -InternalMessage $syncHash.tbAutoReply.Text -ExternalMessage $syncHash.tbAutoReply.Text -Confirm:$false -ExternalAudience All
 			}
 		}
 		else # Not scheduled
@@ -222,6 +223,7 @@ $syncHash.btnSet.Add_Click( {
 	$syncHash.DC.spUser[1] = $true
 	if ( $syncHash.DC.cbActivate[1] ) { UpdateSummary -Text $syncHash.Data.msgTable.StrSettingDone }
 	else { UpdateSummary -Text $syncHash.Data.msgTable.StrSettingInactiveDone }
+
 } )
 $syncHash.Window.Add_Activated( { $syncHash.tbId.Focus() } )
 
