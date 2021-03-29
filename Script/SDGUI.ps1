@@ -71,7 +71,7 @@ function StartWinRMOnRemoteComputer
 
 	try
 	{
-		Test-WSMan $tbComputerName.Text.Trim() -ErrorAction Stop
+		Get-CimInstance -ComputerName $tbComputerName.Text.Trim() -ClassName win32_operatingsystem -ErrorAction Stop
 
 		$Window.Resources["WinRM"] = $true
 	}
