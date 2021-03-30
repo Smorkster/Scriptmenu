@@ -148,6 +148,8 @@ function GetDists
 	$dists = Get-DistributionGroup -Filter "CustomAttribute10 -like '*$( $syncHash.Data.user.EmailAddress )*'"
 	if ( @( $dists ).Count -eq 0 ) { $syncHash.dgDists.AddChild( [pscustomobject]@{ Name = $syncHash.Data.msgTable.StrNoDists ; SMTP = "" } ) }
 	else { $dists | ForEach-Object { $syncHash.dgDists.AddChild( [pscustomobject]@{ Name = $_.Name; SMTP = $_.PrimarySmtpAddress } ) } }
+
+	WriteLog -LogText "Distribution Groups $( $syncHash.tbId.Text )"
 }
 
 #########################################################
@@ -160,6 +162,8 @@ function GetSharedMailboxes
 	$shared = Get-EXOMailBox -Filter "CustomAttribute10 -like '*$( $syncHash.Data.user.EmailAddress )*'"
 	if ( @( $shared ).Count -eq 0 ) { $syncHash.dgShared.AddChild( [pscustomobject]@{ Name = $syncHash.Data.msgTable.StrNoShared ; SMTP = "" } ) }
 	else { $shared | ForEach-Object { $syncHash.dgShared.AddChild( [pscustomobject]@{ Name = $_.DisplayName; SMTP = $_.PrimarySmtpAddress } ) } }
+
+	WriteLog -LogText "Shared Mailboxes $( $syncHash.tbId.Text )"
 }
 
 ########################
@@ -279,10 +283,7 @@ $syncHash.btnID.Add_Click( {
 	}
 	catch [Microsoft.Open.Azure.AD.CommonLibrary.AadNeedAuthenticationException]
 	{
-		if ( $_.Exception -match "Connect-AzureAD" )
-		{
-			ErrorMessage $syncHash.Data.msgTable.StrO365NoAzAdConnection
-		}
+		if ( $_.Exception -match "Connect-AzureAD" ) { ErrorMessage $syncHash.Data.msgTable.StrO365NoAzAdConnection }
 	}
 	catch
 	{
@@ -291,7 +292,7 @@ $syncHash.btnID.Add_Click( {
 			ErrorMessage $syncHash.Data.msgTable.StrO365NotFound
 			FillEllipse "elOAccountCheck" "LightCoral"
 		}
-		else {ErrorMessage $_}
+		else { ErrorMessage $_ }
 	}
 	WriteLog -LogText $syncHash.tbId.Text
 } )
@@ -319,15 +320,9 @@ $syncHash.tbId.Add_TextChanged( {
 				ErrorMessage $syncHash.Data.msgTable.StrErrNoMail
 				FillEllipse "elADMailCheck" "LightCoral"
 			}
-			else
-			{
-				FillEllipse "elADMailCheck" "LightGreen"
-			}
+			else { FillEllipse "elADMailCheck" "LightGreen" }
 
-			if ( $syncHash.Data.user.Enabled )
-			{
-				FillEllipse "elADActiveCheck" "LightGreen"
-			}
+			if ( $syncHash.Data.user.Enabled ) { FillEllipse "elADActiveCheck" "LightGreen" }
 			else
 			{
 				ErrorMessage $syncHash.Data.msgTable.StrErrAdDisabled
@@ -339,10 +334,7 @@ $syncHash.tbId.Add_TextChanged( {
 				ErrorMessage $syncHash.Data.msgTable.StrErrAdLocked
 				FillEllipse "elADLockCheck" "LightCoral"
 			}
-			else
-			{
-				FillEllipse "elADLockCheck" "LightGreen"
-			}
+			else { FillEllipse "elADLockCheck" "LightGreen" }
 
 			if ( $syncHash.Data.user.DistinguishedName -match $syncHash.Data.msgTable.CodeMsExchIgnoreOrg )
 			{
@@ -356,10 +348,7 @@ $syncHash.tbId.Add_TextChanged( {
 					ErrorMessage $syncHash.Data.msgTable.StrErrMsExch
 					FillEllipse "elADmsECheck" "LightCoral"
 				}
-				else
-				{
-					FillEllipse "elADmsECheck" "LightGreen"
-				}
+				else { FillEllipse "elADmsECheck" "LightGreen" }
 			}
 		}
 		catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException]
@@ -396,9 +385,6 @@ $syncHash.btnGetIcon.Add_Click( {
 	}
 
 } )
-$syncHash.btnRemoveIcon.Add_Click( {
-	Remove-UserPhoto -Identity $syncHash.Data.user.EmailAddress
-} )
+$syncHash.btnRemoveIcon.Add_Click( { Remove-UserPhoto -Identity $syncHash.Data.user.EmailAddress } )
 
 [void] $syncHash.Window.ShowDialog()
-$global:syncHash = $syncHash
