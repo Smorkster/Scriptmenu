@@ -12,7 +12,7 @@ function Export
 		$excelWorksheet = $excelWorkbook.ActiveSheet
 
 		$OutputEncoding = ( New-Object System.Text.UnicodeEncoding $False, $False ).psobject.BaseObject
-		$syncHash.Data.Trace.Received | clip
+		$syncHash.Data.Trace.Received | Foreach-Object { "$( $_.ToShortDateString()) $($_.ToLongTimeString())" } | clip
 		$excelWorksheet.Cells.Item( 1, 1 ).PasteSpecial() | Out-Null
 		$syncHash.Data.Trace.SenderAddress | clip
 		$excelWorksheet.Cells.Item( 2, 2 ).PasteSpecial() | Out-Null
@@ -117,12 +117,7 @@ $syncHash.dpStart.Add_LostFocus( {
 } )
 
 $syncHash.btnExport.Add_Click( {
-	$dialogFileName = $syncHash.Data.msgTable.StrExportDefaultFileName
-	if ( $syncHash.Data.SenderEmail -ne $null ) { $dialogFileName += " $( $syncHash.Data.msgTable.StrExportFileNameFrom ) $( $syncHash.Data.SenderEmail )" }
-	if ( $syncHash.Data.ReceiverEmail -ne $null ) { $dialogFileName += " $( $syncHash.Data.msgTable.StrExportFileNameFo ) $( $syncHash.Data.ReceiverEmail )" }
-	$dialogFileName += " $( $syncHash.Data.msgTable.StrExportFileNameDates ) $( $syncHash.DC.dpStart[0].ToShortDateString() ) - $( $syncHash.DC.dpEnd[0].ToShortDateString() )"
-
-	$fileDialog = [Microsoft.Win32.SaveFileDialog]@{ DefaultExt = ".xlsx"; Filter = "Excel-files | *.xlsx" ; FileName = $dialogFileName }
+	$fileDialog = [Microsoft.Win32.SaveFileDialog]@{ DefaultExt = ".xlsx"; Filter = "Excel-files | *.xlsx" ; FileName = $syncHash.Data.searchName }
 	if ( $fileDialog.ShowDialog() )
 	{
 		$syncHash.Data.FileToSave = $fileDialog
@@ -155,6 +150,15 @@ $syncHash.btnSearch.Add_Click( {
 		$syncHash.DC.lvResult[0].Add( $item )
 	}
 	TextToSpeech -Text ( $syncHash.Data.msgTable.StrDone )
+
+	$syncHash.Data.searchName = $syncHash.Data.msgTable.StrExportDefaultFileName
+	if ( $syncHash.Data.SenderEmail -ne $null ) { $syncHash.Data.searchName += " $( $syncHash.Data.msgTable.StrExportFileNameFrom ) $( $syncHash.Data.SenderEmail )" }
+	if ( $syncHash.Data.ReceiverEmail -ne $null ) { $syncHash.Data.searchName += " $( $syncHash.Data.msgTable.StrExportFileNameFo ) $( $syncHash.Data.ReceiverEmail )" }
+	$syncHash.Data.searchName += " $( $syncHash.Data.msgTable.StrExportFileNameDates ) $( $syncHash.DC.dpStart[0].ToShortDateString() ) - $( $syncHash.DC.dpEnd[0].ToShortDateString() )"
+
+	$ofs = "`n"
+	$outputFile = WriteOutput -Output "$( [string]( $syncHash.Data.Trace | out-string ) )"
+	WriteLog -LogText "$( $syncHash.Data.searchName )`n`tOutput: $outputFile"
 	$syncHash.DC.btnExport[1] = $syncHash.Data.Trace.Count -gt 0
 } )
 
