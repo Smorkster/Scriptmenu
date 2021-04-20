@@ -45,8 +45,9 @@ function CreateWindowExt
 {
 	param ( $ControlsToBind )
 
-	$syncHash = [hashtable]::Synchronized( @{} )
 	$Bindings = [hashtable]( @{} )
+	$GenErrors = New-Object System.Collections.ArrayList
+	$syncHash = [hashtable]::Synchronized( @{} )
 	$syncHash.Data = [hashtable]( @{} )
 	$syncHash.DC = [hashtable]( @{} )
 	$syncHash.Output = ""
@@ -60,22 +61,35 @@ function CreateWindowExt
 
 	foreach ( $control in $ControlsToBind )
 	{
-		$n = $control.CName
-		# Insert all predefines property values
-		$control.Props | Foreach-Object { $syncHash.DC.$n.Add( $_.PropVal ) }
-
-		# Create the bindingobjects
-		0..( $control.Props.Count - 1 ) | Foreach-Object { [void] $Bindings.$n.Add( ( New-Object System.Windows.Data.Binding -ArgumentList "[$_]" ) ) }
-		$Bindings.$n | Foreach-Object { $_.Mode = [System.Windows.Data.BindingMode]::TwoWay }
-		# Insert bindings to controls DataContext
-		$syncHash.$n.DataContext = $syncHash.DC.$n
-
-		# Connect the bindings
-		for ( $i = 0; $i -lt $control.Props.Count; $i++ )
+		if ( ( $n = $control.CName ) -in $syncHash.DC.Keys )
 		{
-			$p = "$( $control.Props[$i].PropName )Property"
-			[void][System.Windows.Data.BindingOperations]::SetBinding( $syncHash.$n, $( $syncHash.$n.DependencyObjectType.SystemType )::$p, $Bindings.$n[ $i ] )
+			# Insert all predefines property values
+			$control.Props | Foreach-Object { $syncHash.DC.$n.Add( $_.PropVal ) }
+
+			# Create the bindingobjects
+			0..( $control.Props.Count - 1 ) | Foreach-Object { [void] $Bindings.$n.Add( ( New-Object System.Windows.Data.Binding -ArgumentList "[$_]" ) ) }
+			$Bindings.$n | Foreach-Object { $_.Mode = [System.Windows.Data.BindingMode]::TwoWay }
+			# Insert bindings to controls DataContext
+			$syncHash.$n.DataContext = $syncHash.DC.$n
+
+			# Connect the bindings
+			for ( $i = 0; $i -lt $control.Props.Count; $i++ )
+			{
+				$p = "$( $control.Props[$i].PropName )Property"
+				try
+				{
+					[void][System.Windows.Data.BindingOperations]::SetBinding( $syncHash.$n, $( $syncHash.$n.DependencyObjectType.SystemType )::$p, $Bindings.$n[ $i ] )
+				}
+				catch { [void] $GenErrors.Add( "$n$( $IntmsgTable.ErrNoProperty ) '$p'") }
+			}
 		}
+		else { [void] $GenErrors.Add( "$( $IntmsgTable.ErrNoControl ) $n" ) }
+	}
+
+	if ( $GenErrors.Count -gt 0 )
+	{
+		$ofs = "`n"
+		[void] [System.Windows.MessageBox]::Show( "$( $IntmsgTable.ErrAtGen ):`n`n$GenErrors" )
 	}
 
 	return $syncHash
