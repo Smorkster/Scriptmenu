@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         SizeToContent="WidthAndHeight"
         Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
-        Name="Window">
+        Name="Window"
+        ResizeMode="NoResize">
     <Window.Resources>
         <Style TargetType="{x:Type StackPanel}">
             <Setter Property="Orientation" Value="Horizontal"/>
@@ -18,11 +19,11 @@
             <Setter Property="Margin" Value="5"/>
             <Setter Property="Padding" Value="10,0,10,0"/>
         </Style>
-		<Style TargetType="{x:Type DataGrid}">
-			<Setter Property="Background" Value="White"/>
-			<Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
-			<Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
-		</Style>
+        <Style TargetType="{x:Type DataGrid}">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+        </Style>
     </Window.Resources>
     <Grid Margin="5">
         <Grid.RowDefinitions>
@@ -82,19 +83,33 @@
                 </StackPanel>
             </StackPanel>
         </StackPanel>
-        <TextBox Grid.Row="2" x:Name="tbCheckMessage"/>
-        <StackPanel Grid.Row="3" x:Name="spInfo" Margin="5">
+        <TextBox Grid.Row="2" x:Name="tbCheckMessage" IsReadOnly="True" IsTabStop="False"/>
+        <StackPanel Grid.Column="0" Grid.Row="3" x:Name="spInfo" Margin="5">
             <TabControl>
                 <TabItem x:Name="tiLogins">
-                    <StackPanel Orientation="Vertical">
+                    <StackPanel x:Name="spLogins" Orientation="Vertical" IsEnabled="{Binding ElementName=tiLogins, Path=IsEnabled}">
                         <Button x:Name="btnGetLogins"/>
-                        <TextBox x:Name="tbLogins"/>
+                        <Grid Margin="5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="2*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <Label Grid.Row="0" Grid.Column="0" x:Name="lblLastO365Login"/>
+                            <Label Grid.Row="1" Grid.Column="0" x:Name="lblLastTeamsLogin"/>
+                            <TextBox Grid.Row="0" Grid.Column="1" x:Name="tbLastO365Login" IsReadOnly="True"/>
+                            <TextBox Grid.Row="1" Grid.Column="1" x:Name="tbLastTeamsLogins" IsReadOnly="True"/>
+                        </Grid>
                     </StackPanel>
                 </TabItem>
-                <TabItem x:Name="tiDevices">
+                <TabItem x:Name="tiIcon">
                     <StackPanel Orientation="Vertical">
-                        <Button x:Name="btnGetDevices"/>
-                        <TextBox x:Name="tbDevices"/>
+                        <Button x:Name="btnGetIcon"/>
+                        <Image x:Name="imgIcon" Height="100" Width="100"/>
+                        <Button x:Name="btnRemoveIcon"/>
                     </StackPanel>
                 </TabItem>
                 <TabItem x:Name="tiDelegates">
@@ -104,22 +119,41 @@
                     </StackPanel>
                 </TabItem>
                 <TabItem x:Name="tiDists">
-                    <StackPanel Orientation="Vertical">
-                        <Button x:Name="btnGetDists"/>
-                        <DataGrid x:Name="dgDists"/>
-                    </StackPanel>
+                    <TabControl>
+                        <TabItem x:Name="tiDistsOwner">
+                            <StackPanel Orientation="Vertical">
+                                <Button x:Name="btnGetDistsOwner"/>
+                                <DataGrid x:Name="dgDistsOwner"/>
+                            </StackPanel>
+                        </TabItem>
+                        <TabItem x:Name="tiDistsMember">
+                            <StackPanel Orientation="Vertical">
+                                <Button x:Name="btnGetDistsMember"/>
+                                <DataGrid x:Name="dgDistsMember"/>
+                            </StackPanel>
+                        </TabItem>
+                    </TabControl>
                 </TabItem>
                 <TabItem x:Name="tiShared">
-                    <StackPanel Orientation="Vertical">
-                        <Button x:Name="btnGetShared"/>
-                        <DataGrid x:Name="dgShared"/>
-                    </StackPanel>
+                    <TabControl>
+                        <TabItem x:Name="tiSharedOwner">
+                            <StackPanel Orientation="Vertical">
+                                <Button x:Name="btnGetSharedOwner"/>
+                                <DataGrid x:Name="dgSharedOwner"/>
+                            </StackPanel>
+                        </TabItem>
+                        <TabItem x:Name="tiSharedMember">
+                            <StackPanel Orientation="Vertical">
+                                <Button x:Name="btnGetSharedMember"/>
+                                <DataGrid x:Name="dgSharedMember"/>
+                            </StackPanel>
+                        </TabItem>
+                    </TabControl>
                 </TabItem>
-                <TabItem x:Name="tiIcon">
+                <TabItem x:Name="tiDevices">
                     <StackPanel Orientation="Vertical">
-                        <Button x:Name="btnGetIcon"/>
-                        <Image x:Name="imgIcon" Height="100" Width="100"/>
-                        <Button x:Name="btnRemoveIcon"/>
+                        <Button x:Name="btnGetDevices"/>
+                        <TextBox x:Name="tbDevices"/>
                     </StackPanel>
                 </TabItem>
             </TabControl>
