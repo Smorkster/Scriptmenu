@@ -14,7 +14,7 @@ function GetFolderItems
 	$spFolder = [System.Windows.Controls.WrapPanel]@{ Orientation = "Vertical"; Name = "wp$( $dirPath.Name -replace " " )" }
 	Set-Variable -Name  "wp$( $dirPath.Name )" -Value $spFolder -Scope script
 
-	if ( $wpScriptGroup = CreateScriptGroup $dirPath ) { $spFolder.AddChild( $wpScriptGroup ) }
+	if ( $dirPath -notmatch $msgTable.O365Folder ) { if ( $wpScriptGroup = CreateScriptGroup $dirPath ) { $spFolder.AddChild( $wpScriptGroup ) } }
 
 	if ( $dirPath.Name -eq $msgTable.ComputerFolder ) { $spFolder.AddChild( ( CreateComputerInput ) ) }
 	elseif ( $dirPath.Name -eq $msgTable.O365Folder ) { $spFolder.AddChild( ( CreateO365Input ) ) }
@@ -85,31 +85,6 @@ function StartWinRMOnRemoteComputer
 	CreateComputerInfo
 	$btnConnect.IsEnabled = $false
 	$tbComputerName.IsReadOnly = $true
-}
-
-#################################
-# Connect to O365-online services
-function ConnectO365
-{
-	"ExchangeOnlineManagement", "ActiveDirectory" | ForEach-Object { Import-Module $_ }
-	try
-	{
-		$azureAdAccount = Connect-AzureAD -ErrorAction Stop
-		$statusAzureAD.Fill = "LightGreen"
-	}
-	catch { $statusAzureAD.Fill = "LightCoral" }
-
-	try
-	{
-		Connect-ExchangeOnline -UserPrincipalName $azureAdAccount.Account.Id -ErrorAction Stop
-		$statusExchange.Fill = "LightGreen"
-	}
-	catch { $statusExchange.Fill = "LightCoral" }
-
-	if ( ( Get-AzureADCurrentSessionInfo ) -or ( Get-PSSession -Name Exchange* ) )
-	{
-		$tcO365_Default.Visibility = [System.Windows.Visibility]::Visible
-	}
 }
 
 #####################################
@@ -302,50 +277,18 @@ function CreateComputerInput
 # Create controls to connect to O365-online services
 function CreateO365Input
 {
-	$mainSP = [System.Windows.Controls.StackPanel]@{
-		Orientation = "Vertical"
-	}
-	$controlsSP = [System.Windows.Controls.StackPanel]@{
-		Margin = "5"
-		Orientation = "Horizontal"
-	}
+	$mainSP = [System.Windows.Controls.StackPanel]@{ Orientation = "Horizontal" }
 	$l = [System.Windows.Controls.Label]@{ Content = $msgTable.ContentO365Start }
-
 	$b = [System.Windows.Controls.Button]@{
 		Content = $msgTable.ContentBtnO365Connect
 		Margin = "5,0,0,0"
 		Name = "btnO365Connect"
 	}
-	$b.Add_Click( { ConnectO365 } )
+	$b.Add_Click( { ( [powershell]::Create().AddScript( { param ( $path ) ; Start-Process powershell $path -WindowStyle Hidden } ).AddArgument( "$( ( Get-Item $PSCommandPath ).Directory.FullName )\O365\O365GUI.ps1" ) ).BeginInvoke() } )
 	Set-Variable -Name "btnO365Connect" -Value $b -Scope script
 
-	$controlsSP.AddChild( $l )
-	$controlsSP.AddChild( $b )
-
-	$checkersSP = [System.Windows.Controls.StackPanel]@{
-		Margin = "5"
-		Orientation = "Horizontal"
-	}
-	$lpad = "5,0,5,0"
-	$l = [System.Windows.Controls.Label]@{ Content = $msgTable.ContentLblO365Connected; Margin = "0,0,10,0" }
-	$bo = [System.Windows.Controls.StackPanel]@{ Orientation = "Horizontal" }
-	$e1 = [System.Windows.Shapes.Ellipse]@{ Fill = "LightCoral"; Height = 15; Width = 15; Stroke = "Black" }
-	$cb1 = [System.Windows.Controls.Label]@{ Content = "ExchangeOnline"; VerticalContentAlignment = "Center"; Padding = $lpad }
-	$bo.AddChild( $e1 )
-	$bo.AddChild( $cb1 )
-	Set-Variable -Name "statusExchange" -Value $e1 -Scope script
-	$bo2 = [System.Windows.Controls.StackPanel]@{ Orientation = "Horizontal" }
-	$e2 = [System.Windows.Shapes.Ellipse]@{ Fill = "LightCoral"; Height = 15; Width = 15; Stroke = "Black" }
-	$cb2 = [System.Windows.Controls.Label]@{ Content = "AzureAD"; VerticalContentAlignment = "Center"; Padding = $lpad }
-	$bo2.AddChild( $e2 )
-	$bo2.AddChild( $cb2 )
-	Set-Variable -Name "statusAzureAD" -Value $e2 -Scope script
-	$checkersSP.AddChild( $l )
-	$checkersSP.AddChild( $bo )
-	$checkersSP.AddChild( $bo2 )
-
-	$mainSP.AddChild( $controlsSP )
-	$mainSP.AddChild( $checkersSP )
+	$mainSP.AddChild( $l )
+	$mainSP.AddChild( $b )
 	return $mainSP
 }
 
@@ -397,7 +340,7 @@ function CreateScriptGroup
 					$label = [System.Windows.Controls.Label]@{ Content = $file.Synopsis; ToolTip = [string]$file.Description.Replace( ". ", ".`n" ) }
 					$label.Name = "lbl$( $file.Name -replace "\W" )"
 
-					if ( $file.Depends -in ( $Window.Resources.Keys | Where-Object { $null -eq $_.IsPublic } ) )
+					if ( $file.Depends -in ( $Window.Resources.Keys | Where-Object { $_.IsPublic -eq $null } ) )
 					{ $wpScriptControls.SetResourceReference( [System.Windows.Controls.WrapPanel]::IsEnabledProperty, $file.Depends ) }
 
 					if ( $file.Synopsis -match "$( $msgTable.ScriptContentInDev )" )
@@ -567,7 +510,7 @@ function FulHack
 	$tc.Items.Insert( ( $tc.Items.Count ), $tItem )
 	$Window.Add_ContentRendered( { $Window.Top = 50; $Window.Activate() } )
 	Set-Variable -Name tcComputer_Default -Value ( Get-Variable "tc$( $msgTable.ComputerFolder )" ).Value -Scope script
-	Set-Variable -Name tcO365_Default -Value ( Get-Variable "tc$( $msgTable.O365Folder )" ).Value -Scope script
+	try { Set-Variable -Name tcO365_Default -Value ( Get-Variable "tc$( $msgTable.O365Folder )" ).Value -Scope script -ErrorAction SilentlyContinue } catch {}
 }
 
 ############################## Script start
@@ -591,3 +534,4 @@ $Window.Add_Loaded( { $Window.Activate() } )
 [void] $Window.ShowDialog()
 Pop-Location
 $Window.Close()
+#$global:window = $window
