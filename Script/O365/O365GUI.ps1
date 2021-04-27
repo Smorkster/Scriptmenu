@@ -1,40 +1,29 @@
 <#
 .Synopsis Main GUI for Office 365 scripts
 .Description Main script for collecting and accessing scripts related to Office 365
+.Author Name Surname (sysAdmin1)
 #>
 
-####################################################
-# Search folder for items, operate depending on type
-function GetFolderItems
+#####################################################################
+# Check if a connection to the Office 365 online services are present
+# If connection is present, set scriptcontrols to visible
+function CheckConnection
 {
-	param (
-		$dirPath
-	)
+	$a = $e = $false
+	try { Get-AzureADCurrentSessionInfo -ErrorAction Stop ; $a = $true ; $statusAzureAD.Fill = "LightGreen" } catch { }
+	try { Get-PSSession -Name Exchange* -ErrorAction Stop; $e = $true ; $statusExchange.Fill = "LightGreen" } catch { }
 
-	$spFolder = [System.Windows.Controls.WrapPanel]@{ Orientation = "Vertical"; Name = "wp$( $dirPath.Name -replace " " )" }
-	Set-Variable -Name  "wp$( $dirPath.Name )" -Value $spFolder -Scope script
-
-	if ( $wpScriptGroup = CreateScriptGroup $dirPath ) { $spFolder.AddChild( $wpScriptGroup ) }
-
-	if ( $dirs = Get-ChildItem -Directory -Path $dirPath.FullName )
+	if ( $a -and $e )
 	{
-		$tabControl = [System.Windows.Controls.TabControl]@{ Name = "tc$( $dirPath.Name -replace " " )" }
-
-		if ( $dirPath -eq "" ) { $tabControl.MaxHeight = 700 }
-		Set-Variable -Name ( "tc" + $( $dirPath.Name ) ) -Value $tabControl -Scope script
-
-		$tiList = @()
-		foreach ( $dir in $dirs ) { $tiList += ( CreateTabItem $dir ) }
-		$tiList | Sort-Object $_.Header | ForEach-Object {
-			if ( $_.Content.Children[0].Content.Children.Count -eq 0 )
-			{
-				$_.Visibility = [System.Windows.Visibility]::Collapsed
-			}
-			$tabControl.AddChild( $_ )
-		}
-		$spFolder.AddChild( $tabControl )
+		$MainContent.Visibility = [System.Windows.Visibility]::Visible
+		$btnO365Connect.IsEnabled = $false
 	}
-	return $spFolder
+	else
+	{
+		$MainContent.Visibility = [System.Windows.Visibility]::Collapsed
+		$statusAzureAD.Fill = "LightCoral"
+		$statusExchange.Fill = "LightCoral"
+	}
 }
 
 #################################
@@ -42,40 +31,13 @@ function GetFolderItems
 function ConnectO365
 {
 	"ExchangeOnlineManagement", "ActiveDirectory" | ForEach-Object { Import-Module $_ }
-	try
-	{
-		$azureAdAccount = Connect-AzureAD -ErrorAction Stop
-		$statusAzureAD.Fill = "LightGreen"
-	}
-	catch { $statusAzureAD.Fill = "LightCoral" }
+	try { $azureAdAccount = Connect-AzureAD -ErrorAction Stop }
+	catch {}
 
-	try
-	{
-		Connect-ExchangeOnline -UserPrincipalName $azureAdAccount.Account.Id -ErrorAction Stop
-		$statusExchange.Fill = "LightGreen"
-	}
-	catch { $statusExchange.Fill = "LightCoral" }
+	try { Connect-ExchangeOnline -UserPrincipalName $azureAdAccount.Account.Id -ErrorAction Stop }
+	catch {}
 
-	if ( ( Get-AzureADCurrentSessionInfo ) -or ( Get-PSSession -Name Exchange* ) )
-	{
-		$MainContent.Visibility = [System.Windows.Visibility]::Visible
-	}
-}
-
-##########################
-# Sets title of the window
-function SetTitle
-{
-	param (
-		[switch] $Add,
-		[switch] $Remove,
-		[switch] $Replace,
-		[string] $Text
-	)
-
-	if ( $Add ) { $Window.Title += $Text }
-	elseif ( $Remove ) { $Window.Title = $msgTable.StrScriptSuite }
-	elseif ( $Replace ) { $Window.Title = $Text }
+	CheckConnection
 }
 
 ####################################################
@@ -129,24 +91,6 @@ function CreateO365Input
 	return $mainSP
 }
 
-#########################################
-# Get scriptfiles in the specified folder
-function GetFiles
-{
-	param ( $dirPath )
-	$Get = { ( Select-String -InputObject $_ -Pattern "^.$( $args[0] )" -Encoding UTF8 ).Line.Replace( ".$( $args[0] ) ", "" ) }
-	Get-ChildItem -File -Filter "*ps1" -Path $dirPath.FullName | Where-Object { $_.Name -ne ( Get-Item $PSCommandPath ).Name } | `
-		Select-Object -Property @{ Name = "Name"; Expression = { $_.Name } }, `
-			@{ Name = "Path"; Expression = { $_.FullName } }, `
-			@{ Name = "Group"; Expression = { ( $_.Name -split "-" )[0] } }, `
-			@{ Name = "Synopsis"; Expression = { & $Get "Synopsis" } }, `
-			@{ Name = "Description"; Expression = { & $Get "Description" } }, `
-			@{ Name = "Requires"; Expression = { ( & $Get "Requires" ) -split "\W" | Where-Object { $_ } } }, `
-			@{ Name = "AllowedUsers"; Expression = { ( & $Get "AllowedUsers") -split "\W" | Where-Object { $_ } } }, `
-			@{ Name = "Depends"; Expression = { ( ( & $Get "Depends" ) ) -split "\W" | Where-Object { $_ } } } | `
-			Sort-Object Synopsis
-}
-
 ####################################################################
 # Create a group of buttons and labels for all scriptfiles in folder
 function CreateScriptGroup
@@ -170,20 +114,20 @@ function CreateScriptGroup
 				if ( ( ( $null -eq $file.Requires ) -or ( $file.Requires | ForEach-Object { if ( $_ -in $userGroups ) { $true } } ) ) -and `
 					( ( $null -eq $file.AllowedUsers ) -or ( $env:USERNAME -in $file.AllowedUsers ) ) )
 				{
-					$wpScriptControls = New-Object System.Windows.Controls.WrapPanel
-					$wpScriptControls.Name = "wp$( $file.Name -replace "\W" )"
+					$wpScriptControls = [System.Windows.Controls.WrapPanel]@{ Name = "wp$( $file.Name -replace "\W" )" }
 					$button = [System.Windows.Controls.Button]@{ Content = "$( $msgTable.ContentBtnRun ) >"; ToolTip = $file.Path }
 					$button.Name = "btn$( $file.Name -replace "\W" )"
 					$label = [System.Windows.Controls.Label]@{ Content = $file.Synopsis; ToolTip = [string]$file.Description.Replace( ". ", ".`n" ) }
 					$label.Name = "lbl$( $file.Name -replace "\W" )"
 
-					if ( $file.Depends -in ( $Window.Resources.Keys | Where-Object { $null -eq $_.IsPublic } ) )
+					if ( $file.Depends -in ( $Window.Resources.Keys | Where-Object { $_.IsPublic -eq $null } ) )
 					{ $wpScriptControls.SetResourceReference( [System.Windows.Controls.WrapPanel]::IsEnabledProperty, $file.Depends ) }
 
 					if ( $file.Synopsis -match "$( $msgTable.ScriptContentInDev )" )
 					{
 						$label.Background = "Red"
-						if ( $msgTable.AdmList -notmatch $env:USERNAME ) { $button.IsEnabled = $false }
+						if ( $msgTable.AdmList -match $env:USERNAME -or $file.Author -eq $env:USERNAME ) { $button.IsEnabled = $true }
+						else { $button.IsEnabled = $false }
 					}
 					elseif ( $file.Synopsis -match "$( $msgTable.ScriptContentInTest )" )
 					{
@@ -232,6 +176,75 @@ function CreateTabItem
 	return $tabitem
 }
 
+#########################################
+# Get scriptfiles in the specified folder
+function GetFiles
+{
+	param ( $dirPath )
+	$Get = { ( Select-String -InputObject $_ -Pattern "^.$( $args[0] )" -Encoding UTF8 ).Line.Replace( ".$( $args[0] ) ", "" ) }
+	Get-ChildItem -File -Filter "*ps1" -Path $dirPath.FullName | Where-Object { $_.Name -ne ( Get-Item $PSCommandPath ).Name } | `
+		Select-Object -Property @{ Name = "Name"; Expression = { $_.Name } }, `
+			@{ Name = "Path"; Expression = { $_.FullName } }, `
+			@{ Name = "Group"; Expression = { ( $_.Name -split "-" )[0] } }, `
+			@{ Name = "Synopsis"; Expression = { & $Get "Synopsis" } }, `
+			@{ Name = "Description"; Expression = { & $Get "Description" } }, `
+			@{ Name = "Requires"; Expression = { ( & $Get "Requires" ) -split "\W" | Where-Object { $_ } } }, `
+			@{ Name = "AllowedUsers"; Expression = { ( & $Get "AllowedUsers" ) -split "\W" | Where-Object { $_ } } }, `
+			@{ Name = "Author"; Expression = { ( ( Select-String $_ -Pattern "^.Author" ).Line -split "\(" )[1].TrimEnd( ")" ) } }, `
+			@{ Name = "Depends"; Expression = { ( ( & $Get "Depends" ) ) -split "\W" | Where-Object { $_ } } } | `
+			Sort-Object Synopsis
+}
+
+####################################################
+# Search folder for items, operate depending on type
+function GetFolderItems
+{
+	param (
+		$dirPath
+	)
+
+	$spFolder = [System.Windows.Controls.WrapPanel]@{ Orientation = "Vertical"; Name = "wp$( $dirPath.Name -replace " " )" }
+	Set-Variable -Name  "wp$( $dirPath.Name )" -Value $spFolder -Scope script
+
+	if ( $wpScriptGroup = CreateScriptGroup $dirPath ) { $spFolder.AddChild( $wpScriptGroup ) }
+
+	if ( $dirs = Get-ChildItem -Directory -Path $dirPath.FullName )
+	{
+		$tabControl = [System.Windows.Controls.TabControl]@{ Name = "tc$( $dirPath.Name -replace " " )" }
+
+		if ( $dirPath -eq "" ) { $tabControl.MaxHeight = 700 }
+		Set-Variable -Name ( "tc" + $( $dirPath.Name ) ) -Value $tabControl -Scope script
+
+		$tiList = @()
+		foreach ( $dir in $dirs ) { $tiList += ( CreateTabItem $dir ) }
+		$tiList | Sort-Object $_.Header | ForEach-Object {
+			if ( $_.Content.Children[0].Content.Children.Count -eq 0 )
+			{
+				$_.Visibility = [System.Windows.Visibility]::Collapsed
+			}
+			$tabControl.AddChild( $_ )
+		}
+		$spFolder.AddChild( $tabControl )
+	}
+	return $spFolder
+}
+
+##########################
+# Sets title of the window
+function SetTitle
+{
+	param (
+		[switch] $Add,
+		[switch] $Remove,
+		[switch] $Replace,
+		[string] $Text
+	)
+
+	if ( $Add ) { $Window.Title += $Text }
+	elseif ( $Remove ) { $Window.Title = $msgTable.StrScriptSuite }
+	elseif ( $Replace ) { $Window.Title = $Text }
+}
+
 ############################## Script start
 $BaseDir = ( ( Get-Item $PSCommandPath ).Directory.Parent.FullName -split "\\" | Select-Object -SkipLast 1 ) -join "\"
 Import-Module "$( $BaseDir )\Modules\FileOps.psm1" -Force
@@ -248,7 +261,7 @@ if ( ( ( Get-ADUser $env:USERNAME -Properties memberof ).memberof -match $msgTab
 	Push-Location ( Get-Item $PSCommandPath ).Directory.FullName
 	$spConnect.AddChild( ( CreateO365Input ) )
 	$MainContent.AddChild( ( GetFolderItems "" ) )
-	$Window.Add_ContentRendered( { $Window.Top = 100; $Window.Activate() } )
+	$Window.Add_ContentRendered( { $Window.Top = 100; $Window.Activate() ; CheckConnection } )
 
 	[void] $Window.ShowDialog()
 	Pop-Location

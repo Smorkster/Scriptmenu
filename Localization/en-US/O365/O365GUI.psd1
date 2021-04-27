@@ -1,6 +1,5 @@
 ConvertFrom-StringData @'
-StrBORole = RoleBO_Servicedesk
-StrNoPermission = You do not have the permissions to start Office 365 Scriptmenu
+AdmList = sysAdm1
 ContentBtnO365Connect = Connect
 ContentBtnRun = Run
 ContentLblInTest = Only run this, if you have been asked
@@ -9,4 +8,6 @@ ContentO365Start = Click on 'Connect' to connect to O365 online services
 ScriptContentInDev = in development
 ScriptContentInTest = in testing
 StrScriptSuite = Office 365 Scriptmenu
+StrBORole = RoleBO_Servicedesk
+StrNoPermission = You do not have the permissions to start Office 365 Scriptmenu
 '@
