@@ -128,10 +128,19 @@ function GetPCRole
 	$ComputerObj.Roll = $null
 	$ComputerObj.( $msgTable.StrOSParam ) = $ADPC.OperatingSystem
 
-	switch -Regex ( $PCRoll )
+	switch -Regex ( $ADPC.MemberOf | Where-Object { $_ -match "_Wrk_" } )
 	{
-		"Role1" { $r = "Role1-PC" }
-		"Role2" { $r = "Role2-PC" }
+		"Patient" { $r = "Patient-PC" }
+		"Vard" { $r = "Vård-PC" }
+		"Administrativ" { $r = "Administrativ-PC" }
+		"Flodes" { $r = "Flödes-PC" }
+		"MTWM" { $r = "MT WM-PC" }
+		"MTM" { $r = "MT M-PC" }
+		"Sakerhets" { $r = "Säkerhets-PC" }
+		"Undantag" { $r = "Undantags-PC" }
+		"Tekniker" { $r = "Tekniker-PC" }
+		"Kiosk" { $r = "Kiosk-PC" }
+		"Lakemedelsvagn" { $r = "Lakemedelsvagn-PC" }
 	}
 	if ( $null -eq $r ) { $r = $msgTable.ComputerUnknownRole }
 	$ComputerObj.Roll = $r
@@ -306,6 +315,7 @@ function GetFiles
 			@{ Name = "Description"; Expression = { & $Get "Description" } }, `
 			@{ Name = "Requires"; Expression = { ( & $Get "Requires" ) -split "\W" | Where-Object { $_ } } }, `
 			@{ Name = "AllowedUsers"; Expression = { ( & $Get "AllowedUsers") -split "\W" | Where-Object { $_ } } }, `
+			@{ Name = "Author"; Expression = { ( ( Select-String $_ -Pattern "^.Author" ).Line -split "\(" )[1].TrimEnd( ")" ) } }, `
 			@{ Name = "Depends"; Expression = { ( ( & $Get "Depends" ) ) -split "\W" | Where-Object { $_ } } } | `
 			Sort-Object Synopsis
 }
@@ -346,7 +356,8 @@ function CreateScriptGroup
 					if ( $file.Synopsis -match "$( $msgTable.ScriptContentInDev )" )
 					{
 						$label.Background = "Red"
-						if ( $msgTable.AdmList -notmatch $env:USERNAME ) { $button.IsEnabled = $false }
+						if ( $msgTable.AdmList -match $env:USERNAME -or $file.Author -eq $env:USERNAME ) { $button.IsEnabled = $true }
+						else { $button.IsEnabled = $false }
 					}
 					elseif ( $file.Synopsis -match "$( $msgTable.ScriptContentInTest )" )
 					{
