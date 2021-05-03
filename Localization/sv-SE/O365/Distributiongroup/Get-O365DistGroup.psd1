@@ -1,0 +1,46 @@
+ConvertFrom-StringData @'
+ContentbtnAddNewMembers = Lägg till
+ContentbtnCheck = Kontrollera distributionsgrupp
+ContentbtnCopyMembers = Kopiera medlemslista
+ContentbtnCopyOutput = Kopiera lösningsmeddelande
+ContentbtnDistAddress = Ändra adress
+ContentbtnDistName = Ändra namn
+ContentbtnDistOpenForExternal = Ändra
+ContentbtnDistOwner = Byt ägare
+ContentbtnImport = Importera från clipboard
+ContentbtnRemoveMembers = Ta bort markerade medlemmar
+ContentbtnReset = Avbryt
+ContentbtnRun = Starta ersättningen
+ContentdgMembersNameTitle = Namn
+ContentdgMembersMailTitle = E-mailadress
+ContentlblAddNewMembers = Lägg till medlem/-ar
+ContentlblDist = Ange distributionsgrupp
+ContentlblDistAddress = Mailadress
+ContentlblDistName = Visningsnamn
+ContentlblDistOwner = Ägare
+ContentrbDistOpenForExternalNo = Tillåt inte
+ContentrbDistOpenForExternalYes = Tillåt
+ContenttbDistOpenForExternal = Kan användas av externa användare?
+ContentttAddNewMembers = Email addresses only, separate with semicolon ( ; )
+ContenttiInfo = Info
+ContenttiMembers = Members
+ContenttiReplaceAll = Ersätt alla medlemmar
+ErrNotFoundInAd = Hittas inte i AD
+StrAzureGroupPrefix = DG-
+StrCheckingAddress = Verifierar mailadresser
+StrCopiedMembers = Lista över medlemmar har kopierats till Clipboard
+StrCopiedOutput = Sammanfattning av medlemsersättningar har kopierats till Clipboard
+StrFound = hittades och har lagts in i distributionsgruppen
+StrImported = adresser inlästa
+StrMembersCopiedTitle = Medlemmar av
+StrNameOrAddrNotUpd = Vid byte av namn eller adress behöver detta även reflekteras i det andra värdet. Detta verkar inte ha gjorts. Ska de nuvarande värdena i textrutorna användas för distributionsgruppen?
+StrNotFound = Test-adresser hittades inte, de ignorerades
+StrNotMail = Dessa värden är inte korrekta mailadresser och ignorerades
+StrNoUpdate = Distributionsgruppen uppdaterades inte
+StrOrgDomain = @test.com
+StrOtherOrg = adresser utanför regionen hittades inte som kontaktobjekt i Exchange (nya har skapats)
+StrRemovingMembers = Tar bort nuvarande medlemmar
+StrSummary = har nu fått alla medlemmar ersatta enligt listan bifogad i ärendet. Nedan följer sammanfattning av ändringen:
+# Possible titles for a listcolumn, like if addresses are copied from Excel
+StrTitleMatch = "mail", "email","emails","e-mail","e-mails","epost","e-post","epostadresser","e-postadresser","epostadress","e-postadress","emailadress"
+'@

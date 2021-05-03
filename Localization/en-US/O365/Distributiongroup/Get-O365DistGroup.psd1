@@ -1,0 +1,46 @@
+ConvertFrom-StringData @'
+ContentbtnAddNewMembers = Add
+ContentbtnCheck = Verify distributiongroup
+ContentbtnCopyMembers = Copy memberslist
+ContentbtnCopyOutput = Copy summary
+ContentbtnDistAddress = Change address
+ContentbtnDistName = Change name
+ContentbtnDistOpenForExternal = Change
+ContentbtnDistOwner = Change owner
+ContentbtnImport = Import from clipboard
+ContentbtnRemoveMembers = Remove selected members
+ContentbtnReset = Cancel
+ContentbtnRun = Start replacement
+ContentdgMembersNameTitle = Name
+ContentdgMembersMailTitle = E-mailaddress
+ContentlblAddNewMembers = Add member/-s
+ContentlblDist = Name distributiongroup
+ContentlblDistAddress = Mailaddress
+ContentlblDistName = Displayname
+ContentlblDistOwner = Owner
+ContentrbDistOpenForExternalNo = Do not allow
+ContentrbDistOpenForExternalYes = Allow
+ContenttbDistOpenForExternal = Can be used by external senders?
+ContentttAddNewMembers = Only e-mailaddresses, separate with semicolon ( ; )
+ContenttiInfo = Info
+ContenttiMembers = Medlemmar
+ContenttiReplaceAll = Replace all members
+ErrNotFoundInAd = Not found in AD
+StrAzureGroupPrefix = DG-
+StrCheckingAddress = Verifies email addresses
+StrCopiedMembers = List of members copied to Clipboard
+StrCopiedOutput = Summary of membership replacements has been copied to Clipboard
+StrFound = Found and added to the distributiongroup
+StrImported = addresses loaded
+StrMembersCopiedTitle = Members of
+StrNameOrAddrNotUpd = When changing name or address, this also needs to be reflected in the second value. This does not appear to have been done. Should the current values ​​in the text boxes be used for the distributiongroup?
+StrNotFound = Test-addresses were not found, they were ignored
+StrNotMail = These values ​​are incorrect email addresses and were ignored
+StrNoUpdate = Distributiongroup not updated
+StrOrgDomain = @test.com
+StrOtherOrg = addresses outside the region were not found as contact-objects in Exchange (new ones have been created)
+StrRemovingMembers = Deletes current members
+StrSummary = has now had all members replaced according to the list attached to the case. Below is a summary of the change:
+# Possible titles for a listcolumn, like if addresses are copied from Excel
+StrTitleMatch = "mail", "email", "emails", "email", "emails", "email", "email", "email addresses", "email addresses", "email address", "email address", "email address"
+'@
