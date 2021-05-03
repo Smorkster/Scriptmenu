@@ -2,7 +2,7 @@
 AdmList = sysA, sysB, sysC
 CompList = Comp1, Comp2
 ComputerBaseInfo = Basinformation
-ComputerFolder = Dator
+ComputerFolder = Computer
 O365Folder = O365
 ComputerNoReinstall = Ominstallera EJ denna PC
 ComputerOffline = ... Misslyckades
