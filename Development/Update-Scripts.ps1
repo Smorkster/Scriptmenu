@@ -11,12 +11,15 @@ function CheckForUpdates
 						"UpdateRollback" )
 	$fileExclusion = @( ( Get-Item $PSCommandPath ).Name )
 	$updatedFiles.Clear()
-	$spUpdateList.Children.Clear()
-	$spOtherUpdates.Children.Clear()
+	$Window.Dispatcher.Invoke( [action] {
+		$spUpdateList.Children.Clear()
+		$spOtherUpdates.Children.Clear()
+	} )
 
 	$devFiles = Get-ChildItem $devRoot -Directory -Exclude $dirExclusion | Get-ChildItem -File -Recurse -Exclude $fileExclusion
-	$prodFiles = Get-ChildItem $prodRoot -Directory -Exclude $( $dirExclusion += "Development"; $dirExclusion ) | Get-ChildItem -File -Recurse
-	$prodFiles += Get-ChildItem $prodRoot -File
+	$devFiles += Get-ChildItem $devRoot -File | Where-Object { $_.Name -notin $fileExclusion }
+	$prodFiles = Get-ChildItem $prodRoot -Directory -Exclude $( $dirExclusion += "Development"; $dirExclusion ) | Get-ChildItem -File -Recurse -Exclude $fileExclusion
+	$prodFiles += Get-ChildItem $prodRoot -File | Where-Object { $_.Name -notin $fileExclusion }
 	$MD5 = New-Object -TypeName System.Security.Cryptography.MD5CryptoServiceProvider
 
 	foreach ( $devFile in $devFiles )
@@ -92,7 +95,7 @@ function AddControlsForUpdatedFiles
 		$cbUpdate.ToolTip = "$( $IntmsgTable.StrUpInDev ):`t$devUpdated`n$( $IntmsgTable.StrUpInProd ):`t$prodUpdated"
 		$cbUpdate.Content = "$( ( $( $update[0] ).FullName -split "development" )[1] )"
 
-		if ( ( Get-Content $update[0].FullName | Select-String "^.Synopsis " ) -match $IntmsgTable.ScriptContentInDev )
+		if ( ( Get-Content $update[0].FullName | Select-String "^.State " ) -match $IntmsgTable.ScriptContentInDev )
 		{
 			$cbUpdate.FontWeight = "Bold"
 			$cbUpdate.Foreground = "Red"
@@ -100,7 +103,7 @@ function AddControlsForUpdatedFiles
 		}
 		if ( $update[0].Name.EndsWith( "xaml" ) -or $update[0].Name.EndsWith( "psd1" ) )
 		{
-			if ( ( Get-ChildItem -Filter "$( $update[0].Name.Replace( "xaml", "ps1" ).Replace( "psd1", "ps1" ) )" -Recurse | Select-String ".Synopsis" ) -match $IntmsgTable.ScriptContentInDev )
+			if ( ( Get-ChildItem -Filter "$( $update[0].Name.Replace( "xaml", "ps1" ).Replace( "psd1", "ps1" ) )" -Recurse | Select-String ".State" ) -match $IntmsgTable.ScriptContentInDev )
 			{
 				$cbUpdate.FontWeight = "Bold"
 				$cbUpdate.Foreground = "Red"
@@ -175,11 +178,15 @@ function UpdateScripts
 			$extension = ( Get-Item $updatedFileDestination ).Extension
 			$OFS = "`n"
 			$OutputEncoding = ( New-Object System.Text.UnicodeEncoding $False, $False ).psobject.BaseObject
-			New-Item -Path "$rollbackRoot\$( ( Get-Date ).Year )\$( ( Get-Date ).Month )\" -Name "$name ($( $IntmsgTable.StrRollbackName ) $updated)$extension" -ItemType File -Value ( [string]( Get-Content -Path $updatedFileDestination -Encoding UTF8 ) ) -Force
+			New-Item -Path "$rollbackRoot\$( ( Get-Date ).Year )\$( ( Get-Date ).Month )\" -Name "$name ($( $IntmsgTable.StrRollbackName ) $updated)$extension" -ItemType File -Value ( [string]( Get-Content -Path $updatedFileDestination -Encoding UTF8 ) ) -Force | Out-Null
 			#Copy-Item -Path $updatedFileDestination -Destination "$rollbackRoot\$( ( Get-Date ).ToShortDateString() )\$( $updatedFileDestination -split "\\" | select -Last 1 )" -Force
 			Copy-Item -Path $updatedFile.FullName -Destination $updatedFileDestination -Force
 		}
-		else { New-Item -Path $updatedFileDestination -Value ( [string]( Get-Content $updatedFile.FullName ) ) -ItemType File -Force | Out-Null }
+		else
+		{
+			New-Item -ItemType File -Path $updatedFileDestination -Force
+			Copy-Item -Path $updatedFile.FullName -Destination $updatedFileDestination -Force
+		}
 
 		$spUpdateList.Children.Remove( $fileCheckbox )
 		$loop++
