@@ -315,6 +315,7 @@ function GetFiles
 			@{ Name = "Description"; Expression = { & $Get "Description" } }, `
 			@{ Name = "Requires"; Expression = { ( & $Get "Requires" ) -split "\W" | Where-Object { $_ } } }, `
 			@{ Name = "AllowedUsers"; Expression = { ( & $Get "AllowedUsers") -split "\W" | Where-Object { $_ } } }, `
+			@{ Name = "AllowedUsers"; Expression = { ( & $Get "State") -split "\W" | Where-Object { $_ } } }, `
 			@{ Name = "Author"; Expression = { ( ( Select-String $_ -Pattern "^.Author" ).Line -split "\(" )[1].TrimEnd( ")" ) } }, `
 			@{ Name = "Depends"; Expression = { ( ( & $Get "Depends" ) ) -split "\W" | Where-Object { $_ } } } | `
 			Sort-Object Synopsis
@@ -353,13 +354,13 @@ function CreateScriptGroup
 					if ( $file.Depends -in ( $Window.Resources.Keys | Where-Object { $_.IsPublic -eq $null } ) )
 					{ $wpScriptControls.SetResourceReference( [System.Windows.Controls.WrapPanel]::IsEnabledProperty, $file.Depends ) }
 
-					if ( $file.Synopsis -match "$( $msgTable.ScriptContentInDev )" )
+					if ( $file.State -match "$( $msgTable.ScriptContentInDev )" )
 					{
 						$label.Background = "Red"
 						if ( $msgTable.AdmList -match $env:USERNAME -or $file.Author -eq $env:USERNAME ) { $button.IsEnabled = $true }
 						else { $button.IsEnabled = $false }
 					}
-					elseif ( $file.Synopsis -match "$( $msgTable.ScriptContentInTest )" )
+					elseif ( $file.State -match "$( $msgTable.ScriptContentInTest )" )
 					{
 						$label.Background = "LightBlue"
 						$label.Content += "`n$( $msgTable.ContentLblInTest )"

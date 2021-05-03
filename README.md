@@ -20,6 +20,10 @@ New files must follow these rules:
 <#
 .Synopsis - A short description of what script does [Necessary]
 .Description - A longer, more detailed description of the script. This will be shown as a tooltip for controls for the script [Necessary]
+.State - Highlight the phase of the script. There are three options for this:
+* Dev - The script is in development, only those listed in the admin list, as well as the script creator (see 'Author') can start the script
+* Test - The script is highlighted in the maingui to be in the testing phase
+* Prod - The script is in production and is not highlighted in the maingui. This also happens if State is omitted
 .Author - Who has created the script, i.e. who is responsible
 #>
 ```
