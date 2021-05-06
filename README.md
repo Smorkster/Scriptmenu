@@ -6,8 +6,12 @@ It is suggested that new scripts are first placed in the *Developement*-folder s
 The main script (SDGUI.ps1) searches for scripts in subdirectories, and creates tabcontrol-tabs for each folder and lists scripts for each folder.
 The scripts can take advantage of available modules and thus get more out of the folder structure.
 
+<br>
+
 ## Development area
 The *Development*-folder is used as an area to create new scripts, apply changes or test new functionality. When the development is done, the script `Update-Scripts.ps1` is used to copy scripts to "production", i.e. the *Script*-folder.
+
+<br>
 
 ## Scripts
 Scripts are placed in any appropriate subfolder of the *Script*-folder.
@@ -31,9 +35,11 @@ New files must follow these rules:
 * **.Requires** - A list of AD-groups the user must be member of. If the user is not a member, this script will not be available. If this is not specified, the script will be available for all users. Groupnames are separated by commas (',')
 * **.AllowedUsers** - List of users allowed to run the script. This can be used if the user/-s are not member of required AD-group, or if only specific users should be able to use the script. Usernames are separated by commas (',')
 * If a script uses any technology that can first be check if present before start, use `.Depends` in the help-section. A list of technologies that are checked, se "Dependencies" below.
-  * `.Depends WinRM`
+  
+   `.Depends WinRM`
 
 * To be able to use logging, availabe functions for handling files or other common uses, there are modules available. These are imported with:
+  
     `Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force`
 
 When scripts are started from the GUI, it is initiated with an argument for the root-folder (i.e. *Scriptmenu*-folder). This argument is contained in `$args[0]`.
@@ -52,8 +58,12 @@ Any script in a subfolder is hidden by default and will be made visible if the c
 Script directly in the *O365*-folder is visible by default.
 Scripts located in any subfolder are made visible after connecting to Office365 online services. These scripts can only use the connection if they are not started in a separate PowerShell window. Therefore, they will be started through Invoke-Command and therefore need to manage visibility themselves or use GUI windows.
 
+<br>
+
 ## Pictures
 Pictures are placed in the *Pictures*-folder
+
+<br>
 
 ## Dependencies
 A script can use technology that is not guaranteed to be available at startup, e.g. WinRM to work with remote computer. This can be specified in the help section at the beginning of the script. SDGUI checks if the technology is available and will then make the button to start the script, available or not. To create this dependency, enter ".Depends <technology>" in the help section. Only one technology per script can be used.
@@ -61,8 +71,12 @@ A script can use technology that is not guaranteed to be available at startup, e
 The following techniques can be checked at the moment:
 * WinRM - Used for remote management of remote computer, e.g. Get-Process or Invoke-Command
 
+<br>
+
 ## Other applications
 Applications to be used by scripts are placed in the *Apps*-folder
+
+<br>
 
 ## Localization
 The FileOps module (see below) has functionality for embedding localization in scripts. Localization means that scripts can have text strings depending on the language installed in the operating system. That is, if the language in the operatingsystem is Swedish, "sv-SE" will be culture to import.
@@ -71,30 +85,45 @@ A localization file MUST have the same name as the script file and have the file
 Scripts that use localization MUST have its localization-file placed as follows:
   * In the "Localization" folder
   * Folder with the name of the selected culture. The default for SDGUI is "sv-SE". If another culture is used for the strings, the culture name needs to be specified in the ArgumentList when importing the FileOps module, like so:
+
     `Import-Module "$( $args [0] )\Modules\<Module-name>.psm1" -Force -ArgumentList "sv-SE"`
+
   * Folder structure according to the location of the script file.
 
 Example:
 If the script file "Test.ps1" is located in Script\Computer, there should be a file located according to:
   `Localization\sv-SE\Computer\Test.psd1`
 
-The file **MUST** start with:
-`ConvertFrom-StringData @ '`
+The filecontent **MUST** start with:
+
+    ConvertFrom-StringData @ '
+
 and the last line **MUST** be (with no space at the beginning):
-`'@`
+
+    '@
+
 Each line in between is formulated according to:
 VariableName = Text to use
 
 Imported text is accessed through the hashtable `$msgTable` and is used as follows:
-`$msgTable.VariableName`
+
+`$msgTable.<VariableName>`
+
+<br>
 
 ## Additional modules
 Any new module for this suite are placed in the *Modules*-folder. They are then imported in the same way as mentioned above:
+
 `Import-Module "$( $args[0] )\Modules\<Module name>.psm1" -Force`
 
+<br>
+
 ## Available modules
-There are some modules available for scripts to handle logging, get input from user, create WPF-windows and more. To be able to use these, put this code in the beginning of the script. One for each module to import.
+There are some modules available for scripts to handle logging, get input from user, create WPF-windows and more. To be able to use these, put this code in the beginning of the script; one for each module to import:
+
 `Import-Module "$( $args[0] )\Modules\< Modul-namn >.psm1" -Force`
+
+<br>
 
 ### Module ConsoleOps
 A module for adding functions for operating in the console.
@@ -118,6 +147,8 @@ Starts a wait process and shows a progressbar for set time.
 ##### Example
 StartWait -SecondsToWait 3 -MessageText "until everything is ready"
 
+<br>
+
 ### Module FileOps
 This module is the most used, since it contains functions for handling files for input/output/log.
 
@@ -125,12 +156,14 @@ This module is the most used, since it contains functions for handling files for
 Writes to logfile for operations in scripts. It writes to a file with path based on year, month and with the same name as the script that is calling.
 Each line is preceded with default logdata *"2020-08-01 00:00 Admin1 [Domain] => "* followed by logtext from script.
 
-#### Parameters
+##### Parameters
   * LogText [string] - Text to be written to log
 
-###### Examples
+##### Examples
 Function call: `WriteLog -LogText "Comp1 1.8"`
+
 Written text: *2020-08-01 12:34 Admin1 [Domain] => Comp1 1.8*
+
 Filename: *Log\2020\08\Get-InstalledJava - log.txt*
 
 #### Function *GetUserInput*
@@ -138,40 +171,46 @@ Creates a file in the *Input*-folder to which the user can enter data for the sc
 
 The inputfile is created, if it does not exist, in a folder with the users name in the *Input*-folder. If a file with that name exists, its content will be replaced.
 
-###### Parameters
+##### Parameters
   * DefaultText [string] - The text to be used in input file.
 
-###### Returns
+##### Returns
 The text entered in the textfile, with "default text" excluded.
 
-###### Examples
+##### Examples
 Function call: `GetUserInput -DefaultText "List usernames"`
+
 Filename: *Input\Admin1\Get-Users.txt*
 
 #### Function *WriteOutput*
 Writes outputtext from script. Usable for when writing output that gets to long for a consolewindow, the output is to long for logfile or if output is to be saved for tracing backlog.
 
-###### Parameters
+##### Parameters
   * Output [string] - Text to be written in output-file.
   * FileNameAddition [string] - Other text to be entered in the outputfile filename. Default is empty
 	* FileExtension [string] - Fileextention to be used for the outputfile. Default is *txt*.
 	* Scoreboard [switch] - If output is a scoreboard/toplist. Used for skripts in the *Scoreboard*-folder. Outputfile will then be created in *Output\Scoreboard*
 
-###### Returns
+##### Returns
 Full filepath for the outputfile
 
-###### Examples
+##### Examples
 Function call: `WriteOutput -Output "List usernames"`
+
 Filename: *Output\Admin1\Get-InstalledJava 2020-08-01 12.34.56.txt*
 
 Function call: `WriteOutput -Output "Users with ..." -FileNameAddition "Java users"`
+
 Filename: *Output\Admin1\Java users Get-InstalledJava 2020-08-01 12.34.56.txt*
 
 Function call: `WriteOutput -Output "Users with ..." -FileExtension "csv"`
+
 Filename: *Output\Admin1\Get-InstalledJava 2020-08-01 12.34.56.csv*
 
 Function call: `WriteOutput -Output $topList -Scoreboard -FileExtension "csv"`
-Filename: Output\Scoreboard\Get-InstalledJava 2020-08-01 12.34.56.csv*
+
+Filename: *Output\Scoreboard\Get-InstalledJava 2020-08-01 12.34.56.csv*
+
 
 #### Function *ShowMessageBox*
 Shows a messagebox
@@ -185,7 +224,7 @@ Shows a messagebox
 ##### Returns
 Which button in the messagebox that was clicked.
 
-###### Examples
+##### Examples
 Function call: `ShowMessageBox -Text "Message" -Title "Messagetitle" -Button "Cancel" -Icon "Stop"`
 
 #### Function *EndScript*
@@ -205,7 +244,10 @@ Filepath to errorlog-file.
 
 ##### Examples
 Function call: `WriteErrorLog`
+
 Filename: *ErrorLogs\2020\08\Get-InstalledJava - Errorlog 20200801123456.txt*
+
+<br>
 
 ### Module GUIOps
 
@@ -230,11 +272,12 @@ $var = New-Object Collections.ArrayList
   Props = @(
     @{ PropName = "Value"; PropVal = [double] 50 }
     @{ PropName = "IsIndeterminate"; PropVal = $false }
-  )})
+  ) } )
 ```
 
   * *CName* - Name of the control according to the XAML file
-  * *PropName* - Name of property according to .Net. This must exist like [System.Windows.Control.ProgressBar]::ValueProperty
+  * *PropName* - Name of property according to .Net. This must exist like
+  `[System.Windows.Control.ProgressBar]::ValueProperty`
   * PropVal - Default value for the control. This value will also be the initial value of the control when the GUI starts. That is, in the example above, progressbar will appear as halv filled.
 
 ##### Returns
@@ -244,10 +287,12 @@ The function returns a synchronized hashtable to use for all controls and any da
   * *Output* - A text string that can be used to collect text for output from the script
   * *Vars* - An array with the names of all named controls
   * All controls are also directly available in the hash table. These are accessed by:
-    * $ hashtabell.TextRuta
+    * $ hashtabell.TextBox
 
 ##### Example
 `$syncHash = CreateWindowExt $var`
+
+<br>
 
 ### Module RemoteOps
 Used for functions that works on remote computers
@@ -262,22 +307,24 @@ Starts a job that checks for systemupdates after 10 minutes on remote computer.
 ##### Examples
 Function call: `RunCycle -ComputerName Comp1 -CycleName "Updatecheck"`
 
-#### Function SendToast
+#### Function *SendToast*
 Send a Toast-message to remote computer
 
 ##### Parameters
   * Message - Message to send, maxlength is 150 characters
   * ComputerName - Computername for the receiving device
 
-##### Returnerar
+##### Returns
 Value for if the message was sent:
-  * 0 - Meddelandet skickades
-	* 1 - Datornamn finns inte registrerat eller datorn kan inte nås
-	* 2 - Meddelandet kunde inte skickas, problem att ansluta
-	* 3 - Meddelandet kunde inte skickas, dator har inte Windows 10
+  * 0 - Message sent
+	* 1 - Computername is not registered or the computer can not be reached
+	* 2 - Message could not be sent, error when connecting
+	* 3 - Message could not be sent, the computer does not have Windows 10
 
 ##### Exemples
-`SendToast -Message "Meddelande test" -ComputerName TestComp`
+`SendToast -Message "Message test" -ComputerName TestComp`
+
+<br>
 
 ### Module SysManOps
 Contains functions for working against SysMan.
@@ -285,12 +332,12 @@ Contains functions for working against SysMan.
 #### Function *ChangeInstallation*
 Changes version of deployed application for the computer
 
-###### Parameters
+##### Parameters
   * ComputerName [string] - Name of computer
   * OldVersion [string] - AD-groupname of installationgroup for the old (currently installed) version
   * NewVersion [string] - AD-groupname of installationgroup for the new (to be installed) version
 
-###### Examples
+##### Examples
 Function call: `ChangeOfficeInstallation -ComputerName Comp1 -OldVersion Office1 -NewVersion Office2`
 
 #### Function *GetSysManComputerId*
@@ -299,7 +346,7 @@ Gets the internal id for specified computer in SysMan
 ##### Parameter
   * ComputerName - Computer to get the id for
 
-#### Returns
+##### Returns
 Id in SysMan for the computerobject
 
 ##### Example
