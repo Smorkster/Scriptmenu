@@ -2,6 +2,7 @@
 .Synopsis Unistall application
 .Description Uninstall an application from remote computer
 .Depends WinRM
+.Author Smorkster (smorkster)
 #>
 
 Add-Type -AssemblyName PresentationFramework
@@ -9,28 +10,11 @@ Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force
 
 $controls = New-Object System.Collections.ArrayList
-[void]$controls.Add( @{ CName = "btn"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentButton }
-		@{ PropName = "IsEnabled"; PropVal = $false }
-	) } )
-[void]$controls.Add( @{ CName = "dg"
-	Props = @(
-		@{ PropName = "HeadersVisibility"; PropVal = [System.Windows.Visibility]::Collapsed }
-	) } )
-[void]$controls.Add( @{ CName = "pb"
-	Props = @(
-		@{ PropName = "IsIndeterminate"; PropVal = $false }
-		@{ PropName = "Value"; PropVal = [double] 0 }
-	) } )
-[void]$controls.Add( @{ CName = "pbUT"
-	Props = @(
-		@{ PropName = "Text"; PropVal = "" }
-	) } )
-[void]$controls.Add( @{ CName = "Window"
-	Props = @(
-		@{ PropName = "Title"; PropVal = $msgTable.ContentDefWinTit }
-	) } )
+[void]$controls.Add( @{ CName = "btn" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentButton } ; @{ PropName = "IsEnabled"; PropVal = $false } ) } )
+[void]$controls.Add( @{ CName = "dg" ; Props = @( @{ PropName = "HeadersVisibility"; PropVal = [System.Windows.Visibility]::Collapsed } ) } )
+[void]$controls.Add( @{ CName = "pb" ; Props = @( @{ PropName = "IsIndeterminate"; PropVal = $false } ; @{ PropName = "Value"; PropVal = [double] 0 } ) } )
+[void]$controls.Add( @{ CName = "pbUT" ; Props = @( @{ PropName = "Text"; PropVal = "" } ) } )
+[void]$controls.Add( @{ CName = "Window" ; Props = @( @{ PropName = "Title"; PropVal = $msgTable.ContentDefWinTit } ) } )
 
 $syncHash = CreateWindowExt $controls
 $syncHash.Data.ComputerName = $args[1]
@@ -78,11 +62,12 @@ $syncHash.Window.Add_Activated( {
 		$syncHash.Window.Top = 20
 		$syncHash.Data.list = Get-CimInstance -ComputerName $syncHash.Data.ComputerName -ClassName win32_product | Where-Object { $_.Name -ne $null } | Sort-Object Name
 		$syncHash.Window.Dispatcher.Invoke( [action] {
-			$syncHash.Data.list | Foreach-Object { $syncHash.dg.AddChild( [pscustomobject]@{ Name = $_.Name; Installed = ( [datetime]::ParseExact( $_.InstallDate, "yyyyMMdd", $null ) ).ToShortDateString() ; ID = $_.IdentifyingNumber } ) }
+			$syncHash.Data.list | Foreach-Object { $syncHash.dg.AddChild( [pscustomobject]@{ Name = $_.Name; Installed = try { ( [datetime]::ParseExact( $_.InstallDate, "yyyyMMdd", $null ) ).ToShortDateString() } catch { $syncHash.Data.msgTable.StrNoInstallDate } ; ID = $_.IdentifyingNumber } ) }
 		} )
 		$syncHash.DC.Window[0] = ""
 	}
 } )
 
 [void]$syncHash.Window.ShowDialog()
-WriteLog -LogText "$( $syncHash.Data.ComputerName ) $( $ofs = ", "; [string]( $syncHash.Data.Apps | sort ) )" | Out-Null
+WriteLog -LogText "$( $syncHash.Data.ComputerName ) $( $ofs = ", "; [string]( $syncHash.Data.Apps | Sort-Object ) )" | Out-Null
+$global:syncHash = $syncHash

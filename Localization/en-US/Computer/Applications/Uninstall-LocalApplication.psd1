@@ -7,5 +7,6 @@ ContentDefWinTit = Getting list of applications
 QUninstall = Are you sure to uninstall
 StrAppSum = applications
 StrDone = Applications uninstalled
+StrNoInstallDate = <Not present>
 StrUninstalling = Uninstalling
 '@
