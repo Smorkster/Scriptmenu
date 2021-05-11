@@ -5,6 +5,7 @@ ContentbtnExport = Export
 ContentbtnImport = Import
 ContentbtnImportToolTip = Import from clipboard
 StrExportDone = Export of distgroups finished. The export was written to: (click here to copy)
+StrFileNamePrefix = Export Distributiongroups
 StrNoMembers = <No members>
 StrNoOwner = <No owner specified>
 StrNotFound = Cannot find distribution groups with the following information in Exchange:

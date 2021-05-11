@@ -138,7 +138,7 @@ $syncHash.ExportButton.Add_Click( {
 		$excelTempsheet.ListObjects.Add( 1, $excelTempsheet.Range( $excelTempsheet.Cells.Item( 2, 1 ), $excelTempsheet.Cells.Item( $excelTempsheet.usedrange.rows.count + 1, 1 ) ), 0, 1 ) | Out-Null
 	}
 
-	$syncHash.FilePath = "$( $syncHash.BaseDir )\Output\$( $env:USERNAME )\Export Distributionslistor ($( Get-Date -f "yyyy-MM-dd HH.mm.ss" )).xlsx"
+	$syncHash.FilePath = "$( $syncHash.BaseDir )\Output\$( $env:USERNAME )\$( $syncHash.Data.msgTable.StrFileNamePrefix ) ($( Get-Date -f "yyyy-MM-dd HH.mm.ss" )).xlsx"
 	$excelWorkbook.SaveAs( $syncHash.FilePath )
 	$excelWorkbook.Close()
 	$excel.Quit()
