@@ -7,7 +7,7 @@
     Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
     Width="992">
     <Window.Resources>
-        <sys:Boolean x:Key="Enable">true</sys:Boolean>
+        <sys:Boolean x:Key="ExpandGroups">False</sys:Boolean>
         <sys:Double x:Key="CW">130</sys:Double>
         <sys:Double x:Key="MCW">1000</sys:Double>
         <Visibility x:Key="V">Hidden</Visibility>
@@ -17,14 +17,24 @@
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate>
-                                <Border BorderBrush="Gray" BorderThickness="1">
-                                    <Expander IsExpanded="True">
-                                        <Expander.Header>
-                                            <TextBlock Text="{Binding Name}" Foreground="Gray" FontSize="14"/>
-                                        </Expander.Header>
-                                        <ItemsPresenter/>
-                                    </Expander>
-                                </Border>
+                                <Expander IsExpanded="{DynamicResource ExpandGroups}" Width="Auto" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                                    <Expander.Header>
+                                        <Border>
+                                            <Border.Background>
+                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                    <LinearGradientBrush.GradientStops>
+                                                        <GradientStopCollection>
+                                                            <GradientStop Color="LightGray" Offset="0.0" />
+                                                            <GradientStop Color="White" Offset="1.1" />
+                                                        </GradientStopCollection>
+                                                    </LinearGradientBrush.GradientStops>
+                                                </LinearGradientBrush>
+                                            </Border.Background>
+                                            <TextBlock Text="{Binding Name}" Foreground="Black" FontSize="14" HorizontalAlignment="Stretch" Width="{StaticResource MCW}" Padding="3"/>
+                                        </Border>
+                                    </Expander.Header>
+                                    <ItemsPresenter/>
+                                </Expander>
                             </ControlTemplate>
                         </Setter.Value>
                     </Setter>
@@ -42,29 +52,30 @@
             <MenuItem Name="menuSearchFileName" Header="Search filename"/>
         </ContextMenu>
         <Style TargetType="{x:Type Button}">
-            <Setter Property="IsEnabled" Value="{DynamicResource Enable}"/>
             <Setter Property="Padding" Value="5"/>
+            <Setter Property="Margin" Value="5"/>
         </Style>
         <Style TargetType="{x:Type DatePickerTextBox}">
-            <Setter Property="Focusable" Value="False"/>
-			<Setter Property="IsHitTestVisible" Value="False"/>
+            <Setter Property="IsReadOnly" Value="True"/>
+        </Style>
+        <Style TargetType="{x:Type GroupBox}">
+            <Setter Property="Margin" Value="5"/>
         </Style>
         <Style TargetType="{x:Type RadioButton}">
             <Setter Property="Margin" Value="5"/>
-            <Setter Property="IsEnabled" Value="{DynamicResource Enable}"/>
         </Style>
         <Style TargetType="{x:Type ListView}">
-            <Setter Property="IsEnabled" Value="{DynamicResource Enable}"/>
+            <Setter Property="ListView.View" Value="{DynamicResource View}"/>
+            <Setter Property="SelectionMode" Value="Single"/>
+            <Setter Property="VirtualizingPanel.IsVirtualizingWhenGrouping" Value="True"/>
+            <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Standard"/>
             <Setter Property="ItemContainerStyle">
                 <Setter.Value>
                     <Style TargetType="{x:Type ListViewItem}">
                         <Setter Property="ToolTip" Value="{Binding TT}"/>
-                        <Setter Property="ContextMenu" Value="{DynamicResource cm}"/>
                     </Style>
                 </Setter.Value>
             </Setter>
-            <Setter Property="ListView.View" Value="{DynamicResource View}"/>
-            <Setter Property="SelectionMode" Value="Single"/>
             <Style.Triggers>
                 <Trigger Property="HasItems" Value="False">
                     <Setter Property="IsEnabled" Value="False"/>
@@ -88,7 +99,6 @@
             <Setter Property="Width" Value="100"/>
             <Setter Property="Margin" Value="5,0,5,0"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="IsEnabled" Value="{DynamicResource Enable}"/>
         </Style>
         <Style TargetType="{x:Type ToolTip}">
             <Setter Property="ToolTipService.InitialShowDelay" Value="0"/>
@@ -109,33 +119,66 @@
                 <RowDefinition/>
                 <RowDefinition/>
             </Grid.RowDefinitions>
-            <StackPanel Grid.Column="0" Grid.Row="0">
-				<StackPanel Name="spInput">
-					<Label Name="lblValuesTitle"/>
-					<StackPanel Orientation="Horizontal">
-						<Label Name="lblCaseNrTitle" Width="160"/>
-						<TextBox Name="tbCaseNr"/>
-					</StackPanel>
-					<StackPanel Orientation="Horizontal">
-						<Label Name="lblIDTitle" Width="160"/>
-						<TextBox Name="tbID"/>
-					</StackPanel>
-					<StackPanel>
-						<RadioButton Name="rbLatest" VerticalContentAlignment="Center" GroupName="grpDate"/>
-						<StackPanel Orientation="Horizontal" Margin="0">
-							<RadioButton Name="rbPrevDate" VerticalContentAlignment="Center" GroupName="grpDate"/>
-							<DatePicker Name="DatePickerStart" Width="150" IsEnabled="False"/>
-						</StackPanel>
-						<RadioButton Name="rbAll" VerticalContentAlignment="Center" GroupName="grpDate"/>
-					</StackPanel>
-				</StackPanel>
-                <Button Name="btnSearch"/>
-            </StackPanel>
-            <StackPanel Grid.Column="1" Grid.Row="0" Name="spInfo">
+            <Grid Grid.Column="0" Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <GroupBox Name="gbSearch" Grid.Column="0">
+                    <StackPanel>
+                        <StackPanel Name="spInput">
+                            <Label Name="lblValuesTitle"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Label Name="lblCaseNrTitle" Width="160"/>
+                                <TextBox Name="tbCaseNr"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Label Name="lblIDTitle" Width="160"/>
+                                <TextBox Name="tbID"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+                <Grid Grid.Column="0" Grid.Row="1" Width="{Binding ElementName=gbSearch,Path=ActualWidth}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" Name="btnSearch"/>
+                    <Button Grid.Column="1" Name="btnReset"/>
+                </Grid>
+
+                <GroupBox Name="gbSettings" Grid.Column="1">
+                    <StackPanel>
+                        <GroupBox Name="gbDatePicker">
+                            <StackPanel>
+                                <RadioButton Name="rbLatest" VerticalContentAlignment="Center" GroupName="grpDate"/>
+                                <RadioButton Name="rbPrevDate" VerticalContentAlignment="Top" GroupName="grpDate">
+                                    <StackPanel Width="150" Margin="0,-1,0,0">
+                                        <TextBlock Name="tbPrevDateText"/>
+                                        <DatePicker Name="DatePickerStart" Width="Auto" IsEnabled="{Binding ElementName=rbPrevDate, Path=IsChecked}" Margin="0,5,0,0"/>
+                                    </StackPanel>
+                                </RadioButton>
+                                <RadioButton Name="rbAll" VerticalContentAlignment="Center" GroupName="grpDate" Visibility="Collapsed"/>
+                            </StackPanel>
+                        </GroupBox>
+                        <CheckBox Name="cbExpandGroups" Margin="5"/>
+                    </StackPanel>
+                </GroupBox>
+            </Grid>
+            <GroupBox Grid.Column="1" Grid.Row="0" Name="gbInfo" Visibility="Hidden">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0">
                         <Label Name="lblUserTitle"/>
                         <Label Name="lblUser"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0">
+                        <Label Name="lblFolderCountTitle"/>
+                        <Label Name="lblFolderCount"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0">
                         <Label Name="lblFileCountTitle"/>
@@ -147,8 +190,8 @@
                         <Button Name="btnOpenSummary"/>
                     </StackPanel>
                 </StackPanel>
-            </StackPanel>
-            <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" Name="TotalProgress"/>
+            </GroupBox>
+            <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" Name="TotalProgress" Visibility="Hidden" Margin="5"/>
         </Grid>
         <TabControl Grid.Row="1">
             <TabItem Name="tiFiles">
@@ -157,8 +200,19 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
-                    <Label Grid.Row="0" Name="lblFiles"/>
-                    <ListView Grid.Row="1" Name="lvAllFiles">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Column="0" Name="lblFiles"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <Button Name="btnOpenFolder" IsEnabled="{Binding ElementName=lvAllFiles, Path=IsEnabled}"/>
+                            <Button Name="btnSearchExt" IsEnabled="{Binding ElementName=lvAllFiles, Path=IsEnabled}"/>
+                            <Button Name="btnSearchFileName" IsEnabled="{Binding ElementName=lvAllFiles, Path=IsEnabled}"/>
+                        </StackPanel>
+                    </Grid>
+                    <ListView Grid.Row="1" Name="lvAllFiles" VirtualizingPanel.VirtualizationMode="Recycling">
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn DisplayMemberBinding="{Binding Name}" Width="{StaticResource ResourceKey=MCW}">
@@ -178,7 +232,34 @@
                     </ListView>
                 </Grid>
             </TabItem>
-            <TabItem Name="tiMDH">
+            <TabItem Name="tiFilterMatch" Visibility="Collapsed">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="30"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Label Grid.Row="0" Name="lblFilterMatch"/>
+                    <ListView Grid.Row="1" Name="lvFilterMatch">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn DisplayMemberBinding="{Binding Name}" Width="{StaticResource ResourceKey=MCW}">
+                                    <GridViewColumnHeader Name="lvFMN" Content="{Binding ElementName=lvAN,Path=Content}"/>
+                                </GridViewColumn>
+                                <GridViewColumn DisplayMemberBinding="{Binding Created}" Width="{StaticResource ResourceKey=CW}">
+                                    <GridViewColumnHeader Name="lvFMC" Content="{Binding ElementName=lvAC,Path=Content}"/>
+                                </GridViewColumn>
+                                <GridViewColumn DisplayMemberBinding="{Binding Updated}" Width="{StaticResource ResourceKey=CW}">
+                                    <GridViewColumnHeader Name="lvFMU" Content="{Binding ElementName=lvAD,Path=Content}"/>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                        <ListView.GroupStyle>
+                            <StaticResource ResourceKey="gs"/>
+                        </ListView.GroupStyle>
+                    </ListView>
+                </Grid>
+            </TabItem>
+            <TabItem Name="tiMDH" Visibility="Collapsed">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="30"/>
@@ -205,7 +286,7 @@
                     </ListView>
                 </Grid>
             </TabItem>
-            <TabItem Name="tiMDG">
+            <TabItem Name="tiMDG" Visibility="Collapsed">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="30"/>
@@ -232,11 +313,11 @@
                     </ListView>
                 </Grid>
             </TabItem>
-            <TabItem Name="tiO" Visibility="Visible">
+            <TabItem Name="tiO" Visibility="Hidden">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="30"/>
-                        <RowDefinition Height="30"/>
+                        <RowDefinition Height="40"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
                     <Label Grid.Row="0" Name="lblO"/>
