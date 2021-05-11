@@ -2,6 +2,7 @@
 .Synopsis Show installed applications on remote computer
 .Description Lists all installed applications on given computer. The list if fetched from the computer, and can thus contain applications installed manually.
 .Depends WinRM
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

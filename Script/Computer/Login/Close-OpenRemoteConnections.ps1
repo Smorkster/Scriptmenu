@@ -1,6 +1,7 @@
 <#
 .Synopsis End active remote connection
 .Description Ends an active remote connection on given computer.
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

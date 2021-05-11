@@ -1,6 +1,7 @@
 <#
 .Synopsis Get local admin registered on remote computer
 .Description Get local admin registered on remote computer.
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
@@ -9,7 +10,7 @@ $ComputerName = Read-Host "$( $msgTable.QComputer )"
 
 $Computer = Get-ADComputer $ComputerName -Properties adminDescription
 
-if ( $Computer.adminDescription -eq $null )
+if ( $null -eq $Computer.adminDescription )
 {
 	Write-Host "$( $msgTable.StrNoLA )"
 	$logText = $msgTable.StrLogNoLA

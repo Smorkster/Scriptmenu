@@ -2,6 +2,7 @@
 .Synopsis Add AD-groups, pasted in console [BO]
 .Requires Role_Backoffice
 .Description Creates permissions for multiple given AD-groups.
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\ConsoleOps.psm1" -Force

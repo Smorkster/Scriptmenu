@@ -2,6 +2,7 @@
 .Synopsis Show networkrouting from remote computer to given address
 .Description Show networkrouting from remote computer to given address.
 .Depends WinRM
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

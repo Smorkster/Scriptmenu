@@ -2,6 +2,7 @@
 .Synopsis List profiles on remote computer
 .Description List profiles on remote computer.
 .Depends WinRM
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

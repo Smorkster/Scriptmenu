@@ -1,6 +1,7 @@
 <#
 .Synopsis Run all tasks in CM-agent on remote computer
 .Description Run all tasks in CM-agent on given computer.
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

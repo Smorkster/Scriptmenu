@@ -1,6 +1,7 @@
 <#
 .Synopsis List groups a user is member of
 .Description List groups a user is member of.
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

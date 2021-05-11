@@ -2,6 +2,7 @@
 .Synopsis Check if Java is installed, and what version
 .Description Checks if Java is installed and with what version. Asks if all computers at same department, having Java installed, is to be listed.
 .Depends WinRM
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

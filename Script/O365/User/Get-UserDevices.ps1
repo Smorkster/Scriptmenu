@@ -1,6 +1,7 @@
 <#
 .Synopsis Get devices registered for O365
 .Description Get all units registered for user in Azure
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

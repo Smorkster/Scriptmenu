@@ -2,6 +2,7 @@
 .Synopsis Retart SMS & CM agents
 .Description Restart SMS & CM agents on remote computer
 .Depends WinRM
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

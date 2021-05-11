@@ -2,6 +2,7 @@
 .Synopsis Restart remote computer
 .Description Forces a reboot of given computer.
 .Depends WinRM
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

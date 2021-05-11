@@ -1,7 +1,7 @@
 <#
 .Synopsis Check status of AD-account
 .Description Search for a users AD-account and check if it is active and status of password. The account can be reactivated and the validity of the password can be extended. If the account requires other permissions, a message is shown.
-.Author Someone
+.Author Smorkster (smorkster)
 #>
 
 #######################################

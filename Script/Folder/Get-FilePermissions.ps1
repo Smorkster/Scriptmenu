@@ -1,6 +1,7 @@
 <#
 .Synopsis List users that have permissions for a file
 .Description For given file, list all users with permission for it. The list sorts the users by permissionlevel.
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
@@ -18,7 +19,7 @@ function GetMember
 		try
 		{
 			$groupMembers = Get-ADGroup $member -Properties members
-			$groupMembers.members | foreach { GetMember $_ }
+			$groupMembers.members | ForEach-Object { GetMember $_ }
 		}
 		catch
 		{
@@ -44,7 +45,7 @@ foreach ( $rightsType in $FileSystemRights.Keys )
 	foreach ( $holder in $rightsHolder )
 	{
 		$member = GetMember $holder.IdentityReference
-		if ( $member -ne $null )
+		if ( $null -ne $member )
 		{ $member | Where-Object { $_ -match "\(" } | Foreach-Object { $toutput += $_ } }
 	}
 	$toutput | Select-Object -Unique | Sort-Object | Foreach-Object { $output += "$_`n" }

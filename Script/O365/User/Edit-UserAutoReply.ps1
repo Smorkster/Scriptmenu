@@ -1,6 +1,7 @@
 <#
 .Synopsis Editera en användares autoreply
 .Description Ange text för autoreply samt ange start och slutdatum
+.Author Smorkster (smorkster)
 #>
 
 function UpdateSummary

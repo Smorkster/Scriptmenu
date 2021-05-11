@@ -1,6 +1,7 @@
 <#
 .Synopsis Kontrollera status för Office365 konto
 .Description Kontrollerar status för en användares Office365 konto, ifall det synkats samt annan information
+.Author Smorkster (smorkster)
 #>
 
 ############################

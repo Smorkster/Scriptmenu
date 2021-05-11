@@ -1,6 +1,7 @@
 <#
 .Synopsis List permissions and owner for one or more folders
 .Description For given shared folders, list its owner and users with permission for it.
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\ConsoleOps.psm1" -Force

@@ -2,6 +2,7 @@
 .Synopsis Open profilefolder on remote computer
 .Description Starts Explorer with given computers profilefolder opened.
 .Depends WinRM
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

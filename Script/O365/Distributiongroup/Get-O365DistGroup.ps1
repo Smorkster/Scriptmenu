@@ -2,7 +2,7 @@
 .Synopsis Gets distribitiongroup from Exchange
 .Description Get a distributiongroup from Exchange. In the GUI are functions for administering the group. Change name and owner. Enabled/disable external senders to use the group. Add/remove members.
 .State Prod
-.Author Someone (usrID)
+.Author Smorkster (smorkster)
 #>
 
 ########################################################

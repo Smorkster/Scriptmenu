@@ -1,6 +1,7 @@
 <#
 .Synopsis Update and verify deployed applications for remote computer
 .Description Starts a search for updates and deployed applications with CM agent on given computer.
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

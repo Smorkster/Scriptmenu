@@ -1,6 +1,7 @@
 <#
 .Synopsis Repair CM agent on remote computer
 .Description Repair CM agent on given computer.
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

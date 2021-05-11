@@ -1,7 +1,7 @@
 <#
 .Synopsis Add and remove folderpermissions, with GUI
 .Description Add/remove permissions for shared folders.
-.Author Someone
+.Author Smorkster (smorkster)
 #>
 
 ####################  Operational functions  ####################
@@ -14,24 +14,12 @@ function CheckUser
 		[string] $Id
 	)
 
-	if ( dsquery User -samid $Id )
-	{
-		return "User"
-	}
-	elseif ( dsquery Group -samid $Id )
-	{
-		return "Group"
-	}
+	if ( dsquery User -samid $Id ) { return "User" }
+	elseif ( dsquery Group -samid $Id ) { return "Group" }
 	elseif ( $EKG = Get-ADGroup -LDAPFilter "($( $msgTable.StrEGroupIdName )=$( $msgTable.StrEGroupOrg )-$Id)" )
 	{
-		if ( $EKG.Count -gt 1 )
-		{
-			return "EGroups"
-		}
-		else
-		{
-			return "EGroup"
-		}
+		if ( $EKG.Count -gt 1 ) { return "EGroups" }
+		else { return "EGroup" }
 	}
 	else
 	{
@@ -48,18 +36,9 @@ function CollectADGroups
 	{
 		switch ( $syncHash.DC.cbDisk[1].Substring( 0, 1 ) )
 		{
-			"G"
-			{
-				CollectADGroupsG -Entries $syncHash.DC.lbFoldersChosen[0]
-			}
-			"R"
-			{
-				CollectADGroupsR -Entries $syncHash.DC.lbFoldersChosen[0]
-			}
-			"S"
-			{
-				CollectADGroupsS -Entries $syncHash.DC.lbFoldersChosen[0]
-			}
+			"G" { CollectADGroupsG -Entries $syncHash.DC.lbFoldersChosen[0] }
+			"R" { CollectADGroupsR -Entries $syncHash.DC.lbFoldersChosen[0] }
+			"S" { CollectADGroupsS -Entries $syncHash.DC.lbFoldersChosen[0] }
 		}
 	}
 	else

@@ -2,6 +2,7 @@
 .Synopsis Open services on remote computer
 .Description Open Windows servicesmanager, connected to the given computer.
 .Depends WinRM
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

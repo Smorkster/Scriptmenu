@@ -2,6 +2,7 @@
 .Synopsis Restart tasks in CM agent on remote computer
 .Description Restart tasks in CM agent on remote computer.
 .Depends WinRM
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

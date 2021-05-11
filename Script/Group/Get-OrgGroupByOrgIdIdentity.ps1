@@ -1,6 +1,7 @@
 <#
 .Synopsis Get AD-group for department by its Id
 .Description Get AD-group for department by its Id.
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
@@ -18,7 +19,7 @@ else
 
 $Group = Get-ADGroup -LDAPFilter $Filter -Properties ( $msgTable.CodeOrgIdPropName ) | Select-Object @{ Name = ( $msgTable.CodePropTitleOrg ); Expression = { $_.Name } }, @{ Name = ( $msgTable.CodePropTitleId ); Expression = { $_.( $msgTable.CodeOrgIdPropName ) -replace "$( $msgTable.CodeOrgIdPropPrefix )-", "" } }
 
-if ( $Group -eq $null )
+if ( $null -eq $Group )
 {
 	Write-Host "$( $msgTable.StrNotFound ) $UserInput"
 }

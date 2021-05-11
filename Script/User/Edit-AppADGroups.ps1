@@ -2,6 +2,7 @@
 .Synopsis Edit AD-Groups for applications
 .Requires Role_Backoffice
 .Description Add/remove permissions for applications. These applications are governed by AD-groups. When the permissions are set, a message with summary is copied to the clipboard.
+.Author Smorkster (smorkster)
 #>
 
 ##########################################

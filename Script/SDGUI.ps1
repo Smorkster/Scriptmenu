@@ -1,6 +1,7 @@
 <#
 .Synopsis Main script
 .Description Main script for collecting and accessing script
+.Author Smorkster (smorkster)
 #>
 
 ####################################################
@@ -351,7 +352,7 @@ function CreateScriptGroup
 					$label = [System.Windows.Controls.Label]@{ Content = $file.Synopsis; ToolTip = [string]$file.Description.Replace( ". ", ".`n" ) }
 					$label.Name = "lbl$( $file.Name -replace "\W" )"
 
-					if ( $file.Depends -in ( $Window.Resources.Keys | Where-Object { $_.IsPublic -eq $null } ) )
+					if ( $file.Depends -in ( $Window.Resources.Keys | Where-Object { $null -eq $_.IsPublic } ) )
 					{ $wpScriptControls.SetResourceReference( [System.Windows.Controls.WrapPanel]::IsEnabledProperty, $file.Depends ) }
 
 					if ( $file.State -match "$( $msgTable.ScriptContentInDev )" )

@@ -1,7 +1,7 @@
 <#
 .Synopsis Main GUI for Office 365 scripts
 .Description Main script for collecting and accessing scripts related to Office 365
-.Author Name Surname (sysAdmin1)
+.Author Smorkster (smorkster)
 #>
 
 #####################################################################
@@ -120,7 +120,7 @@ function CreateScriptGroup
 					$label = [System.Windows.Controls.Label]@{ Content = $file.Synopsis; ToolTip = [string]$file.Description.Replace( ". ", ".`n" ) }
 					$label.Name = "lbl$( $file.Name -replace "\W" )"
 
-					if ( $file.Depends -in ( $Window.Resources.Keys | Where-Object { $_.IsPublic -eq $null } ) )
+					if ( $file.Depends -in ( $Window.Resources.Keys | Where-Object { $null -eq $_.IsPublic } ) )
 					{ $wpScriptControls.SetResourceReference( [System.Windows.Controls.WrapPanel]::IsEnabledProperty, $file.Depends ) }
 
 					if ( $file.State -match "$( $msgTable.ScriptContentInDev )" )

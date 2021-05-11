@@ -1,6 +1,7 @@
 <#
 .Synopsis List folders for wich a user is listed as owner
 .Description List folders for wich a user is listed as owner.
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

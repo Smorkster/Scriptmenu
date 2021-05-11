@@ -2,6 +2,7 @@
 .Synopsis Log on to remote computer as admin
 .Description Starts a remote connection to computer, loggin in as administrator.
 .Depends WinRM
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

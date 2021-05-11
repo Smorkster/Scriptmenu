@@ -1,6 +1,7 @@
 <#
 .Synopsis Remove multiple users from one or more AD-groups
 .Description Remove multiple users from one or more AD-groups.
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\ConsoleOps.psm1" -Force
@@ -21,7 +22,7 @@ foreach ( $GroupId in $Groups )
 {
 	# Get group and its users
 	$Group = Get-ADGroup $GroupId
-	$GroupMembers = $Group | Get-ADGroupMember | select -ExpandProperty SamAccountName
+	$GroupMembers = $Group | Get-ADGroupMember | Select-Object -ExpandProperty SamAccountName
 	Write-Host "$( $msgTable.StrGettingUsers ) $Group `n" -ForegroundColor Cyan
 
 	$UserRemoval = @()
@@ -49,7 +50,7 @@ foreach ( $GroupId in $Groups )
 		Write-Host "$User " -ForegroundColor Green -NoNewline
 		$Row += "$User, "
 	}
-	$AllUsers | foreach { if ( $UserRemoval.SamAccountName -notcontains $_ ) { $nRow += "$nRow " } }
+	$AllUsers | ForEach-Object { if ( $UserRemoval.SamAccountName -notcontains $_ ) { $nRow += "$nRow " } }
 	if ( $nRow -ne "" )
 	{
 		Write-Host "$( $msgTable.StrNotMembers ):`n$nRow"

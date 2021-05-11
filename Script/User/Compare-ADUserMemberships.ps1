@@ -1,6 +1,7 @@
 <#
 .Synopsis Compare groupmembership for two or more users
 .Description By given users id's, compare each users AD-groupmemberships. List is written to a CSV-file.
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

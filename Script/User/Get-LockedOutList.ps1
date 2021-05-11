@@ -1,6 +1,7 @@
 <#
 .Synopsis List where a users account have been locked
 .Description Search for user in logfiles of accountlocks. Then lists at which computer the account was locked.
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

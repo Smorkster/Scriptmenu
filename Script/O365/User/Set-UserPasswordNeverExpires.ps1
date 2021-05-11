@@ -1,6 +1,7 @@
 <#
 .Synopsis Sets a users password to never expire
 .Description Set an individual user's password to never expire
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

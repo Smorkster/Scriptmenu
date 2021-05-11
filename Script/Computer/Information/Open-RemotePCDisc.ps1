@@ -2,6 +2,7 @@
 .Synopsis Show C:\ on remote computer
 .Description Opens Explorer C:\ for the given computer opened.
 .Depends WinRM
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

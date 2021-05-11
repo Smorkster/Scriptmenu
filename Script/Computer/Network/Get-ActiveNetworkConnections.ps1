@@ -2,6 +2,7 @@
 .Synopsis Show active networkconnections on remote computer, and related applications
 .Description List all active networkconnections on given computer. The outputlist shows what processes owns the connection, where it is connected and if it is active.
 .Depends WinRM
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

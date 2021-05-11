@@ -1,6 +1,7 @@
 <#
 .Synopsis List number of reinstallations
 .Description Lists who has performed reinstallations between given dates. Information is gathered from SysMan.
+.Author Smorkster (smorkster)
 #>
 
 ############################
@@ -56,7 +57,7 @@ function BtnStart_Click
 			$Runspace.RunspacePool = $RunspacePool
 			[void]$Runspace.AddScript( {
 				param ( $processingStart, $processingEnd, $syncHash )
-				( Invoke-RestMethod -Uri ( Invoke-Expression $syncHash.msgTable.CodeSysManUrl ) -Method Get -UseDefaultCredentials -ContentType "application/json" ).result | where { $_.LoggedBy -match $syncHash.msgTable.StrAdmPrefix -and $_.eventCode -eq "OSINST" }
+				( Invoke-RestMethod -Uri ( Invoke-Expression $syncHash.msgTable.CodeSysManUrl ) -Method Get -UseDefaultCredentials -ContentType "application/json" ).result | Where-Object { $_.LoggedBy -match $syncHash.msgTable.StrAdmPrefix -and $_.eventCode -eq "OSINST" }
 			} )
 			[void]$Runspace.AddArgument( $processingStart )
 			[void]$Runspace.AddArgument( $processingEnd )
@@ -73,19 +74,19 @@ function BtnStart_Click
 		do
 		{
 			Start-Sleep -Milliseconds 10
-			$syncHash.DC.Progress[0] = [double]( ( ( ( $jobs | where { $_.H.IsCompleted } ).Count ) / ( $jobs.Count ) ) * 100 )
+			$syncHash.DC.Progress[0] = [double]( ( ( ( $jobs | Where-Object { $_.H.IsCompleted } ).Count ) / ( $jobs.Count ) ) * 100 )
 		} until ( ( $jobs.H.IsCompleted -eq $false ).Count -eq 0 )
 
 		$ticker = 0
 		$syncHash.Window.Dispatcher.Invoke( [action]{ $syncHash.Window.Title = $syncHash.msgTable.StrOpRead }, "Normal" )
 		foreach ( $j in $jobs )
 		{
-			$j.RS.EndInvoke( $j.H ) | foreach { [void]$logs.Add( $_ ) }
+			$j.RS.EndInvoke( $j.H ) | ForEach-Object { [void]$logs.Add( $_ ) }
 			$ticker++
 			$syncHash.DC.Progress[0] = [double]( ( $ticker / $jobs.Count ) * 100 )
 		}
 
-		$jobs | foreach { $_.RS.Close(); $_.RS.Dispose() }
+		$jobs | ForEach-Object { $_.RS.Close(); $_.RS.Dispose() }
 		$RunspacePool.Close()
 		$syncHash.Window.Dispatcher.Invoke( [action]{ $syncHash.Window.Title = $syncHash.msgTable.StrWinTitle }, "Normal" )
 
@@ -149,7 +150,7 @@ function BtnStart_Click
 			}
 		}
 
-		$syncHash.installations | sort Installations -Descending | foreach `
+		$syncHash.installations | Sort-Object Installations -Descending | ForEach-Object `
 		{
 			$syncHash.DC.UserView[0].Add( [pscustomobject]@{ User = $_.User; Installations = $_.Installations } )
 		}
@@ -177,7 +178,7 @@ function BtnStart_Click
 # Exports information to CSV
 function BtnExport_Click
 {
-	$output = $syncHash.installations | sort Installations -Descending | foreach { [pscustomobject]@{ User = $_.User; OS_Installations = $_.Installations } } | ConvertTo-Csv -NoTypeInformation -Delimiter ";"
+	$output = $syncHash.installations | Sort-Object Installations -Descending | ForEach-Object { [pscustomobject]@{ User = $_.User; OS_Installations = $_.Installations } } | ConvertTo-Csv -NoTypeInformation -Delimiter ";"
 	$outputFile = WriteOutput -Output $output -FileExtension "csv" -Scoreboard
 	ShowMessageBox "$( $syncHash.msgTable.StrExportPathMessage )`n$outputFile"
 	$syncHash.btnExport.IsEnabled = $false
@@ -271,12 +272,12 @@ function UserView_SelectionChanged
 					try
 					{
 						$ofs = "`n"
-						$r = Get-ADComputer ( $in.Computer ) -Properties MemberOf -ErrorAction Stop | select -ExpandProperty MemberOf | where { $_ -like "*_Wrk*PR*_PC*" } | foreach { ( ( $_ -split "=" )[1] -split "," )[0] }
+						$r = Get-ADComputer ( $in.Computer ) -Properties MemberOf -ErrorAction Stop | Select-Object -ExpandProperty MemberOf | Where-Object { $_ -like "*_Wrk*PR*_PC*" } | ForEach-Object { ( ( $_ -split "=" )[1] -split "," )[0] }
 						if ( $r.Count -eq 0 )
 						{ $t = $syncHash.msgTable.StrOtherCompRole }
 						else
 						{
-							$r | foreach {
+							$r | ForEach-Object {
 								if ( ( $syncHash.msgTable.CodeAllowedCompOrgs -split "," | Foreach-Object -Begin { $ok = $false } -Process { if ( $r -match $_.Trim() ) { $ok = $true } } -End { $ok } ) -and `
 								( $syncHash.msgTable.CodeAllowedCompRoles-split "," | Foreach-Object -Begin { $ok = $false } -Process { if ( $r -match $_.Trim() ) { $ok = $true } } -End { $ok } ) )
 								{ $wrongType = 0 }
@@ -315,7 +316,7 @@ function UserView_SelectionChanged
 			do
 			{
 				Start-Sleep -Milliseconds 500
-				$completed = ( $data.Jobs | where { $_.Handle.IsCompleted -eq "Completed" } ).Count
+				$completed = ( $data.Jobs | Where-Object { $_.Handle.IsCompleted -eq "Completed" } ).Count
 				$syncHash.DC.Progress[0] = [double]( ( $completed / $data.Jobs.Count ) * 100 )
 			} until ( $completed -eq $data.Jobs.Count )
 
@@ -345,11 +346,11 @@ function SortUserList
 	param ( $Column )
 
 	if ( $Column -eq "User" )
-	{ $items = $syncHash.DC.DescriptionView[0] | sort User, Installations }
+	{ $items = $syncHash.DC.DescriptionView[0] | Sort-Object User, Installations }
 	else
-	{ $items = $syncHash.DC.DescriptionView[0] | sort Installations, User -Descending }
+	{ $items = $syncHash.DC.DescriptionView[0] | Sort-Object Installations, User -Descending }
 	$syncHash.DC.DescriptionView[0].Clear()
-	$items | foreach { $syncHash.DC.DescriptionView[0].Add( $_ ) }
+	$items | ForEach-Object { $syncHash.DC.DescriptionView[0].Add( $_ ) }
 }
 
 ###################### Script start

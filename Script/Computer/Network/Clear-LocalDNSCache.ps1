@@ -2,6 +2,7 @@
 .Synopsis Clear local DNS cache on remote computer
 .Description Clear local DNS cache on given computer.
 .Depends WinRM
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

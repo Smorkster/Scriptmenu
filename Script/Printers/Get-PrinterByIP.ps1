@@ -1,6 +1,7 @@
 <#
 .Synopsis Find printerqueue by IP-address
 .Description Search for IP-address and list the printerqueue connected to it.
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

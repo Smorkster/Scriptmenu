@@ -1,6 +1,7 @@
 <#
 .Synopsis Find newly deployed applications for remote computer
 .Description Find newly deployed applications for remote computer.
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

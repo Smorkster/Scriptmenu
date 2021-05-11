@@ -1,6 +1,7 @@
 <#
 .Synopsis List all AD-objects that are members of AD-group
 .Description List all AD-objects, users/groups/computers etc, that are members of given AD-group.
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

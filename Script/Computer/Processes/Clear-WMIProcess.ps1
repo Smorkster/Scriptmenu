@@ -2,6 +2,7 @@
 .Synopsis Helps handle 'Waiting for userlogin'
 .Description Clears tasklist for CCMEXEC. This may help errormessage "Waiting for userlogin".
 .Depends WinRM
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

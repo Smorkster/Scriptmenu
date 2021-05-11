@@ -1,6 +1,7 @@
 <#
 .Synopsis Get mail messagetrace to and/or from specified user
 .Description Do a messagetrace in Office365 from a given sender and/or receiver. Start and End-dates can be specified
+.Author Smorkster (smorkster)
 #>
 
 function Export

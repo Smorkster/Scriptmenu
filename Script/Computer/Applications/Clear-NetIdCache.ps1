@@ -2,6 +2,7 @@
 .Synopsis Clear NetID-cache for one remote computer
 .Description Removes all cache-files for NetID on given computer.
 .Depends WinRM
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

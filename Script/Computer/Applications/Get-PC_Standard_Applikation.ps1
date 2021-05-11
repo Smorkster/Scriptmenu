@@ -1,6 +1,7 @@
 <#
 .Synopsis Show core applications on remote computer
 .Description List all core-applications installed on given computer.
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

@@ -1,6 +1,7 @@
 <#
 .Synopsis List ALL folderpermissions for one or more users
 .Description List ALL folderpermissions for one or more users.
+.Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force

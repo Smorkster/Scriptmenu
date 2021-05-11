@@ -3,6 +3,7 @@
 .Description Remove one or more profiles on remote computer.
 .Requires Role_Servicedesk_Backoffice
 .Depends WinRM
+.Author Smorkster (smorkster)
 #>
 
 function Connect
@@ -29,7 +30,7 @@ function Connect
 				{
 					Test-WSMan $syncHash.Data.ComputerName -ErrorAction Stop
 					$syncHash.Window.Dispatcher.Invoke( [action] { $li.Content += "`n`t$( $syncHash.Data.msgTable.StrOnline )" } )
-					$n = ( quser /server:$( $syncHash.data.ComputerName ) | select -Skip 1 ).Count
+					$n = ( quser /server:$( $syncHash.data.ComputerName ) | Select-Object -Skip 1 ).Count
 					$c = "`n`t$( $n ) $( $syncHash.Data.msgTable.StrUsersLoginSessions )"
 					if ( $n -gt 0 )
 					{
@@ -105,13 +106,13 @@ function DeleteProfiles
 					"C:\Users\$id\AppData\Roaming\Microsoft\Office",
 					"C:\Users\$id\AppData\Roaming\Microsoft\Signatures",
 					"C:\Users\$id\AppData\Roaming\Microsoft\Sticky Notes",
-					"C:\Users\$id\Favorites" | foreach {
+					"C:\Users\$id\Favorites" | ForEach-Object {
 						Get-ChildItem $_ -Recurse -ErrorAction SilentlyContinue | Copy-Item -Destination { $_.FullName -replace "$id", "Old\$id" }
 					}
 
 					# Specific files to backup
 					"C:\Users\$id\AppData\Local\Google\Chrome\User Data\Default\Bookmarks",
-					"C:\Users\$id\AppData\Roaming\Microsoft\OneNote\16.0\Preferences.dat" | foreach {
+					"C:\Users\$id\AppData\Roaming\Microsoft\OneNote\16.0\Preferences.dat" | ForEach-Object {
 						if ( Test-Path $_ )
 						{
 							New-Item -Path ( [IO.Path]::GetDirectoryName( $_ ) -replace "$id", "Old\$id" ) `
@@ -128,7 +129,7 @@ function DeleteProfiles
 					Remove-Item C:\Users\Old\$id -Recurse -Force
 
 					# Remove earlier backups
-					Get-ChildItem -Path "C:\Users\Old" | where { $_.Name -match $id -and $_.LastWriteTime -lt ( Get-Date ).AddDays( -30 ) } | Remove-Item2 -Recurse
+					Get-ChildItem -Path "C:\Users\Old" | Where-Object { $_.Name -match $id -and $_.LastWriteTime -lt ( Get-Date ).AddDays( -30 ) } | Remove-Item2 -Recurse
 
 					[pscustomobject]@{ ZIP = $zipDest ; Org = "C:\Users\$id" }
 				} catch { $_ }
@@ -138,7 +139,7 @@ function DeleteProfiles
 
 			# region RemoveProfile
 			$syncHash.Window.Dispatcher.Invoke( [action] { $li.Content += "`n`t$( $syncHash.Data.msgTable.StrRemoves ) ($( $user.ID ))... " } )
-			Get-CimInstance -ComputerName $syncHash.Data.ComputerName -Class Win32_UserProfile | where { $_.LocalPath.Split( '\' )[-1] -eq $user.ID } | Remove-CimInstance
+			Get-CimInstance -ComputerName $syncHash.Data.ComputerName -Class Win32_UserProfile | Where-Object { $_.LocalPath.Split( '\' )[-1] -eq $user.ID } | Remove-CimInstance
 			$syncHash.Window.Dispatcher.Invoke( [action] { $li.Content += $syncHash.Data.msgTable.StrDone } )
 			# endregion RemoveProfile
 
@@ -163,7 +164,7 @@ function LogoffRemote
 {
 	if ( $syncHash.DC.btnLogOutAll[1] -eq $syncHash.Data.msgTable.ContentLogoutUsers )
 	{
-		$userlogins = quser /server:$( $syncHash.Data.ComputerName ) | select -Skip 1 | foreach { 
+		$userlogins = quser /server:$( $syncHash.Data.ComputerName ) | Select-Object -Skip 1 | ForEach-Object { 
 			[pscustomobject]@{
 				UserID = ( Get-ADUser ( $_ -split " +" )[1] ).Name
 				SessionID = $( if ( ( $_ -split " +" ).Count -eq 8 ) { ( $_ -split " +" )[3] } else { ( $_ -split " +" )[2] } )
@@ -175,7 +176,7 @@ function LogoffRemote
 		} )
 		SendToast -Message "$( $syncHash.Data.msgTable.StrMessageLogout )" -ComputerName $syncHash.Data.ComputerName
 		Start-Sleep -Seconds 10
-		$userlogins | foreach { logoff $_.SessionID /server:$( $syncHash.Data.ComputerName ) }
+		$userlogins | ForEach-Object { logoff $_.SessionID /server:$( $syncHash.Data.ComputerName ) }
 
 		$syncHash.Window.Dispatcher.Invoke( [action] {
 			$ofs = "`n`t"
@@ -183,17 +184,17 @@ function LogoffRemote
 		} )
 	}
 
-	Get-CimInstance -ComputerName $( $syncHash.Data.ComputerName ) -ClassName Win32_UserProfile | where { ( -not $_.Special ) `
+	Get-CimInstance -ComputerName $( $syncHash.Data.ComputerName ) -ClassName Win32_UserProfile | Where-Object { ( -not $_.Special ) `
 			-and ( $_.LocalPath -notmatch "default" ) `
 			-and ( $_.LocalPath -notmatch $env:USERNAME ) `
-			-and ( -not [string]::IsNullOrEmpty( $_.LocalPath ) ) } | foreach {
+			-and ( -not [string]::IsNullOrEmpty( $_.LocalPath ) ) } | ForEach-Object {
 		[pscustomobject]@{
 			P = $_.LocalPath
 			ID = ( $_.LocalPath -split "\\" )[2].ToUpper()
 			Name = ( Get-ADUser ( $_.LocalPath -split "\\" )[2] ).Name
 			LastUsed = $_.LastUseTime.ToShortDateString()
 		}
-	} | sort Name | foreach { $syncHash.DC.lvProfileList[0].Add( $_ ) }
+	} | Sort-Object Name | ForEach-Object { $syncHash.DC.lvProfileList[0].Add( $_ ) }
 	if ( $syncHash.DC.lvProfileList[0].Count -gt 0 )
 	{
 		$syncHash.DC.btnSelectAll[0] = $true
@@ -216,11 +217,11 @@ function VerifyInput
 	{
 		try
 		{
-			$role = Get-ADComputer $syncHash.Data.ComputerName -Properties Memberof | select -ExpandProperty MemberOf | where { $_ -match "_Wrk_.+PC," }
-			$role | foreach { if ( $_ -match $syncHash.Data.msgTable.CodeRoleMatch ) { $c1 = $true } }
+			$role = Get-ADComputer $syncHash.Data.ComputerName -Properties Memberof | Select-Object -ExpandProperty MemberOf | Where-Object { $_ -match "_Wrk_.+PC," }
+			$role | ForEach-Object { if ( $_ -match $syncHash.Data.msgTable.CodeRoleMatch ) { $c1 = $true } }
 			if ( -not $c1 )
 			{
-				$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.lbOutput[0].Add( ( [System.Windows.Controls.ListBoxItem]@{ Content = "$( $syncHash.Data.msgTable.StrWrongRole )`n`t$( $ofs = "`n`t"; $role | foreach { ( ( $_ -split "=" )[1] -split "," )[0] } )"; Background = "#FFFF0000" } ) ) } )
+				$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.lbOutput[0].Add( ( [System.Windows.Controls.ListBoxItem]@{ Content = "$( $syncHash.Data.msgTable.StrWrongRole )`n`t$( $ofs = "`n`t"; $role | ForEach-Object { ( ( $_ -split "=" )[1] -split "," )[0] } )"; Background = "#FFFF0000" } ) ) } )
 			}
 		}
 		catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException]
