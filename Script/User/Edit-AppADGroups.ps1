@@ -256,6 +256,7 @@ function PerformPermissions
 			ShowMessageBox -Text "$( $syncHash.lbGroupsChosen.Items.Count * ( @( $syncHash.AddUsers ).Count + @( $syncHash.RemoveUsers ).Count ) ) $( $syncHash.Data.msgTable.WFinishMessage )" -Title "$( $syncHash.Data.msgTable.WFinishMessageTitle )"
 
 			UndoInput
+			ResetVariables
 			$syncHash.Window.Title = $syncHash.Data.msgTable.WTitle
 		}
 	}
