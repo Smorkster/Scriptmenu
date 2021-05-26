@@ -114,7 +114,7 @@ function CreateLogText
 
 	if ( $syncHash.RemoveUsers )
 	{
-		$LogText += "`n@( $syncHash.Data.msgTable.WRemove )"
+		$LogText += "`n$( $syncHash.Data.msgTable.WRemove )"
 		$syncHash.RemoveUsers.AD | ForEach-Object { $LogText += "`n`t$( $_.Name )" }
 	}
 
