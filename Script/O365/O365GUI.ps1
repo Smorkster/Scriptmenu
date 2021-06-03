@@ -10,19 +10,22 @@
 function CheckConnection
 {
 	$a = $e = $false
-	try { Get-AzureADCurrentSessionInfo -ErrorAction Stop ; $a = $true ; $statusAzureAD.Fill = "LightGreen" } catch { }
-	try { Get-PSSession -Name Exchange* -ErrorAction Stop; $e = $true ; $statusExchange.Fill = "LightGreen" } catch { }
+	try { $syncHash.azureAdAccount = Get-AzureADCurrentSessionInfo -ErrorAction Stop ; $a = $true ; $syncHash.DC.elStatusAzureAD[0] = "LightGreen" } catch { }
+	try { Get-PSSession -Name Exchange* -ErrorAction Stop; $e = $true ; $syncHash.DC.elStatusExchange[0] = "LightGreen" } catch { }
 
 	if ( $a -and $e )
 	{
-		$MainContent.Visibility = [System.Windows.Visibility]::Visible
-		$btnO365Connect.IsEnabled = $false
+		$syncHash.DC.MainContent[0] = [System.Windows.Visibility]::Visible
+		$syncHash.DC.btnO365Connect[1] = $false
+		$syncHash.DC.spConnect[0] = [System.Windows.Visibility]::Collapsed
+		$syncHash.DC.spConnected[0] = [System.Windows.Visibility]::Visible
+		$syncHash.DC.lblConnectedAs[0] = $syncHash.azureAdAccount.Account.Id
 	}
 	else
 	{
-		$MainContent.Visibility = [System.Windows.Visibility]::Collapsed
-		$statusAzureAD.Fill = "LightCoral"
-		$statusExchange.Fill = "LightCoral"
+		$syncHash.DC.MainContent[0] = [System.Windows.Visibility]::Collapsed
+		$syncHash.DC.elStatusAzureAD[0] = "LightCoral"
+		$syncHash.DC.elStatusExchange[0] = "LightCoral"
 	}
 }
 
@@ -31,10 +34,10 @@ function CheckConnection
 function ConnectO365
 {
 	"ExchangeOnlineManagement", "ActiveDirectory" | ForEach-Object { Import-Module $_ }
-	try { $azureAdAccount = Connect-AzureAD -ErrorAction Stop }
+	try { $syncHash.azureAdAccount = Connect-AzureAD -ErrorAction Stop }
 	catch {}
 
-	try { Connect-ExchangeOnline -UserPrincipalName $azureAdAccount.Account.Id -ErrorAction Stop }
+	try { Connect-ExchangeOnline -UserPrincipalName $syncHash.azureAdAccount.Account.Id -ErrorAction Stop }
 	catch {}
 
 	CheckConnection
@@ -42,62 +45,11 @@ function ConnectO365
 
 ####################################################
 # Create controls to connect to O365-online services
-function CreateO365Input
-{
-	$mainSP = [System.Windows.Controls.StackPanel]@{
-		Orientation = "Vertical"
-	}
-	$controlsSP = [System.Windows.Controls.StackPanel]@{
-		Margin = "5"
-		Orientation = "Horizontal"
-	}
-	$l = [System.Windows.Controls.Label]@{ Content = $msgTable.ContentO365Start }
-
-	$b = [System.Windows.Controls.Button]@{
-		Content = $msgTable.ContentBtnO365Connect
-		Margin = "5,0,0,0"
-		Name = "btnO365Connect"
-	}
-	$b.Add_Click( { ConnectO365 } )
-	Set-Variable -Name "btnO365Connect" -Value $b -Scope script
-
-	$controlsSP.AddChild( $l )
-	$controlsSP.AddChild( $b )
-
-	$checkersSP = [System.Windows.Controls.StackPanel]@{
-		Margin = "5"
-		Orientation = "Horizontal"
-	}
-	$lpad = "5,0,5,0"
-	$l = [System.Windows.Controls.Label]@{ Content = $msgTable.ContentLblO365Connected; Margin = "0,0,10,0" }
-	$bo = [System.Windows.Controls.StackPanel]@{ Orientation = "Horizontal" }
-	$e1 = [System.Windows.Shapes.Ellipse]@{ Fill = "LightCoral"; Height = 15; Width = 15; Stroke = "Black" }
-	$cb1 = [System.Windows.Controls.Label]@{ Content = "ExchangeOnline"; VerticalContentAlignment = "Center"; Padding = $lpad }
-	$bo.AddChild( $e1 )
-	$bo.AddChild( $cb1 )
-	Set-Variable -Name "statusExchange" -Value $e1 -Scope script
-	$bo2 = [System.Windows.Controls.StackPanel]@{ Orientation = "Horizontal" }
-	$e2 = [System.Windows.Shapes.Ellipse]@{ Fill = "LightCoral"; Height = 15; Width = 15; Stroke = "Black" }
-	$cb2 = [System.Windows.Controls.Label]@{ Content = "AzureAD"; VerticalContentAlignment = "Center"; Padding = $lpad }
-	$bo2.AddChild( $e2 )
-	$bo2.AddChild( $cb2 )
-	Set-Variable -Name "statusAzureAD" -Value $e2 -Scope script
-	$checkersSP.AddChild( $l )
-	$checkersSP.AddChild( $bo )
-	$checkersSP.AddChild( $bo2 )
-
-	$mainSP.AddChild( $controlsSP )
-	$mainSP.AddChild( $checkersSP )
-	return $mainSP
-}
-
 ####################################################################
 # Create a group of buttons and labels for all scriptfiles in folder
 function CreateScriptGroup
 {
-	param (
-		$dirPath
-	)
+	param ( $dirPath )
 
 	if ( $FilesInFolder = GetFiles $dirPath )
 	{
@@ -115,24 +67,24 @@ function CreateScriptGroup
 					( ( $null -eq $file.AllowedUsers ) -or ( $env:USERNAME -in $file.AllowedUsers ) ) )
 				{
 					$wpScriptControls = [System.Windows.Controls.WrapPanel]@{ Name = "wp$( $file.Name -replace "\W" )" }
-					$button = [System.Windows.Controls.Button]@{ Content = "$( $msgTable.ContentBtnRun ) >"; ToolTip = $file.Path }
+					$button = [System.Windows.Controls.Button]@{ Content = "$( $syncHash.Data.msgTable.ContentbtnRun ) >"; ToolTip = $file.Path }
 					$button.Name = "btn$( $file.Name -replace "\W" )"
 					$label = [System.Windows.Controls.Label]@{ Content = $file.Synopsis; ToolTip = [string]$file.Description.Replace( ". ", ".`n" ) }
 					$label.Name = "lbl$( $file.Name -replace "\W" )"
 
-					if ( $file.Depends -in ( $Window.Resources.Keys | Where-Object { $null -eq $_.IsPublic } ) )
+					if ( $file.Depends -in ( $syncHash.Window.Resources.Keys | Where-Object { $_.IsPublic -eq $null } ) )
 					{ $wpScriptControls.SetResourceReference( [System.Windows.Controls.WrapPanel]::IsEnabledProperty, $file.Depends ) }
 
-					if ( $file.State -match "$( $msgTable.ScriptContentInDev )" )
+					if ( $file.State -match "$( $syncHash.Data.msgTable.ScriptContentInDev )" )
 					{
 						$label.Background = "Red"
-						if ( $msgTable.AdmList -match $env:USERNAME -or $file.Author -eq $env:USERNAME ) { $button.IsEnabled = $true }
+						if ( $syncHash.Data.msgTable.AdmList -match $env:USERNAME -or $file.Author -eq $env:USERNAME ) { $button.IsEnabled = $true }
 						else { $button.IsEnabled = $false }
 					}
-					elseif ( $file.State -match "$( $msgTable.ScriptContentInTest )" )
+					elseif ( $file.State -match "$( $syncHash.Data.msgTable.ScriptContentInTest )" )
 					{
 						$label.Background = "LightBlue"
-						$label.Content += "`n$( $msgTable.ContentLblInTest )"
+						$label.Content += "`n$( $syncHash.Data.msgTable.ContentLblInTest )"
 					}
 
 					$button.Add_Click( { Invoke-Command -ScriptBlock { & $this.ToolTip ( ( Get-Item $PSScriptRoot ).Parent.Parent.FullName ) } } )
@@ -158,9 +110,7 @@ function CreateScriptGroup
 # Create a tabcontrol tabitem for given directory
 function CreateTabItem
 {
-	param (
-		$dirPath
-	)
+	param ( $dirPath )
 
 	$tT = ""
 	( $dirPath.Name ).GetEnumerator() | ForEach-Object { if ( $_ -cmatch "\b[A-Z]") { $tT += " $_" } else { $tT += $_ } }
@@ -241,32 +191,78 @@ function SetTitle
 		[string] $Text
 	)
 
-	if ( $Add ) { $Window.Title += $Text }
-	elseif ( $Remove ) { $Window.Title = $msgTable.StrScriptSuite }
-	elseif ( $Replace ) { $Window.Title = $Text }
+	if ( $Add ) { $syncHash.Window.Title += $Text }
+	elseif ( $Remove ) { $syncHash.Window.Title = $syncHash.Data.msgTable.StrScriptSuite }
+	elseif ( $Replace ) { $syncHash.Window.Title = $Text }
 }
 
 ############################## Script start
 $BaseDir = ( ( Get-Item $PSCommandPath ).Directory.Parent.FullName -split "\\" | Select-Object -SkipLast 1 ) -join "\"
+Add-Type -AssemblyName PresentationFramework
 Import-Module "$( $BaseDir )\Modules\FileOps.psm1" -Force
 Import-Module "$( $BaseDir )\Modules\GUIOps.psm1" -Force
 
 if ( ( ( Get-ADUser $env:USERNAME -Properties memberof ).memberof -match $msgTable.StrBORole ).Count -gt 0 )
 {
-	$Window, $vars = CreateWindow
-	$Window.Title = $msgTable.StrScriptSuite
+	$controls = New-Object System.Collections.ArrayList
+	[void]$controls.Add( @{ CName = "btnAddAdminPermission" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnAddAdminPermission } ) } )
+	[void]$controls.Add( @{ CName = "btnO365Connect" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnO365Connect } ; @{ PropName = "IsEnabled"; PropVal = $true } ) } )
+	[void]$controls.Add( @{ CName = "elStatusAzureAD" ; Props = @( @{ PropName = "Fill"; PropVal = "LightCoral" } ) } )
+	[void]$controls.Add( @{ CName = "elStatusExchange" ; Props = @( @{ PropName = "Fill"; PropVal = "LightCoral" } ) } )
+	[void]$controls.Add( @{ CName = "lbAdminPermissions" ; Props = @( @{ PropName = "ItemsSource"; PropVal = ( New-Object System.Collections.ObjectModel.ObservableCollection[Object] ) } ) } )
+	[void]$controls.Add( @{ CName = "lblCheckersTitle" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblCheckersTitle } ) } )
+	[void]$controls.Add( @{ CName = "lblConnectedAs" ; Props = @( @{ PropName = "Content"; PropVal = "" } ) } )
+	[void]$controls.Add( @{ CName = "lblConnectedAsTitle" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblConnectedAsTitle } ) } )
+	[void]$controls.Add( @{ CName = "lblConnectTitle" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblConnectTitle } ) } )
+	[void]$controls.Add( @{ CName = "lblPermListTitle" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblPermListTitle } ) } )
+	[void]$controls.Add( @{ CName = "lblStatusAzureAD" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblStatusAzureAD } ) } )
+	[void]$controls.Add( @{ CName = "lblStatusExchange" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblStatusExchange } ) } )
+	[void]$controls.Add( @{ CName = "MainContent" ; Props = @( @{ PropName = "Visibility"; PropVal = [System.Windows.Visibility]::Collapsed } ) } )
+	[void]$controls.Add( @{ CName = "spConnect" ; Props = @( @{ PropName = "Visibility"; PropVal = [System.Windows.Visibility]::Visible } ) } )
+	[void]$controls.Add( @{ CName = "spConnected" ; Props = @( @{ PropName = "Visibility"; PropVal = [System.Windows.Visibility]::Collapsed } ) } )
+	[void]$controls.Add( @{ CName = "Window" ; Props = @( @{ PropName = "Title"; PropVal = $msgTable.StrScriptSuite } ) } )
+
+	$syncHash = CreateWindowExt $controls
+	$syncHash.Data.msgTable = $msgTable
+
+	$FileSystemWatcher = New-Object System.IO.FileSystemWatcher
+	$FileSystemWatcher.Path  = $env:USERPROFILE
+	$FileSystemWatcher.EnableRaisingEvents = $true
+	$FileSystemWatcher.Filter = "O365Admin.txt"
+
+	$Action = {
+		$event.MessageData.DC.lbAdminPermissions[0].Clear()
+		Get-Content "$( $env:USERPROFILE )\O365Admin.txt" | Foreach-Object { $event.MessageData.DC.lbAdminPermissions[0].Add( $_ ) }
+	}
+	Register-ObjectEvent -InputObject $FileSystemWatcher -EventName Changed -Action $Action -SourceIdentifier MainFSChange -MessageData $syncHash | Out-Null
+	Register-ObjectEvent -InputObject $FileSystemWatcher -EventName Created -Action $Action -SourceIdentifier MainFSCreate -MessageData $syncHash | Out-Null
+	Register-ObjectEvent -InputObject $FileSystemWatcher -EventName Deleted -Action $Action -SourceIdentifier MainFSDelete -MessageData $syncHash | Out-Null
 
 	if ( $PSCommandPath -match "Development" ) { SetTitle -Add " - Developer edition" }
-	$vars | ForEach-Object { Set-Variable -Name $_ -Value $Window.FindName( $_ ) }
 
 	Push-Location ( Get-Item $PSCommandPath ).Directory.FullName
-	$spConnect.AddChild( ( CreateO365Input ) )
-	$MainContent.AddChild( ( GetFolderItems "" ) )
-	$Window.Add_ContentRendered( { $Window.Top = 100; $Window.Activate() ; CheckConnection } )
+	$syncHash.MainContent.AddChild( ( GetFolderItems "" ) )
 
-	[void] $Window.ShowDialog()
+	$syncHash.btnAddAdminPermission.Add_Click( { <# TODO #> } )
+	$syncHash.btnO365Connect.Add_Click( { ConnectO365 } )
+	$syncHash.Window.Add_Closed( {
+		$FileSystemWatcher.EnableRaisingEvents = $false
+		$FileSystemWatcher.Dispose()
+		Unregister-Event MainFSChange
+		Unregister-Event MainFSCreate
+		Unregister-Event MainFSDelete
+		Get-Job | Remove-Job -ErrorAction SilentlyContinue
+	} )
+	$syncHash.Window.Add_ContentRendered( {
+		$syncHash.Window.Top = 100
+		$syncHash.Window.Activate()
+		CheckConnection
+		Get-Content "$( $env:USERPROFILE )\O365Admin.txt" | Foreach-Object { $syncHash.DC.lbAdminPermissions[0].Add( $_ ) }
+	} )
+
+	[void] $syncHash.Window.ShowDialog()
+	$global:syncHash = $syncHash
 	Pop-Location
-	$Window.Close()
+	$syncHash.Window.Close()
 }
 else { [void] [System.Windows.MessageBox]::Show( $msgTable.StrNoPermission ) }
-#$global:window = $window

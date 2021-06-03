@@ -1,13 +1,18 @@
 ConvertFrom-StringData @'
 AdmList = sysAdm1
-ContentBtnO365Connect = Connect
-ContentBtnRun = Run
-ContentLblInTest = Only run this, if you have been asked
-ContentLblO365Connected = Connected to
-ContentO365Start = Click on 'Connect' to connect to O365 online services
+ContentbtnO365Connect = Connect
+ContentbtnRun = Run
+ContentbtnAddAdminPermission = Create Full-permission for mailbox
+ContentlblCheckersTitle = Connected to
+ContentlblConnectedAsTitle = Connected as: 
+ContentlblConnectTitle = Click on 'Connect' to connect to O365 online services
+ContentlblInTest = Only run this, if you have been asked
+ContentlblPermListTitle = Mailboxes you have Full-permission for in Exchange
+ContentlblStatusAzureAD = Azure AD
+ContentlblStatusExchange = Exchange
 ScriptContentInDev = Dev
 ScriptContentInTest = Test
-StrScriptSuite = Office 365 Scriptmenu
 StrBORole = RoleBO_Servicedesk
 StrNoPermission = You do not have the permissions to start Office 365 Scriptmenu
+StrScriptSuite = Office 365 Scriptmenu
 '@
