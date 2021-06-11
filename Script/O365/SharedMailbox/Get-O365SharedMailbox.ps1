@@ -80,7 +80,7 @@ function UpdateDGMembers
 # Verify that the values in the textboxes are to be used, if they haven't both been changed
 function UpdateNameAddress
 {
-	if ( ( Confirmations -Action $syncHash.Data.msgTable.StrConfirmNewName -WithPrefix ) -eq "Yes" )
+	if ( ( Confirmations -Action $syncHash.Data.msgTable.StrConfirmRename -WithPrefix ) -eq "Yes" )
 	{
 		$update = $false
 		if ( $syncHash.DC.tbSMAddress[0] -ne $syncHash.Data.SharedMailbox.WindowsEmailAddress -and `
@@ -100,12 +100,12 @@ function UpdateNameAddress
 			Set-Mailbox -Identity $syncHash.Data.SharedMailbox.PrimarySmtpAddress -WindowsEmailAddress $syncHash.DC.tbSMAddress[0].Trim() -Name $syncHash.DC.tbSMName[0].Trim() -DisplayName $syncHash.DC.tbSMName[0].Trim() -EmailAddresses @{add="smtp:$( $syncHash.Data.SharedMailbox.PrimarySmtpAddress )"}
 
 			$azGroups = Get-AzureADGroup -SearchString "$( $syncHash.Data.msgTable.StrAzureADGrpNamePrefix )$( $syncHash.Data.SharedMailbox.DisplayName )"
-			foreach ( $group in $Groups )
+			foreach ( $group in $azGroups )
 			{
 				Set-AzureADGroup -ObjectId $group.ObjectId -DisplayName ( $group.DisplayName -replace $group.DisplayName , $syncHash.DC.tbSMName[0].Trim() ) -Description "Now"
 			}
 
-			WriteLog -Text "$( $syncHash.Data.msgTable.StrLogNewNameAddr ) $( $syncHash.Data.SharedMailbox.DisplayName ) > $( $syncHash.DC.tbSMName[0] ) ($( $syncHash.DC.tbSMAddresse[0] ))"
+			WriteLog -Text "$( $syncHash.Data.msgTable.StrLogNewNameAddr ) $( $syncHash.Data.SharedMailbox.DisplayName ) > $( $syncHash.DC.tbSMName[0] ) ($( $syncHash.DC.tbSMAddress[0] ))"
 			$syncHash.Data.SharedMailbox = Get-Mailbox -Identity $syncHash.DC.tbSMName[0].Trim()
 			$syncHash.btnSMName.IsEnabled = $syncHash.btnSMAddress.IsEnabled = $false
 		}
@@ -300,7 +300,7 @@ $syncHash.btnSMOwner.Add_Click( {
 			$syncHash.Data.SharedMailbox = Get-Mailbox -Identity $syncHash.DC.tbSMAddress[0] -ErrorAction Stop
 			$registeredOwner = Get-ExoMailbox ( $syncHash.Data.SharedMailbox.CustomAttribute10 -replace $syncHash.Data.msgTable.StrOwnerAttrPrefix ).Trim()
 			$syncHash.Data.SharedMailboxOwner = Get-ADUser -Identity $registeredOwner.Alias -Properties EmailAddress -ErrorAction Stop
-			$syncHash.DC.tbSMOwnerAddr[0] = $syncHash.Data.SharedMailboxOwner
+			$syncHash.DC.tbSMOwnerAddr[0] = $syncHash.Data.SharedMailboxOwner.EmailAddress
 			WriteLog -Text "$( $syncHash.Data.SharedMailbox.DisplayName ) $( $syncHash.Data.msgTable.StrLogNewOwner ) $( $registeredOwner.Alias ) > $( $syncHash.Data.SharedMailboxOwner )"
 		}
 	}
@@ -355,7 +355,7 @@ $syncHash.gInfo.Add_IsEnabledChanged( {
 		}
 
 		# Check if AD user exists
-		$syncHash.Data.SharedMailboxOwner = Get-ADUser -LDAPFilter "(proxyaddresses=smtp:$registeredOwner)" -ErrorAction Stop
+		$syncHash.Data.SharedMailboxOwner = Get-ADUser -LDAPFilter "(proxyaddresses=*smtp:$registeredOwner*)" -ErrorAction Stop
 		if ( $null -eq $syncHash.Data.SharedMailboxOwner )
 		{
 			$syncHash.Window.Dispatcher.Invoke( [action] {
