@@ -305,43 +305,25 @@ function SetUserSettings
 # Add names for applications with AD-Groups
 function UpdateAppList
 {
-	$app = [System.Windows.Controls.ComboboxItem]@{	Content = "Citrix Distansanslutning"
-		Tag = @{ AppFilter = "(&(Name=Sll_Acc_ADCVPN*_Users)(!(Name=*DNSReg*)))"
+	$app = [System.Windows.Controls.ComboboxItem]@{	Content = "App 1"
+		Tag = @{ AppFilter = "(&(Name=App1*_Users)(!(Name=*DNSReg*)))"
 			Exclude = @( "DNSReg", "Acceptans" )
+			GroupType = "App1-grupper"
 			split = "_"
 			index = 3 } }
 	[void] $syncHash.cbApp.Items.Add( $app )
 
-	$app = [System.Windows.Controls.ComboboxItem]@{ Content ="DS Chefsforum"
-		Tag = @{ AppFilter = "(Name=Dan_Mig_webbChef*)"
-			Exclude = $null } }
+	$app = [System.Windows.Controls.ComboboxItem]@{ Content ="App 2"
+		Tag = @{ AppFilter = "(Name=App2*)"
+			Exclude = $null
+			GroupType = "App2-grupper" } }
 	[void] $syncHash.cbApp.Items.Add( $app )
 
-	$app = [System.Windows.Controls.ComboboxItem]@{ Content = "Kar Tableau"
-		Tag = @{ AppFilter = "(Name=Kar_Tableau*)"
-			Exclude = @( "Akut", "AoS", "BoK", "DOS", "DS", "Halso", "HK", "ILOV", "Inkop", "Innovation", "ITPortfolj", "KULab", "Neuro", "OpChef", "PoU", "PUppf", "SMB", "SSVP", "ToRM", "UUR" )
-			split = "_"
-			index = 2 } }
-	[void] $syncHash.cbApp.Items.Add( $app )
-
-	$app = [System.Windows.Controls.ComboboxItem]@{ Content = "Logisticaps / Clockworks"
-		Tag = @{ AppFilter = "(Name=*_Sys_Logistics_*Remote_Usr)"
-			Exclude = $null } }
-	[void] $syncHash.cbApp.Items.Add( $app )
-
-	$app = [System.Windows.Controls.ComboboxItem]@{ Content = "QlikView Dan"
-		Tag = @{ AppFilter = "(Name=Dan_Acc_Qlik*)"
-			Exclude = $null } }
-	[void] $syncHash.cbApp.Items.Add( $app )
-
-	$app = [System.Windows.Controls.ComboboxItem]@{ Content = "QlikView Sös"
-		Tag = @{ AppFilter = "(|(Name=Sos_Mig_Qlik*)(Name=Sos_Acc_Qlik*))"
-			Exclude = $null } }
 	[void] $syncHash.cbApp.Items.Add( $app )
 }
 
-#########################################################################
-# Item in combobox has changed, get that applications group and list them
+##########################################################################
+# Item in combobox has changed, get that applications groups and list them
 function UpdateAppGroupList
 {
 	$syncHash.lbGroupsChosen.Items.Clear()
@@ -350,33 +332,7 @@ function UpdateAppGroupList
 	$syncHash.GroupList = @()
 	$item = $syncHash.cbApp.SelectedItem
 
-	switch ( $item.Content )
-	{
-		"Citrix Distansanslutning"
-		{
-			$syncHash.GroupType = "Citrix Distans-grupper"
-		}
-		"DS Chefsforum"
-		{
-			$syncHash.GroupType = "Chefsforum-grupper"
-		}
-		"Kar Tableau"
-		{
-			$syncHash.GroupType = "Tableau-grupper"
-		}
-		"Logisticaps / Clockworks"
-		{
-			$syncHash.GroupType = "Logisticaps-grupper"
-		}
-		"QlikView Dan"
-		{
-			$syncHash.GroupType = "QlikView-grupper"
-		}
-		"QlikView Sös"
-		{
-			$syncHash.GroupType = "QlikView-grupper"
-		}
-	}
+	$syncHash.GroupType = $item.Tag.GroupType
 	if ( $null -eq $item.Tag.Exclude )
 	{ $syncHash.GroupList = Get-ADGroup -LDAPFilter "$( $item.Tag.AppFilter )" | Select-Object -ExpandProperty Name | Sort-Object }
 	else
@@ -446,42 +402,15 @@ Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
 Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force
 
 $controls = New-Object System.Collections.ArrayList
-[void] $controls.Add( @{ CName = "lblApp"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentlblApp }
-	) } )
-[void] $controls.Add( @{ CName = "lblAppGroupList"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentlblAppGroupList }
-	) } )
-[void] $controls.Add( @{ CName = "lblGroupsChosen"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentlblGroupsChosen }
-	) } )
-[void] $controls.Add( @{ CName = "lblUsersAddPermission"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentlblUsersAddPermission }
-	) } )
-[void] $controls.Add( @{ CName = "lblUsersRemovePermission"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentlblUsersRemovePermission }
-	) } )
-[void] $controls.Add( @{ CName = "btnPerform"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentbtnPerform }
-	) } )
-[void] $controls.Add( @{ CName = "btnUndo"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentbtnUndo }
-	) } )
-[void] $controls.Add( @{ CName = "lblLog"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentlblLog }
-	) } )
-[void] $controls.Add( @{ CName = "cbApp"
-	Props = @(
-		@{ PropName = "SelectedItem"; PropVal = "" }
-	) } )
+[void] $controls.Add( @{ CName = "btnPerform" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnPerform } ) } )
+[void] $controls.Add( @{ CName = "btnUndo" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnUndo } ) } )
+[void] $controls.Add( @{ CName = "cbApp" ; Props = @( @{ PropName = "SelectedItem"; PropVal = "" } ) } )
+[void] $controls.Add( @{ CName = "lblApp" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblApp } ) } )
+[void] $controls.Add( @{ CName = "lblAppGroupList" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblAppGroupList } ) } )
+[void] $controls.Add( @{ CName = "lblGroupsChosen" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblGroupsChosen } ) } )
+[void] $controls.Add( @{ CName = "lblLog" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblLog } ) } )
+[void] $controls.Add( @{ CName = "lblUsersAddPermission" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblUsersAddPermission } ) } )
+[void] $controls.Add( @{ CName = "lblUsersRemovePermission" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblUsersRemovePermission } ) } )
 
 $syncHash = CreateWindowExt $controls
 $syncHash.Data.msgTable = $msgTable
