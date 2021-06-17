@@ -131,17 +131,8 @@ function GetPCRole
 
 	switch -Regex ( $ADPC.MemberOf | Where-Object { $_ -match "_Wrk_" } )
 	{
-		"Patient" { $r = "Patient-PC" }
-		"Vard" { $r = "Vård-PC" }
-		"Administrativ" { $r = "Administrativ-PC" }
-		"Flodes" { $r = "Flödes-PC" }
-		"MTWM" { $r = "MT WM-PC" }
-		"MTM" { $r = "MT M-PC" }
-		"Sakerhets" { $r = "Säkerhets-PC" }
-		"Undantag" { $r = "Undantags-PC" }
-		"Tekniker" { $r = "Tekniker-PC" }
-		"Kiosk" { $r = "Kiosk-PC" }
-		"Lakemedelsvagn" { $r = "Lakemedelsvagn-PC" }
+		"Role1" { $r = "Role1-PC" }
+		"Role2" { $r = "Role2-PC" }
 	}
 	if ( $null -eq $r ) { $r = $msgTable.ComputerUnknownRole }
 	$ComputerObj.Roll = $r
@@ -307,7 +298,7 @@ function CreateO365Input
 function GetFiles
 {
 	param ( $dirPath )
-	$Get = { ( Select-String -InputObject $_ -Pattern "^.$( $args[0] )" -Encoding UTF8 ).Line.Replace( ".$( $args[0] ) ", "" ) }
+	$Get = { ( Select-String -InputObject $_ -Pattern "^\.$( $args[0] )" -Encoding UTF8 ).Line.Replace( ".$( $args[0] ) ", "" ) }
 	Get-ChildItem -File -Filter "*ps1" -Path $dirPath.FullName | Where-Object { $_.Name -ne ( Get-Item $PSCommandPath ).Name } | `
 		Select-Object -Property @{ Name = "Name"; Expression = { $_.Name } }, `
 			@{ Name = "Path"; Expression = { $_.FullName } }, `
@@ -316,7 +307,7 @@ function GetFiles
 			@{ Name = "Description"; Expression = { & $Get "Description" } }, `
 			@{ Name = "Requires"; Expression = { ( & $Get "Requires" ) -split "\W" | Where-Object { $_ } } }, `
 			@{ Name = "AllowedUsers"; Expression = { ( & $Get "AllowedUsers") -split "\W" | Where-Object { $_ } } }, `
-			@{ Name = "AllowedUsers"; Expression = { ( & $Get "State") -split "\W" | Where-Object { $_ } } }, `
+			@{ Name = "State"; Expression = { ( & $Get "State") -split "\W" | Where-Object { $_ } } }, `
 			@{ Name = "Author"; Expression = { ( ( Select-String $_ -Pattern "^.Author" ).Line -split "\(" )[1].TrimEnd( ")" ) } }, `
 			@{ Name = "Depends"; Expression = { ( ( & $Get "Depends" ) ) -split "\W" | Where-Object { $_ } } } | `
 			Sort-Object Synopsis
