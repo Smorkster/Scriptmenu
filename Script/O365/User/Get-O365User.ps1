@@ -1,68 +1,34 @@
 <#
-.Synopsis Kontrollera status för Office365 konto
-.Description Kontrollerar status för en användares Office365 konto, ifall det synkats samt annan information
+.Synopsis Check status of Office365-account
+.Description Check status of a users Office365-account, can do some administration
+.State Prod
 .Author Smorkster (smorkster)
 #>
 
-############################
-# Get last successful logins
-function GetLogins
+#####################
+# Reset ellipse color
+function ClearEllipses
 {
-	$syncHash.DC.spLogins[0] = $false
-	$syncHash.DC.btnGetDelegates[1] = $false
-	$syncHash.DC.btnGetDistsMember[1] = $false
-	$syncHash.DC.btnGetDistsOwner[1] = $false
-	$syncHash.DC.btnGetIcon[1] = $false
-	$syncHash.DC.btnGetDelegates[0] += " $( $syncHash.Data.msgTable.StrGettingLogginsDelegates )"
-	$syncHash.DC.btnGetDistsMember[0] += " $( $syncHash.Data.msgTable.StrGettingLogginsDelegates )"
-	$syncHash.DC.btnGetDistsOwner[0] += " $( $syncHash.Data.msgTable.StrGettingLogginsDelegates )"
-	$syncHash.DC.btnGetIcon[0] += " $( $syncHash.Data.msgTable.StrGettingLogginsDelegates )"
-	$syncHash.DC.tbLastO365Login[0] = $syncHash.Data.msgTable.StrGettingLoggins
-
-	$syncHash.Data.mailLogin = ( Get-MailboxStatistics $syncHash.DC.tbId[0] ).LastLogonTime
-	$syncHash.Data.GetAuditLog = Search-UnifiedAuditLog -StartDate ( ( [DateTime]::Today.AddDays( -10 ) ).ToUniversalTime() ) -EndDate ( ( [DateTime]::Now ).ToUniversalTime() ) -UserIds $syncHash.Data.user.EmailAddress -Operations "FileAccessed" -RecordType "SharePointFileOperation" -AsJob
-
-	( [powershell]::Create().AddScript( { param ( $syncHash )
-		Wait-Job $syncHash.Data.GetAuditLog
-		$syncHash.Data.GetAuditLog = $syncHash.Data.GetAuditLog | Receive-Job
-		if ( $syncHash.Data.GetAuditLog.Count -eq 0 ) { $TeamsLoginText = $syncHash.Data.msgTable.StrNoLogin }
-		else
-		{
-			$syncHash.Data.lastLogin = ( $syncHash.Data.GetAuditLog | Sort-Object CreationDate | Select-Object -Last 1 ).CreationDate
-			$TeamsLoginText = "$( $syncHash.Data.lastLogin.ToShortDateString() ) $( $syncHash.Data.lastLogin.ToLongTimeString() )"
-		}
-
-		$syncHash.Window.Dispatcher.Invoke( [action] {
-			$syncHash.tbLastTeamsLogins.Text = $TeamsLoginText
-			$syncHash.DC.tbLastO365Login[0] = "$( $syncHash.Data.mailLogin.ToShortDateString() ) $( $syncHash.Data.mailLogin.ToLongTimeString() )"
-			$syncHash.DC.btnGetDelegates[0] = $syncHash.Data.msgTable.ContentbtnGetDelegates
-			$syncHash.DC.btnGetDistsMember[0] = $syncHash.Data.msgTable.ContentbtnGetDistsMember
-			$syncHash.DC.btnGetDistsOwner[0] = $syncHash.Data.msgTable.ContentbtnGetDistsOwner
-			$syncHash.DC.btnGetIcon[0] = $syncHash.Data.msgTable.ContentbtnGetIcon
-			$syncHash.DC.spLogins[0] = $true
-			$syncHash.DC.btnGetDelegates[1] = $true
-			$syncHash.DC.btnGetDistsMember[1] = $true
-			$syncHash.DC.btnGetDistsOwner[1] = $true
-			$syncHash.DC.btnGetIcon[1] = $true
-		} )
-	} ).AddArgument( $syncHash ) ).BeginInvoke()
-	WriteLog -LogText "Logins $( $syncHash.DC.tbId[0] )"
+	$syncHash.Keys | Where-Object { $_ -like "el*" } | ForEach-Object { $syncHash.$_.Fill = "LightGray" }
 }
 
-#################################
-# Get devices registered for user
-function GetDevices
+###############
+# Write message
+function ErrorMessage
 {
-	if ( ( $devices = Get-AzureADUserRegisteredDevice -ObjectId $syncHash.Data.userAzure.ObjectId ).Count -gt 0 )
-	{
-		$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.tbDevices.Text = "" } )
-		foreach ( $device in $devices )
-		{
-			$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.tbDevices.Text += "$( $device.DisplayName )`n" } )
-		}
-	}
+	param( $Text, [switch] $ClearText )
 
-	WriteLog -LogText "Devices $( $syncHash.DC.tbId[0] )"
+	if ( $ClearText ) { $syncHash.tbCheckMessage.Text = $Text }
+	else { $syncHash.tbCheckMessage.Text += "$( $syncHash.tbCheckMessage.Text )`n $( $Text )".Trim() }
+	if ( $syncHash.tbCheckMessage.LineCount -lt 5 ) { $syncHash.rdMessage.Height = $syncHash.tbCheckMessage.LineCount * 20 }
+}
+
+########################
+# Set ellipse fill-color
+function FillEllipse
+{
+	param ( $c, $co )
+	$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.$c.Fill = $co } )
 }
 
 ###################
@@ -112,6 +78,22 @@ function GetDelegates
 	WriteLog -LogText "Delegates $( $syncHash.DC.tbId[0] )"
 }
 
+#################################
+# Get devices registered for user
+function GetDevices
+{
+	if ( ( $devices = Get-AzureADUserRegisteredDevice -ObjectId $syncHash.Data.userAzure.ObjectId ).Count -gt 0 )
+	{
+		$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.tbDevices.Text = "" } )
+		foreach ( $device in $devices )
+		{
+			$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.tbDevices.Text += "$( $device.DisplayName )`n" } )
+		}
+	}
+
+	WriteLog -LogText "Devices $( $syncHash.DC.tbId[0] )"
+}
+
 ##################################################
 # Get all distributiongroups the user is member of
 function GetDistsMembership
@@ -145,6 +127,51 @@ function GetDistsOwnership
 	else { $dists | ForEach-Object { $syncHash.dgDistsOwner.AddChild( [pscustomobject]@{ Name = $_.Name; SMTP = $_.PrimarySmtpAddress } ) } }
 
 	WriteLog -LogText "Distribution Groups Owner $( $syncHash.DC.tbId[0] )"
+}
+
+############################
+# Get last successful logins
+function GetLogins
+{
+	$syncHash.DC.spLogins[0] = $false
+	$syncHash.DC.btnGetDelegates[1] = $false
+	$syncHash.DC.btnGetDistsMember[1] = $false
+	$syncHash.DC.btnGetDistsOwner[1] = $false
+	$syncHash.DC.btnGetIcon[1] = $false
+	$syncHash.DC.btnGetDelegates[0] += " $( $syncHash.Data.msgTable.StrGettingLogginsDelegates )"
+	$syncHash.DC.btnGetDistsMember[0] += " $( $syncHash.Data.msgTable.StrGettingLogginsDelegates )"
+	$syncHash.DC.btnGetDistsOwner[0] += " $( $syncHash.Data.msgTable.StrGettingLogginsDelegates )"
+	$syncHash.DC.btnGetIcon[0] += " $( $syncHash.Data.msgTable.StrGettingLogginsDelegates )"
+	$syncHash.DC.tbLastO365Login[0] = $syncHash.Data.msgTable.StrGettingLoggins
+
+	$syncHash.Data.mailLogin = ( Get-MailboxStatistics $syncHash.DC.tbId[0] ).LastLogonTime
+	$syncHash.Data.GetAuditLog = Search-UnifiedAuditLog -StartDate ( ( [DateTime]::Today.AddDays( -10 ) ).ToUniversalTime() ) -EndDate ( ( [DateTime]::Now ).ToUniversalTime() ) -UserIds $syncHash.Data.user.EmailAddress -Operations "FileAccessed" -RecordType "SharePointFileOperation" -AsJob
+
+	( [powershell]::Create().AddScript( { param ( $syncHash )
+		Wait-Job $syncHash.Data.GetAuditLog
+		$syncHash.Data.GetAuditLog = $syncHash.Data.GetAuditLog | Receive-Job
+		if ( $syncHash.Data.GetAuditLog.Count -eq 0 ) { $TeamsLoginText = $syncHash.Data.msgTable.StrNoLogin }
+		else
+		{
+			$syncHash.Data.lastLogin = ( $syncHash.Data.GetAuditLog | Sort-Object CreationDate | Select-Object -Last 1 ).CreationDate
+			$TeamsLoginText = "$( $syncHash.Data.lastLogin.ToShortDateString() ) $( $syncHash.Data.lastLogin.ToLongTimeString() )"
+		}
+
+		$syncHash.Window.Dispatcher.Invoke( [action] {
+			$syncHash.tbLastTeamsLogins.Text = $TeamsLoginText
+			$syncHash.DC.tbLastO365Login[0] = "$( $syncHash.Data.mailLogin.ToShortDateString() ) $( $syncHash.Data.mailLogin.ToLongTimeString() )"
+			$syncHash.DC.btnGetDelegates[0] = $syncHash.Data.msgTable.ContentbtnGetDelegates
+			$syncHash.DC.btnGetDistsMember[0] = $syncHash.Data.msgTable.ContentbtnGetDistsMember
+			$syncHash.DC.btnGetDistsOwner[0] = $syncHash.Data.msgTable.ContentbtnGetDistsOwner
+			$syncHash.DC.btnGetIcon[0] = $syncHash.Data.msgTable.ContentbtnGetIcon
+			$syncHash.DC.spLogins[0] = $true
+			$syncHash.DC.btnGetDelegates[1] = $true
+			$syncHash.DC.btnGetDistsMember[1] = $true
+			$syncHash.DC.btnGetDistsOwner[1] = $true
+			$syncHash.DC.btnGetIcon[1] = $true
+		} )
+	} ).AddArgument( $syncHash ) ).BeginInvoke()
+	WriteLog -LogText "Logins $( $syncHash.DC.tbId[0] )"
 }
 
 ################################################
@@ -190,32 +217,6 @@ function GetSharedOwnership
 	WriteLog -LogText "Shared Mailboxes Ownership $( $syncHash.DC.tbId[0] )"
 }
 
-########################
-# Set ellipse fill-color
-function FillEllipse
-{
-	param ( $c, $co )
-	$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.$c.Fill = $co } )
-}
-
-###############
-# Write message
-function ErrorMessage
-{
-	param( $Text, [switch] $ClearText )
-
-	if ( $ClearText ) { $syncHash.tbCheckMessage.Text = $Text }
-	else { $syncHash.tbCheckMessage.Text += "$( $syncHash.tbCheckMessage.Text )`n $( $Text )".Trim() }
-	if ( $syncHash.tbCheckMessage.LineCount -lt 5 ) { $syncHash.rdMessage.Height = $syncHash.tbCheckMessage.LineCount * 20 }
-}
-
-#####################
-# Reset ellipse color
-function ClearEllipses
-{
-	$syncHash.Keys | Where-Object { $_ -like "el*" } | ForEach-Object { $syncHash.$_.Fill = "LightGray" }
-}
-
 function Reset
 {
 	$syncHash.DC.spInfo[0] = [System.Windows.Visibility]::Collapsed
@@ -243,28 +244,21 @@ Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force
 Import-Module ActiveDirectory
 
 $controls = New-Object System.Collections.ArrayList
-[void]$controls.Add( @{ CName = "btnGetDelegates"; Props = @(
-	@{ PropName = "Content"; PropVal = $msgTable.ContentbtnGetDelegates }
-	@{ PropName = "IsEnabled" ; PropVal = $true } ) } )
+[void]$controls.Add( @{ CName = "btnActiveLogin"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnActiveLogin } ; @{ PropName = "IsEnabled" ; PropVal = $false } ) } )
+[void]$controls.Add( @{ CName = "btnGetDelegates"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnGetDelegates } ; @{ PropName = "IsEnabled" ; PropVal = $true } ) } )
 [void]$controls.Add( @{ CName = "btnGetDevices"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnGetDevices } ) } )
-[void]$controls.Add( @{ CName = "btnGetDistsMember"; Props = @(
-	@{ PropName = "Content"; PropVal = $msgTable.ContentbtnGetDistsMember }
-	@{ PropName = "IsEnabled" ; PropVal = $true } ) } )
-[void]$controls.Add( @{ CName = "btnGetDistsOwner"; Props = @(
-	@{ PropName = "Content"; PropVal = $msgTable.ContentbtnGetDistsOwner }
-	@{ PropName = "IsEnabled" ; PropVal = $true } ) } )
-[void]$controls.Add( @{ CName = "btnGetIcon"; Props = @(
-	@{ PropName = "Content"; PropVal = $msgTable.ContentbtnGetIcon }
-	@{ PropName = "IsEnabled" ; PropVal = $true } ) } )
+[void]$controls.Add( @{ CName = "btnGetDistsMember"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnGetDistsMember } ; @{ PropName = "IsEnabled" ; PropVal = $true } ) } )
+[void]$controls.Add( @{ CName = "btnGetDistsOwner"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnGetDistsOwner } ; @{ PropName = "IsEnabled" ; PropVal = $true } ) } )
+[void]$controls.Add( @{ CName = "btnGetIcon"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnGetIcon } ; @{ PropName = "IsEnabled" ; PropVal = $true } ) } )
 [void]$controls.Add( @{ CName = "btnGetLogins"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnGetLogins } ) } )
 [void]$controls.Add( @{ CName = "btnGetSharedOwner"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnGetSharedOwner } ) } )
 [void]$controls.Add( @{ CName = "btnGetSharedMember"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnGetSharedMember } ) } )
-[void]$controls.Add( @{ CName = "btnID"; Props = @(
-	@{ PropName = "Content"; PropVal = $msgTable.ContentbtnID }
-	@{ PropName = "IsEnabled" ; PropVal = $false } ) } )
-[void]$controls.Add( @{ CName = "btnRemoveIcon"; Props = @(
-	@{ PropName = "Content"; PropVal = $msgTable.ContentbtnRemoveIcon }
-	@{ PropName = "IsEnabled"; PropVal = $false } ) } )
+[void]$controls.Add( @{ CName = "btnID"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnID } ; @{ PropName = "IsEnabled" ; PropVal = $false } ) } )
+[void]$controls.Add( @{ CName = "btnRemoveIcon"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnRemoveIcon } ; @{ PropName = "IsEnabled"; PropVal = $false } ) } )
+[void]$controls.Add( @{ CName = "cbActiveLogin"; Props = @( @{ PropName = "IsChecked"; PropVal = $false } ) } )
+[void]$controls.Add( @{ CName = "gbAD"; Props = @( @{ PropName = "Header"; PropVal = $msgTable.ContentgbAD } ) } )
+[void]$controls.Add( @{ CName = "gbO365"; Props = @( @{ PropName = "Header"; PropVal = $msgTable.ContentgbO365 } ) } )
+[void]$controls.Add( @{ CName = "lblActiveLogin"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblActiveLogin } ) } )
 [void]$controls.Add( @{ CName = "lblADActiveCheck"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblADActiveCheck } ) } )
 [void]$controls.Add( @{ CName = "lblADCheck"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblADCheck } ) } )
 [void]$controls.Add( @{ CName = "lblADLockCheck"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblADLockCheck } ) } )
@@ -298,148 +292,11 @@ $controls = New-Object System.Collections.ArrayList
 $syncHash = CreateWindowExt $controls
 $syncHash.Data.msgTable = $msgTable
 
-$syncHash.btnID.Add_Click( {
-	try
-	{
-		$syncHash.Data.userAzure = Get-AzureADUser -Filter "mail eq '$( $syncHash.Data.user.EmailAddress )'" -ErrorAction Stop
-		FillEllipse "elOAccountCheck" "LightGreen"
-
-		if ( $syncHash.Data.userAzure.AccountEnabled )
-		{
-			FillEllipse "elOLoginCheck" "LightGreen"
-		} else {
-			ErrorMessage $syncHash.Data.msgTable.StrO365LoginDisabled
-			FillEllipse "elOLoginCheck" "LightCoral"
-		}
-
-		if ( ( $syncHash.Data.userAzure | Get-AzureADUserMembership ).DisplayName -match "O365-MigPilots" )
-		{
-			FillEllipse "elOMigCheck" "LightGreen"
-		}
-		else
-		{
-			ErrorMessage $syncHash.Data.msgTable.StrO365NoMig
-			FillEllipse "elOMigCheck" "LightCoral"
-		}
-
-		if ( $syncHash.Data.user.DistinguishedName -match $syncHash.Data.msgTable.CodeMsExchIgnoreOrg )
-		{
-			ErrorMessage $syncHash.Data.msgTable.StrO365IgnoreLicense
-			FillEllipse "elOLicCheck" "LightGray"
-		}
-		else
-		{
-			if ( $syncHash.Data.userAzure.AssignedLicenses.SkuId -match ( Get-AzureADSubscribedSku | Where-Object { $_.SkuPartNumber -match "EnterprisePack" } ).SkuId )
-			{
-				FillEllipse "elOLicCheck" "LightGreen"
-			}
-			else
-			{
-				ErrorMessage $syncHash.Data.msgTable.StrO365NoLicens
-				FillEllipse "elOLicCheck" "LightCoral"
-			}
-		}
-
-		try
-		{
-			Get-EXOMailbox -Identity $syncHash.Data.user.EmailAddress -ErrorAction Stop
-			FillEllipse "elOExchCheck" "LightGreen"
-			$syncHash.DC.spInfo[0] = [System.Windows.Visibility]::Visible
-		}
-		catch
-		{
-			ErrorMessage $syncHash.Data.msgTable.StrO365NotFoundExchange
-			FillEllipse "elOExchCheck" "LightCoral"
-		}
-	}
-	catch [Microsoft.Open.Azure.AD.CommonLibrary.AadNeedAuthenticationException]
-	{
-		if ( $_.Exception -match "Connect-AzureAD" ) { ErrorMessage $syncHash.Data.msgTable.StrO365NoAzAdConnection }
-	}
-	catch
-	{
-		if ( $_.Exception -match "User Not Found" )
-		{
-			ErrorMessage $syncHash.Data.msgTable.StrO365NotFound
-			FillEllipse "elOAccountCheck" "LightCoral"
-		}
-		else { ErrorMessage $_ }
-	}
-	WriteLog -LogText $syncHash.DC.tbId[0]
-} )
-
-$syncHash.tbId.Add_TextChanged( {
-	Reset
-
-	if ( $this.Text.Length -ge 4 )
-	{
-		try
-		{
-			$syncHash.Data.user = Get-ADUser -Identity $this.Text -Properties *
-			FillEllipse "elADCheck" "LightGreen"
-
-			if ( $null -eq $syncHash.Data.user.EmailAddress )
-			{
-				ErrorMessage $syncHash.Data.msgTable.StrErrNoMail
-				FillEllipse "elADMailCheck" "LightCoral"
-			}
-			else { FillEllipse "elADMailCheck" "LightGreen" }
-
-			if ( $syncHash.Data.user.Enabled ) { FillEllipse "elADActiveCheck" "LightGreen" }
-			else
-			{
-				ErrorMessage $syncHash.Data.msgTable.StrErrAdDisabled
-				FillEllipse "elADActiveCheck" "LightCoral"
-			}
-
-			if ( $syncHash.Data.user.LockedOut )
-			{
-				ErrorMessage $syncHash.Data.msgTable.StrErrAdLocked
-				FillEllipse "elADLockCheck" "LightCoral"
-			}
-			else { FillEllipse "elADLockCheck" "LightGreen" }
-
-			if ( $syncHash.Data.user.DistinguishedName -match $syncHash.Data.msgTable.CodeMsExchIgnoreOrg )
-			{
-				ErrorMessage $syncHash.Data.msgTable.StrIgnoreMsExch
-				FillEllipse "elADmsECheck" "LightGray"
-			}
-			else
-			{
-				if ( $null -ne $syncHash.Data.user.msExchMailboxGuid )
-				{
-					ErrorMessage $syncHash.Data.msgTable.StrErrMsExch
-					FillEllipse "elADmsECheck" "LightCoral"
-				}
-				else
-				{
-					FillEllipse "elADmsECheck" "LightGreen"
-					$syncHash.DC.btnID[1] = $true
-					$syncHash.btnID.Focus()
-				}
-			}
-		}
-		catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException]
-		{
-			ErrorMessage -Text $syncHash.Data.msgTable.StrErrADNF -ClearText
-			FillEllipse "elADCheck" "LightCoral"
-		}
-		catch [Microsoft.ActiveDirectory.Management.ADServerDownException]
-		{
-			ErrorMessage $syncHash.Data.msgTable.StrErrAD
-			FillEllipse "elADCheck" "LightGray"
-		}
-	}
-} )
-$syncHash.btnGetLogins.Add_Click( { GetLogins } )
-$syncHash.btnGetDevices.Add_Click( { GetDevices } )
+$syncHash.btnActiveLogin.Add_Click( { Set-AzureADUser -ObjectId $syncHash.Data.userAzure.ObjectId -AccountEnabled $syncHash.DC.cbActiveLogin[0] } )
 $syncHash.btnGetDelegates.Add_Click( { GetDelegates } )
-$syncHash.Window.Add_ContentRendered( { $syncHash.tbId.Focus() } )
-
+$syncHash.btnGetDevices.Add_Click( { GetDevices } )
 $syncHash.btnGetDistsMember.Add_Click( { GetDistsMembership } )
 $syncHash.btnGetDistsOwner.Add_Click( { GetDistsOwnership } )
-$syncHash.btnGetSharedMember.Add_Click( { GetSharedMembership } )
-$syncHash.btnGetSharedOwner.Add_Click( { GetSharedOwnership } )
 $syncHash.btnGetIcon.Add_Click( {
 	try
 	{
@@ -456,11 +313,164 @@ $syncHash.btnGetIcon.Add_Click( {
 		$syncHash.btnRemoveIcon.Content = $syncHash.Data.msgTable.StrNoImage
 	}
 } )
-$syncHash.btnRemoveIcon.Add_Click( { Remove-UserPhoto -Identity $syncHash.Data.user.EmailAddress } )
+$syncHash.btnGetLogins.Add_Click( { GetLogins } )
+$syncHash.btnGetSharedMember.Add_Click( { GetSharedMembership } )
+$syncHash.btnGetSharedOwner.Add_Click( { GetSharedOwnership } )
+$syncHash.btnID.Add_Click( {
+	try
+	{
+		$syncHash.Data.userAzure = Get-AzureADUser -Filter "mail eq '$( $syncHash.Data.user.EmailAddress )'" -ErrorAction Stop
+		FillEllipse "elOAccountCheck" "LightGreen"
 
-$syncHash.tiLogins.Add_GotFocus( {
-	$this.Background = $null
+		# Is the account enabled?
+		if ( $syncHash.Data.userAzure.AccountEnabled )
+		{
+			FillEllipse "elOLoginCheck" "LightGreen"
+			$syncHash.DC.cbActiveLogin[0] = $true
+		}
+		else
+		{
+			ErrorMessage $syncHash.Data.msgTable.StrO365LoginDisabled
+			FillEllipse "elOLoginCheck" "LightCoral"
+			$syncHash.DC.cbActiveLogin[0] = $false
+		}
+
+		# Is the account member of O365-MigPilots?
+		if ( ( $syncHash.Data.userAzure | Get-AzureADUserMembership ).DisplayName -match "O365-MigPilots" )
+		{
+			FillEllipse "elOMigCheck" "LightGreen"
+		}
+		else
+		{
+			ErrorMessage $syncHash.Data.msgTable.StrO365NoMig
+			FillEllipse "elOMigCheck" "LightCoral"
+		}
+
+		# Check org
+		if ( $syncHash.Data.user.DistinguishedName -match $syncHash.Data.msgTable.CodeMsExchIgnoreOrg )
+		{
+			ErrorMessage $syncHash.Data.msgTable.StrO365IgnoreLicense
+			FillEllipse "elOLicCheck" "LightGray"
+		}
+		else
+		{
+			# Do the account have the correct licens?
+			if ( $syncHash.Data.userAzure.AssignedLicenses.SkuId -match ( Get-AzureADSubscribedSku | Where-Object { $_.SkuPartNumber -match "EnterprisePack" } ).SkuId )
+			{
+				FillEllipse "elOLicCheck" "LightGreen"
+			}
+			else
+			{
+				ErrorMessage $syncHash.Data.msgTable.StrO365NoLicens
+				FillEllipse "elOLicCheck" "LightCoral"
+			}
+		}
+
+		# Check if account is synched to Exchange
+		try
+		{
+			Get-EXOMailbox -Identity $syncHash.Data.user.EmailAddress -ErrorAction Stop
+			FillEllipse "elOExchCheck" "LightGreen"
+			$syncHash.DC.spInfo[0] = [System.Windows.Visibility]::Visible
+		}
+		catch
+		{
+			ErrorMessage $syncHash.Data.msgTable.StrO365NotFoundExchange
+			FillEllipse "elOExchCheck" "LightCoral"
+		}
+	}
+	# No open connection to Azure-online services
+	catch [Microsoft.Open.Azure.AD.CommonLibrary.AadNeedAuthenticationException]
+	{
+		if ( $_.Exception -match "Connect-AzureAD" ) { ErrorMessage $syncHash.Data.msgTable.StrO365NoAzAdConnection }
+	}
+	# User was not found
+	catch
+	{
+		if ( $_.Exception -match "User Not Found" )
+		{
+			ErrorMessage $syncHash.Data.msgTable.StrO365NotFound
+			FillEllipse "elOAccountCheck" "LightCoral"
+		}
+		else { ErrorMessage $_ }
+	}
+	WriteLog -LogText $syncHash.DC.tbId[0]
 } )
+$syncHash.btnRemoveIcon.Add_Click( { Remove-UserPhoto -Identity $syncHash.Data.user.EmailAddress } )
+$syncHash.cbActiveLogin.Add_Checked( { $syncHash.DC.btnActiveLogin[1] = $this.IsChecked -ne $syncHash.Data.userAzure.AccountEnabled } )
+$syncHash.cbActiveLogin.Add_Unchecked( { $syncHash.DC.btnActiveLogin[1] = $this.IsChecked -ne $syncHash.Data.userAzure.AccountEnabled } )
+$syncHash.tbId.Add_TextChanged( {
+	Reset
+
+	if ( $this.Text.Length -ge 4 )
+	{
+		try
+		{
+			$syncHash.Data.user = Get-ADUser -Identity $this.Text -Properties *
+			FillEllipse "elADCheck" "LightGreen"
+
+			# Do the AD-user have an emailaddress?
+			if ( $null -eq $syncHash.Data.user.EmailAddress )
+			{
+				ErrorMessage $syncHash.Data.msgTable.StrErrNoMail
+				FillEllipse "elADMailCheck" "LightCoral"
+			}
+			else { FillEllipse "elADMailCheck" "LightGreen" }
+
+			# Is the AD-User active?
+			if ( $syncHash.Data.user.Enabled ) { FillEllipse "elADActiveCheck" "LightGreen" }
+			else
+			{
+				ErrorMessage $syncHash.Data.msgTable.StrErrAdDisabled
+				FillEllipse "elADActiveCheck" "LightCoral"
+			}
+
+			# Is the AD-user locked
+			if ( $syncHash.Data.user.LockedOut )
+			{
+				ErrorMessage $syncHash.Data.msgTable.StrErrAdLocked
+				FillEllipse "elADLockCheck" "LightCoral"
+			}
+			else { FillEllipse "elADLockCheck" "LightGreen" }
+
+			# Check org for user
+			if ( $syncHash.Data.user.DistinguishedName -match $syncHash.Data.msgTable.CodeMsExchIgnoreOrg )
+			{
+				ErrorMessage $syncHash.Data.msgTable.StrIgnoreMsExch
+				FillEllipse "elADmsECheck" "LightGray"
+			}
+			else
+			{
+				# Verify if msExchMailboxGuid is empty
+				if ( $null -ne $syncHash.Data.user.msExchMailboxGuid )
+				{
+					ErrorMessage $syncHash.Data.msgTable.StrErrMsExch
+					FillEllipse "elADmsECheck" "LightCoral"
+				}
+				else
+				{
+					FillEllipse "elADmsECheck" "LightGreen"
+					$syncHash.DC.btnID[1] = $true
+					$syncHash.btnID.Focus()
+				}
+			}
+		}
+		# User was not found in AD
+		catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException]
+		{
+			ErrorMessage -Text $syncHash.Data.msgTable.StrErrADNF -ClearText
+			FillEllipse "elADCheck" "LightCoral"
+		}
+		# Couldn't connect to AD
+		catch [Microsoft.ActiveDirectory.Management.ADServerDownException]
+		{
+			ErrorMessage $syncHash.Data.msgTable.StrErrAD
+			FillEllipse "elADCheck" "LightGray"
+		}
+	}
+} )
+$syncHash.tiLogins.Add_GotFocus( { $this.Background = $null } )
+$syncHash.Window.Add_ContentRendered( { $syncHash.tbId.Focus() } )
 
 [void] $syncHash.Window.ShowDialog()
 #$global:syncHash = $syncHash

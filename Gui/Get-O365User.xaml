@@ -1,13 +1,20 @@
 <Window
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        SizeToContent="WidthAndHeight"
         Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
-        Name="Window"
-        ResizeMode="NoResize">
+        ResizeMode="NoResize"
+        SizeToContent="WidthAndHeight"
+        WindowStartupLocation="CenterScreen"
+        Name="Window">
     <Window.Resources>
-        <Style TargetType="{x:Type StackPanel}">
-            <Setter Property="Orientation" Value="Horizontal"/>
+        <Style TargetType="{x:Type Button}">
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="Padding" Value="5"/>
+        </Style>
+        <Style TargetType="{x:Type DataGrid}">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
         </Style>
         <Style TargetType="{x:Type Ellipse}">
             <Setter Property="Fill" Value="LightGray"/>
@@ -15,20 +22,14 @@
             <Setter Property="Stroke" Value="Black"/>
             <Setter Property="Width" Value="15"/>
         </Style>
-        <Style TargetType="{x:Type Button}">
-            <Setter Property="Margin" Value="5"/>
-            <Setter Property="Padding" Value="10,0,10,0"/>
-        </Style>
-        <Style TargetType="{x:Type DataGrid}">
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
-            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+        <Style TargetType="{x:Type StackPanel}">
+            <Setter Property="Orientation" Value="Horizontal"/>
         </Style>
     </Window.Resources>
     <Grid Margin="5">
         <Grid.RowDefinitions>
-            <RowDefinition Height="40"/>
-            <RowDefinition Height="70"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition x:Name="rdMessage"/>
             <RowDefinition/>
         </Grid.RowDefinitions>
@@ -38,56 +39,65 @@
             <Button x:Name="btnID"/>
         </StackPanel>
         <StackPanel Grid.Row="1" Orientation="Vertical">
-            <StackPanel>
+            <GroupBox x:Name="gbAD">
                 <StackPanel>
-                    <Ellipse x:Name="elADCheck"/>
-                    <Label x:Name="lblADCheck"/>
+                    <StackPanel>
+                        <Ellipse x:Name="elADCheck"/>
+                        <Label x:Name="lblADCheck"/>
+                    </StackPanel>
+                    <StackPanel>
+                        <Ellipse x:Name="elADMailCheck"/>
+                        <Label x:Name="lblADMailCheck"/>
+                    </StackPanel>
+                    <StackPanel>
+                        <Ellipse x:Name="elADActiveCheck"/>
+                        <Label x:Name="lblADActiveCheck"/>
+                    </StackPanel>
+                    <StackPanel>
+                        <Ellipse x:Name="elADLockCheck"/>
+                        <Label x:Name="lblADLockCheck"/>
+                    </StackPanel>
+                    <StackPanel>
+                        <Ellipse x:Name="elADmsECheck"/>
+                        <Label x:Name="lblADmsECheck"/>
+                    </StackPanel>
                 </StackPanel>
+            </GroupBox>
+            <GroupBox x:Name="gbO365">
                 <StackPanel>
-                    <Ellipse x:Name="elADMailCheck"/>
-                    <Label x:Name="lblADMailCheck"/>
+                    <StackPanel>
+                        <Ellipse x:Name="elOAccountCheck"/>
+                        <Label x:Name="lblOAccountCheck"/>
+                    </StackPanel>
+                    <StackPanel>
+                        <Ellipse x:Name="elOLoginCheck"/>
+                        <Label x:Name="lblOLoginCheck"/>
+                    </StackPanel>
+                    <StackPanel>
+                        <Ellipse x:Name="elOMigCheck"/>
+                        <Label x:Name="lblOMigCheck"/>
+                    </StackPanel>
+                    <StackPanel>
+                        <Ellipse x:Name="elOLicCheck"/>
+                        <Label x:Name="lblOLicCheck"/>
+                    </StackPanel>
+                    <StackPanel>
+                        <Ellipse x:Name="elOExchCheck"/>
+                        <Label x:Name="lblOExchCheck"/>
+                    </StackPanel>
                 </StackPanel>
-                <StackPanel>
-                    <Ellipse x:Name="elADActiveCheck"/>
-                    <Label x:Name="lblADActiveCheck"/>
-                </StackPanel>
-                <StackPanel>
-                    <Ellipse x:Name="elADLockCheck"/>
-                    <Label x:Name="lblADLockCheck"/>
-                </StackPanel>
-                <StackPanel>
-                    <Ellipse x:Name="elADmsECheck"/>
-                    <Label x:Name="lblADmsECheck"/>
-                </StackPanel>
-            </StackPanel>
-            <StackPanel>
-                <StackPanel>
-                    <Ellipse x:Name="elOAccountCheck"/>
-                    <Label x:Name="lblOAccountCheck"/>
-                </StackPanel>
-                <StackPanel>
-                    <Ellipse x:Name="elOLoginCheck"/>
-                    <Label x:Name="lblOLoginCheck"/>
-                </StackPanel>
-                <StackPanel>
-                    <Ellipse x:Name="elOMigCheck"/>
-                    <Label x:Name="lblOMigCheck"/>
-                </StackPanel>
-                <StackPanel>
-                    <Ellipse x:Name="elOLicCheck"/>
-                    <Label x:Name="lblOLicCheck"/>
-                </StackPanel>
-                <StackPanel>
-                    <Ellipse x:Name="elOExchCheck"/>
-                    <Label x:Name="lblOExchCheck"/>
-                </StackPanel>
-            </StackPanel>
+            </GroupBox>
         </StackPanel>
         <TextBox Grid.Row="2" x:Name="tbCheckMessage" IsReadOnly="True" IsTabStop="False"/>
-        <StackPanel Grid.Column="0" Grid.Row="3" x:Name="spInfo" Margin="5">
-            <TabControl>
-                <TabItem x:Name="tiLogins">
-                    <StackPanel x:Name="spLogins" Orientation="Vertical" IsEnabled="{Binding ElementName=tiLogins, Path=IsEnabled}">
+        <TabControl Grid.Column="0" Grid.Row="3" x:Name="spInfo" Margin="5">
+            <TabItem x:Name="tiLogins">
+                <StackPanel Orientation="Vertical">
+                    <StackPanel x:Name="spActiveLogin" Orientation="Horizontal">
+                        <Label x:Name="lblActiveLogin" VerticalContentAlignment="Center"/>
+                        <CheckBox x:Name="cbActiveLogin" VerticalContentAlignment="Center"/>
+                        <Button x:Name="btnActiveLogin"/>
+                    </StackPanel>
+                    <StackPanel x:Name="spLogins" Orientation="Vertical">
                         <Button x:Name="btnGetLogins"/>
                         <Grid Margin="5">
                             <Grid.ColumnDefinitions>
@@ -104,59 +114,59 @@
                             <TextBox Grid.Row="1" Grid.Column="1" x:Name="tbLastTeamsLogins" IsReadOnly="True"/>
                         </Grid>
                     </StackPanel>
-                </TabItem>
-                <TabItem x:Name="tiIcon">
-                    <StackPanel Orientation="Vertical">
-                        <Button x:Name="btnGetIcon"/>
-                        <Image x:Name="imgIcon" Height="100" Width="100"/>
-                        <Button x:Name="btnRemoveIcon"/>
-                    </StackPanel>
-                </TabItem>
-                <TabItem x:Name="tiDelegates">
-                    <StackPanel Orientation="Vertical">
-                        <Button x:Name="btnGetDelegates"/>
-                        <DataGrid x:Name="dgDelegates"/>
-                    </StackPanel>
-                </TabItem>
-                <TabItem x:Name="tiDists">
-                    <TabControl>
-                        <TabItem x:Name="tiDistsOwner">
-                            <StackPanel Orientation="Vertical">
-                                <Button x:Name="btnGetDistsOwner"/>
-                                <DataGrid x:Name="dgDistsOwner"/>
-                            </StackPanel>
-                        </TabItem>
-                        <TabItem x:Name="tiDistsMember">
-                            <StackPanel Orientation="Vertical">
-                                <Button x:Name="btnGetDistsMember"/>
-                                <DataGrid x:Name="dgDistsMember"/>
-                            </StackPanel>
-                        </TabItem>
-                    </TabControl>
-                </TabItem>
-                <TabItem x:Name="tiShared">
-                    <TabControl>
-                        <TabItem x:Name="tiSharedOwner">
-                            <StackPanel Orientation="Vertical">
-                                <Button x:Name="btnGetSharedOwner"/>
-                                <DataGrid x:Name="dgSharedOwner"/>
-                            </StackPanel>
-                        </TabItem>
-                        <TabItem x:Name="tiSharedMember">
-                            <StackPanel Orientation="Vertical">
-                                <Button x:Name="btnGetSharedMember"/>
-                                <DataGrid x:Name="dgSharedMember"/>
-                            </StackPanel>
-                        </TabItem>
-                    </TabControl>
-                </TabItem>
-                <TabItem x:Name="tiDevices">
-                    <StackPanel Orientation="Vertical">
-                        <Button x:Name="btnGetDevices"/>
-                        <TextBox x:Name="tbDevices"/>
-                    </StackPanel>
-                </TabItem>
-            </TabControl>
-        </StackPanel>
+                </StackPanel>
+            </TabItem>
+            <TabItem x:Name="tiIcon">
+                <StackPanel Orientation="Vertical">
+                    <Button x:Name="btnGetIcon"/>
+                    <Image x:Name="imgIcon" Height="100" Width="100"/>
+                    <Button x:Name="btnRemoveIcon"/>
+                </StackPanel>
+            </TabItem>
+            <TabItem x:Name="tiDelegates">
+                <StackPanel Orientation="Vertical">
+                    <Button x:Name="btnGetDelegates"/>
+                    <DataGrid x:Name="dgDelegates"/>
+                </StackPanel>
+            </TabItem>
+            <TabItem x:Name="tiDists">
+                <TabControl>
+                    <TabItem x:Name="tiDistsOwner">
+                        <StackPanel Orientation="Vertical">
+                            <Button x:Name="btnGetDistsOwner"/>
+                            <DataGrid x:Name="dgDistsOwner"/>
+                        </StackPanel>
+                    </TabItem>
+                    <TabItem x:Name="tiDistsMember">
+                        <StackPanel Orientation="Vertical">
+                            <Button x:Name="btnGetDistsMember"/>
+                            <DataGrid x:Name="dgDistsMember"/>
+                        </StackPanel>
+                    </TabItem>
+                </TabControl>
+            </TabItem>
+            <TabItem x:Name="tiShared">
+                <TabControl>
+                    <TabItem x:Name="tiSharedOwner">
+                        <StackPanel Orientation="Vertical">
+                            <Button x:Name="btnGetSharedOwner"/>
+                            <DataGrid x:Name="dgSharedOwner"/>
+                        </StackPanel>
+                    </TabItem>
+                    <TabItem x:Name="tiSharedMember">
+                        <StackPanel Orientation="Vertical">
+                            <Button x:Name="btnGetSharedMember"/>
+                            <DataGrid x:Name="dgSharedMember"/>
+                        </StackPanel>
+                    </TabItem>
+                </TabControl>
+            </TabItem>
+            <TabItem x:Name="tiDevices">
+                <StackPanel Orientation="Vertical">
+                    <Button x:Name="btnGetDevices"/>
+                    <TextBox x:Name="tbDevices"/>
+                </StackPanel>
+            </TabItem>
+        </TabControl>
     </Grid>
 </Window>

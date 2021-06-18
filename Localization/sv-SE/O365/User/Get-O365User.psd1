@@ -1,5 +1,6 @@
 ConvertFrom-StringData @'
 CodeMsExchIgnoreOrg = OU=Org5
+ContentbtnActiveLogin = Spara
 ContentbtnGetDelegates = Hämta delegeringar
 ContentbtnGetDevices = Hämta enheter
 ContentbtnGetDistsMember = Hämta medlemskap
@@ -10,10 +11,13 @@ ContentbtnGetSharedMember = Hämta medlemskap
 ContentbtnGetSharedOwner = Hämta ägarskap
 ContentbtnID = Kontrollera O365 status
 ContentbtnRemoveIcon = Ta bort ikon
+ContentgbAD = GAIA
+ContentgbO365 = Azure / Exchange
+ContentlblActiveLogin = Inloggning aktiverad
 ContentlblADActiveCheck = AD Aktiv
-ContentlblADCheck = AD
+ContentlblADCheck = Finns i AD
 ContentlblADLockCheck = AD Olåst
-ContentlblADMailCheck = Mailattribut
+ContentlblADMailCheck = Mailattribut angivet
 ContentlblADmsECheck = msExchMailboxGuid tom
 ContentlblID = Ange användar-id
 ContentlblLastO365Login = Senast lyckade Office 365-inloggning:

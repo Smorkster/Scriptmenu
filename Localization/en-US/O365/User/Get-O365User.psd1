@@ -1,5 +1,6 @@
 ConvertFrom-StringData @'
 CodeMsExchIgnoreOrg = OU=Org5
+ContentbtnActiveLogin = Save
 ContentbtnGetDelegates = Get delegations
 ContentbtnGetDevices = Get devices
 ContentbtnGetDistsMember = Get memberships
@@ -10,8 +11,11 @@ ContentbtnGetSharedMember = Get memberships
 ContentbtnGetSharedOwner = Get ownerships
 ContentbtnID = Check O365-account status
 ContentbtnRemoveIcon = Remove usericon
+ContentgbAD = AD
+ContentgbO365 = Azure / Exchange
+ContentlblActiveLogin = Login active
 ContentlblADActiveCheck = AD Active
-ContentlblADCheck = AD
+ContentlblADCheck = Exists in AD
 ContentlblADLockCheck = AD unlocked
 ContentlblADMailCheck = Mailattribute
 ContentlblADmsECheck = msExchMailboxGuid empty
