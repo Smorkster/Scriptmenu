@@ -4,7 +4,7 @@
 .Author Smorkster (smorkster)
 #>
 
-Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
+Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -Argumentlist $args[1]
 
 $CaseNr = Read-Host "Related casenumber (if any) "
 $UserInput = Read-Host "Write IP-address"

@@ -307,9 +307,9 @@ function Resort
 }
 
 ####################### Script start
-Import-Module "$( $args[0] )\Modules\ConsoleOps.psm1" -Force
-Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
-Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force
+Import-Module "$( $args[0] )\Modules\ConsoleOps.psm1" -Force -ArgumentList $args[1] -Argumentlist $args[1]
+Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1] -Argumentlist $args[1]
+Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -ArgumentList $args[1] -Argumentlist $args[1]
 
 $controls = New-Object Collections.ArrayList
 [void]$controls.Add( @{ CName = "btnCreateQuestion"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnCreateQuestion } ) } )
@@ -480,5 +480,5 @@ $syncHash.Window.Add_Loaded( {
 } )
 
 [void] $syncHash.Window.ShowDialog()
-$global:syncHash = $syncHash
+#$global:syncHash = $syncHash
 [System.GC]::Collect()

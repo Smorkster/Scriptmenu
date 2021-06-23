@@ -59,8 +59,8 @@ function UpdateNameAddress
 }
 
 ##################### Script start
-Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
-Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force
+Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -Argumentlist $args[1]
+Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -Argumentlist $args[1]
 
 $controls = New-Object System.Collections.ArrayList
 [void]$controls.Add( @{ CName = "bordDist" ; Props = @( @{ PropName = "BorderBrush"; PropVal = "Red" } ; @{ PropName = "BorderThickness"; PropVal = 0 } ) } )

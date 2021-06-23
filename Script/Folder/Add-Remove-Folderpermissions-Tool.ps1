@@ -681,8 +681,8 @@ function WriteToLog
 ####################  End Control functions  ####################
 
 ######################################### Script start
-Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
-Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force
+Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
+Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -ArgumentList $args[1]
 
 $controlProperties = New-Object Collections.ArrayList
 [void]$controlProperties.Add( @{ CName = "Window"

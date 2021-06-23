@@ -4,9 +4,9 @@
 .Author Smorkster (smorkster)
 #>
 
-Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
+Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
-$ComputerName = $args[1]
+$ComputerName = $args[2]
 
 Invoke-WmiMethod -ComputerName $ComputerName -Namespace root\ccm -Class sms_client -Name RepairClient
 

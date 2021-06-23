@@ -5,10 +5,10 @@
 .Author Smorkster (smorkster)
 #>
 
-Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
+Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 Write-Host $msgTable.StrStart
-$ComputerName = $args[1]
+$ComputerName = $args[2]
 
 $a = ( driverquery /s $ComputerName /v /fo list ) -replace [char]8221, "ö" -replace [char]255, ","
 $l = New-Object System.Collections.ArrayList

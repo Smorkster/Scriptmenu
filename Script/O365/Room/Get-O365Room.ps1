@@ -244,8 +244,8 @@ function WriteOpLog
 
 ###################### Script start
 Add-Type -AssemblyName PresentationFramework
-Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
-Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force
+Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -Argumentlist $args[1]
+Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -Argumentlist $args[1]
 
 $controls = New-Object System.Collections.ArrayList
 [void]$controls.Add( @{ CName = "btnAddAdmin" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnAddAdmin } ; @{ PropName = "IsEnabled" ; PropVal = $false } ) } )

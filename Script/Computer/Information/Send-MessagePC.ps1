@@ -5,13 +5,13 @@
 .Author Smorkster (smorkster)
 #>
 
-Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
+Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
-$ComputerName = $args[1]
+$ComputerName = $args[2]
 
 $Message = Read-Host "$( $msgTable.StrMessage )"
 
-Invoke-Command -computername $ComputerName -Args $Message -ScriptBlock ` {
+Invoke-Command -ComputerName $ComputerName -ArgumentList $Message -ScriptBlock ` {
 	Param( $Message )
 	$CmdMessage = { C:\windows\system32\msg.exe * "$Message" }
 	$CmdMessage | Invoke-Expression

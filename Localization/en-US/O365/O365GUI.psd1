@@ -1,8 +1,8 @@
 ConvertFrom-StringData @'
 AdmList = sysAdm1
+ContentbtnAddAdminPermission = Create permission on users account
 ContentbtnO365Connect = Connect
 ContentbtnRun = Run
-ContentbtnAddAdminPermission = Create Full-permission for mailbox
 ContentlblCheckersTitle = Connected to
 ContentlblConnectedAsTitle = Connected as: 
 ContentlblConnectTitle = Click on 'Connect' to connect to O365 online services
@@ -14,5 +14,6 @@ ScriptContentInDev = Dev
 ScriptContentInTest = Test
 StrBORole = RoleBO_Servicedesk
 StrNoPermission = You do not have the permissions to start Office 365 Scriptmenu
+StrNoRecipientFound = Can not find any Exchange-object with given value
 StrScriptSuite = Office 365 Scriptmenu
 '@

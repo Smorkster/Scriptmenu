@@ -4,7 +4,7 @@
 .Author Smorkster (smorkster)
 #>
 
-Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
+Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 $Folders = @()
 

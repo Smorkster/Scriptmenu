@@ -6,8 +6,8 @@
 #>
 
 Add-Type -AssemblyName PresentationFramework
-Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
-Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force
+Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
+Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -ArgumentList $args[1]
 
 $controls = New-Object System.Collections.ArrayList
 [void]$controls.Add( @{ CName = "btn" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentButton } ; @{ PropName = "IsEnabled"; PropVal = $false } ) } )
@@ -17,7 +17,7 @@ $controls = New-Object System.Collections.ArrayList
 [void]$controls.Add( @{ CName = "Window" ; Props = @( @{ PropName = "Title"; PropVal = $msgTable.ContentDefWinTit } ) } )
 
 $syncHash = CreateWindowExt $controls
-$syncHash.Data.ComputerName = $args[1]
+$syncHash.Data.ComputerName = $args[2]
 $syncHash.Data.msgTable = $msgTable
 $syncHash.Data.Apps = New-Object System.Collections.ArrayList
 

@@ -5,9 +5,9 @@
 .Author Smorkster (smorkster)
 #>
 
-Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force
+Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
-$ComputerName = $args[1]
+$ComputerName = $args[2]
 $CaseNr = Read-Host "Related casenumber (if any) "
 
 $Users = wmic /node:$ComputerName ComputerSystem Get UserName | Where-Object { $_ -notmatch "UserName" -and $_ -ne "" }

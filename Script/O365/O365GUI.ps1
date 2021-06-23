@@ -3,6 +3,7 @@
 .Description Main script for collecting and accessing scripts related to Office 365
 .Author Smorkster (smorkster)
 #>
+param ( $culture = "sv-SE" )
 
 #####################################################################
 # Check if a connection to the Office 365 online services are present
@@ -87,7 +88,7 @@ function CreateScriptGroup
 						$label.Content += "`n$( $syncHash.Data.msgTable.ContentLblInTest )"
 					}
 
-					$button.Add_Click( { Invoke-Command -ScriptBlock { & $this.ToolTip ( ( Get-Item $PSScriptRoot ).Parent.Parent.FullName ) } } )
+					$button.Add_Click( { Invoke-Command -ScriptBlock { param ( $lc ) & $this.ToolTip ( ( Get-Item $PSScriptRoot ).Parent.Parent.FullName ) $lc } -ArgumentList "en-US" } )
 
 					[void] $wpScriptControls.AddChild( $button )
 					[void] $wpScriptControls.AddChild( $label )
@@ -198,9 +199,15 @@ function SetTitle
 
 ############################## Script start
 $BaseDir = ( ( Get-Item $PSCommandPath ).Directory.Parent.FullName -split "\\" | Select-Object -SkipLast 1 ) -join "\"
+if ( ( [System.Globalization.CultureInfo]::GetCultures( "AllCultures" ) ).Name -contains "sv-SE" -contains $culture ) { $LocalizeCulture = $culture }
+else
+{
+	[System.Windows.MessageBox]::Show( "Not a valid localization language. Will default to sv-SE" )
+	$LocalizeCulture = "sv-SE"
+}
 Add-Type -AssemblyName PresentationFramework
-Import-Module "$( $BaseDir )\Modules\FileOps.psm1" -Force
-Import-Module "$( $BaseDir )\Modules\GUIOps.psm1" -Force
+Import-Module "$( $BaseDir )\Modules\FileOps.psm1" -Force -ArgumentList $LocalizeCulture
+Import-Module "$( $BaseDir )\Modules\GUIOps.psm1" -Force -ArgumentList $LocalizeCulture
 
 if ( ( ( Get-ADUser $env:USERNAME -Properties memberof ).memberof -match $msgTable.StrBORole ).Count -gt 0 )
 {
@@ -218,6 +225,7 @@ if ( ( ( Get-ADUser $env:USERNAME -Properties memberof ).memberof -match $msgTab
 	[void]$controls.Add( @{ CName = "lblStatusAzureAD" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblStatusAzureAD } ) } )
 	[void]$controls.Add( @{ CName = "lblStatusExchange" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblStatusExchange } ) } )
 	[void]$controls.Add( @{ CName = "MainContent" ; Props = @( @{ PropName = "Visibility"; PropVal = [System.Windows.Visibility]::Collapsed } ) } )
+	[void]$controls.Add( @{ CName = "tbAddAdminPermission" ; Props = @( @{ PropName = "Text"; PropVal = "" } ) } )
 	[void]$controls.Add( @{ CName = "spConnect" ; Props = @( @{ PropName = "Visibility"; PropVal = [System.Windows.Visibility]::Visible } ) } )
 	[void]$controls.Add( @{ CName = "spConnected" ; Props = @( @{ PropName = "Visibility"; PropVal = [System.Windows.Visibility]::Collapsed } ) } )
 	[void]$controls.Add( @{ CName = "Window" ; Props = @( @{ PropName = "Title"; PropVal = $msgTable.StrScriptSuite } ) } )
@@ -243,7 +251,22 @@ if ( ( ( Get-ADUser $env:USERNAME -Properties memberof ).memberof -match $msgTab
 	Push-Location ( Get-Item $PSCommandPath ).Directory.FullName
 	$syncHash.MainContent.AddChild( ( GetFolderItems "" ) )
 
-	$syncHash.btnAddAdminPermission.Add_Click( { <# TODO #> } )
+	$syncHash.btnAddAdminPermission.Add_Click( {
+		try
+		{
+			$a = Get-EXORecipient -Identity $syncHash.DC.tbAddAdminPermission[0] -ErrorAction Stop
+			if ( $a.RecipientTypeDetails -in ( "EquipmentMailbox","RoomMailbox","SharedMailbox","UserMailbox" ) )
+			{
+				Add-MailboxPermission -Identity $a.PrimarySmtpAddress -User $syncHash.azureAdAccount -AccessRights FullAccess
+				Add-Content -Value $a.PrimarySmtpAddress -Path "$( $env:USERPROFILE )\O365Admin.txt"
+			}
+			else { throw }
+		}
+		catch
+		{
+			ShowMessageBox -Text $syncHash.Data.msgTable.StrNoRecipientFound
+		}
+	} )
 	$syncHash.btnO365Connect.Add_Click( { ConnectO365 } )
 	$syncHash.Window.Add_Closed( {
 		$FileSystemWatcher.EnableRaisingEvents = $false

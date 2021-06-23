@@ -249,9 +249,9 @@ function VerifyInput
 
 ########################### Script start
 $BaseDir = $args[0]
-Import-Module "$BaseDir\Modules\FileOps.psm1" -Force
-Import-Module "$BaseDir\Modules\GUIOps.psm1" -Force
-Import-Module "$BaseDir\Modules\RemoteOps.psm1" -Force
+Import-Module "$BaseDir\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
+Import-Module "$BaseDir\Modules\GUIOps.psm1" -Force -ArgumentList $args[1]
+Import-Module "$BaseDir\Modules\RemoteOps.psm1" -Force -ArgumentList $args[1]
 
 $controlProperties = New-Object Collections.ArrayList
 [void]$controlProperties.Add( @{ CName = "Progress"
@@ -378,7 +378,7 @@ $syncHash.Window.Add_ContentRendered( {
 	$syncHash.txtCName.Focus()
 } )
 
-$syncHash.Data.ComputerName = $syncHash.txtCName.Text = $args[1]
+$syncHash.Data.ComputerName = $syncHash.txtCName.Text = $args[2]
 
 [void] $syncHash.Window.ShowDialog()
 $syncHash.Window.Close()
