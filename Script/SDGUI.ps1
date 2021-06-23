@@ -452,17 +452,8 @@ function GetPCRole
 
 	switch -Regex ( $ADPC.MemberOf | Where-Object { $_ -match "_Wrk_" } )
 	{
-		"Patient" { $r = "Patient-PC" }
-		"Vard" { $r = "Vård-PC" }
-		"Administrativ" { $r = "Administrativ-PC" }
-		"Flodes" { $r = "Flödes-PC" }
-		"MTWM" { $r = "MT WM-PC" }
-		"MTM" { $r = "MT M-PC" }
-		"Sakerhets" { $r = "Säkerhets-PC" }
-		"Undantag" { $r = "Undantags-PC" }
-		"Tekniker" { $r = "Tekniker-PC" }
-		"Kiosk" { $r = "Kiosk-PC" }
-		"Lakemedelsvagn" { $r = "Lakemedelsvagn-PC" }
+		"Role1" { $r = "PCRole 1" }
+		"Role2" { $r = "PCRole 2" }
 	}
 	if ( $null -eq $r ) { $r = $msgTable.ComputerUnknownRole }
 	$ComputerObj.Roll = $r
