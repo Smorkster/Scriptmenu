@@ -4,21 +4,21 @@
 .Author Smorkster (smorkster)
 #>
 
-Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -Argumentlist $args[1]
+Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
-$CaseNr = Read-Host "Related casenumber (if any) "
-$UserInput = Read-Host "Write IP-address"
+$UserInput = Read-Host $msgTable.StrQIp
 
 if ( $Printers = Get-ADObject -LDAPFilter "(&(objectClass=printQueue)(portName=$UserInput*))" -Properties * )
 {
 	$Printers | Select-Object Name, portName, driverName, location
 	$logText = "$UserInput > $( $Printers.Name )"
+	Write-Host $logText
 }
 else
 {
-	Write-Host "No printerqueue registered for IP '$UserInput'"
-	$logText = "No printerqueue for '$UserInput'"
+	Write-Host "$( $msgTable.ErrNoPrinter ) '$UserInput'"
+	$logText = "$( $msgTable.LogNoPrinter ) '$UserInput'"
 }
 
-WriteLog -LogText "$CaseNr $logText"
+WriteLog -LogText $logText | Out-Null
 EndScript
