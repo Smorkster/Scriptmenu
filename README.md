@@ -15,44 +15,60 @@ The *Development*-folder is used as an area to create new scripts, apply changes
 
 ## Scripts
 Scripts are placed in any appropriate subfolder of the *Script*-folder.
+
 If a script uses WPF for GUI-purposes, an XAML-file with the same name as the script, is placed in the *GUI*-folder to take advantage of module-functionality.
-New files must follow these rules:
+
+When the scriptmenu starts, it searches for scripts in the *Script*-folder and reads the comment based help-section at the begining of the file. Parameters in the section are used to create the controls in the scriptmenu. If this is not present, the scripts will not be listed properly and might not be able to run from the GUI.
+
+Scripts must follow these rules:
 * Fileextension .ps1
 * No spaces in filename
-* The script must contain these lines, at the beginning:
+* The filename should start with an approved verb, i.e. "Get-". This is used to group scripts in the GUI
+* The script must have a comment based help-section at the begining of the file. The following parameter are mandatory:
 ```powershell
 <#
-.Synopsis - A short description of what script does [Necessary]
-.Description - A longer, more detailed description of the script. This will be shown as a tooltip for controls for the script [Necessary]
-.State - Highlight the phase of the script. There are three options for this:
+.Synopsis - A short description of what script does. This is shown in by the button to start the script
+.Description - A longer, more detailed description of the script. This will be shown as a tooltip for controls for the script
+.State - Define production phase of the script. There are three options for this:
 * Dev - The script is in development, only those listed in the admin list, as well as the script creator (see 'Author') can start the script
 * Test - The script is highlighted in the maingui to be in the testing phase
 * Prod - The script is in production and is not highlighted in the maingui. This also happens if State is omitted
-.Author - Who has created the script, i.e. who is responsible
+.Author - Who has created the script, i.e. who is responsible. This user will always have access to the script, even if not member of any of the AD-groups specified in "Requires" or listed in "AllowedUsers" (see below)
 #>
 ```
-* A script can limit who gets access to run it, by adding one or more of these to the help-section:
-* **.Requires** - A list of AD-groups the user must be member of. If the user is not a member, this script will not be available. If this is not specified, the script will be available for all users. Groupnames are separated by commas (',')
-* **.AllowedUsers** - List of users allowed to run the script. This can be used if the user/-s are not member of required AD-group, or if only specific users should be able to use the script. Usernames are separated by commas (',')
-* If a script uses any technology that can first be check if present before start, use `.Depends` in the help-section. A list of technologies that are checked, se "Dependencies" below.
-  
-   `.Depends WinRM`
+Alternate script parameters:
+* **.Requires** - List of AD groups that must have been assigned to the user. If not specified, the script will be available to everyone. Group names are separated by commas (',')
+* **.AllowedUsers** - List of users allowed to run the script. Users do not have to be a member of the AD group according to Requires. Usernames are separated by commas (',')
+* **.Depends** - Technology that can be controlled by the scriptmenu. For a list of controlled technologies, see section "Dependencies"
 
-* To be able to use logging, availabe functions for handling files or other common uses, there are modules available. These are imported with:
-  
-    `Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force`
+To be able to use any of the modules created for the scriptmenu, such as logging, file management or GUI (see section "Available modules"), these are imported as follows:
 
-When scripts are started from the GUI, it is initiated with an argument for the root-folder (i.e. *Scriptmenu*-folder). This argument is contained in `$args[0]`.
-Any scripts in the *Computer*-folder will also get computername entered in the textbox in the Computer-tab. The computername is contained in `$args[1]`.
+    Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
+
+<br>
+
+### Scriptstart
+When scripts are started, a list of arguments is always sent as an argumentlist. These arguments are available by the automatic variable **$args** at the beginning of the script.
+
+The list contains the following:
+* **$args[0]** - The path for the "base folder", i.e. G:\Scriptmenu. This is used to more easily access files in the other folders, such as modules or folders
+* **$args[1]** - IetfLanguageTag for the language to be used when locating scripts. The default is sv-SE. For more info, see section Localization
+* **$args[2]** - Scripts located in the "**Script\Computer**"-folder always get the computer name specified in GUI by the user. This is not given to scripts in other top folders
+
+<br>
 
 ### Subfolders for scripts
 All folders in the *Script*-folder, will get a tab in the tabcontrol. If a folder contains any subfolder, that in turn will give another tabcontrol, within that tab and also contain tabs for each folder.
 Foldernames must not contain any space. If a foldername should have more than one name, each word should be capitalized. SDGUI will then add a space between the words to then be shown in the tabitem-header.
 
+<br>
+
 ### Special folders
 #### *Computer*-folder
 Script directly in the *Computer*-folder is visible by default.
 Any script in a subfolder is hidden by default and will be made visible if the computer entered in textbox, is online and reachable. These are shown after a check made from the "Fetch info"-button.
+
+<br>
 
 #### *O365*-folder
 Script directly in the *O365*-folder is visible by default.
@@ -79,20 +95,24 @@ Applications to be used by scripts are placed in the *Apps*-folder
 <br>
 
 ## Localization
-The FileOps module (see below) has functionality for embedding localization in scripts. Localization means that scripts can have text strings depending on the language installed in the operating system. That is, if the language in the operatingsystem is Swedish, "sv-SE" will be culture to import.
-A localization file MUST have the same name as the script file and have the file extension ".psd1". If the file name differs, the file will not be loaded.
+The FileOps module (see below) has functionality for embedding localization in scripts. Localization means that scripts can have text strings depending on the language specified for the scriptmenu (in SDGUI.ps1). That is, if the language should be swedish, culture will be set as "sv-SE". To see available cultures, run this code:
+
+    [System.Globalization.CultureInfo]::GetCultures( "AllCultures" )
+
+A localization file MUST have the same name as the script file and have the file extension ".psd1". If the filename differs, the locale will not be loaded and no textstrings will be available for the script.
 
 Scripts that use localization MUST have its localization-file placed as follows:
   * In the "Localization" folder
-  * Folder with the name of the selected culture. The default for SDGUI is "sv-SE". If another culture is used for the strings, the culture name needs to be specified in the ArgumentList when importing the FileOps module, like so:
+  * Folder with the name of the selected culture. The default for GUI is "sv-SE". If another culture is used for the strings, the culture name needs to be specified in the ArgumentList when importing the FileOps module, like so:
 
-    `Import-Module "$( $args [0] )\Modules\<Module-name>.psm1" -Force -ArgumentList "sv-SE"`
+      `Import-Module "$( $args [0] )\Modules\<Module-name>.psm1" -Force -ArgumentList "sv-SE"`
 
-  * Folder structure according to the location of the script file.
+  * Folder structure like that of the script file.
 
 Example:
-If the script file "Test.ps1" is located in Script\Computer, there should be a file located according to:
-  `Localization\sv-SE\Computer\Test.psd1`
+If the script file "Test.ps1" is located in Script\Computer, and uses swedish for the textstring, the file is located at:
+
+`Localization\sv-SE\Computer\Test.psd1`
 
 The filecontent **MUST** start with:
 
@@ -103,29 +123,34 @@ and the last line **MUST** be (with no space at the beginning):
     '@
 
 Each line in between is formulated according to:
-VariableName = Text to use
+
+    VariableName = Text to use
 
 Imported text is accessed through the hashtable `$msgTable` and is used as follows:
 
-`$msgTable.<VariableName>`
+    $msgTable.<VariableName>
 
 <br>
 
 ## Additional modules
-Any new module for this suite are placed in the *Modules*-folder. They are then imported in the same way as mentioned above:
+Modules for this suite are placed in the *Modules*-folder. They are then imported in the same way as mentioned above:
 
-`Import-Module "$( $args[0] )\Modules\<Module name>.psm1" -Force`
+    Import-Module "$( $args[0] )\Modules\<Module name>.psm1" -Force -ArgumentList $args[1]
 
 <br>
 
 ## Available modules
 There are some modules available for scripts to handle logging, get input from user, create WPF-windows and more. To be able to use these, put this code in the beginning of the script; one for each module to import:
 
-`Import-Module "$( $args[0] )\Modules\< Modul-namn >.psm1" -Force`
+    Import-Module "$( $args[0] )\Modules\< Modul-namn >.psm1" -Force
 
 <br>
 
 ### Module ConsoleOps
+Is imported with:
+
+    Import-Module "$( $args[0] )\Modules\ConsolOps.psm1" -Force -ArgumentList $args[1]
+
 A module for adding functions for operating in the console.
 
 #### Function *GetConsolePasteInput*
@@ -150,7 +175,12 @@ StartWait -SecondsToWait 3 -MessageText "until everything is ready"
 <br>
 
 ### Module FileOps
-This module is the most used, since it contains functions for handling files for input/output/log.
+Is imported with:
+
+    Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
+
+This module is the one most used, since it contains functions for handling files for input/output/log.
+The module also loads any localization file created for scripts. If there is a psd1-file with the same name and under the same folder structure as the calling script, the module will load the file and export the data in a hashtable named $msgTable. From this, scripts can retrieve the text strings.
 
 #### Function *WriteLog*
 Writes to logfile for operations in scripts. It writes to a file with path based on year, month and with the same name as the script that is calling.
@@ -250,6 +280,9 @@ Filename: *ErrorLogs\2020\08\Get-InstalledJava - Errorlog 20200801123456.txt*
 <br>
 
 ### Module GUIOps
+Is imported with:
+
+    Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -ArgumentList $args[1]
 
 #### Function *CreateWindow*
 Creates a WPF-window based on the XAML-file located in the *GUI*-folder, which have the same name as the calling script.
@@ -295,6 +328,10 @@ The function returns a synchronized hashtable to use for all controls and any da
 <br>
 
 ### Module RemoteOps
+Is imported with:
+
+    Import-Module "$( $args[0] )\Modules\RemoteOps.psm1" -Force -ArgumentList $args[1]
+
 Used for functions that works on remote computers
 
 #### Function *RunCycle*
@@ -327,6 +364,10 @@ Value for if the message was sent:
 <br>
 
 ### Module SysManOps
+Is imported with:
+
+    Import-Module "$( $args[0] )\Modules\SysManOps.psm1" -Force -ArgumentList $args[1]
+
 Contains functions for working against SysMan.
 
 #### Function *ChangeInstallation*
