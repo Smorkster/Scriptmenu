@@ -8,7 +8,6 @@
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 $ComputerName = $args[2]
-$CaseNr = Read-Host "Related casenumber (if any) "
 
 try
 {
@@ -26,21 +25,23 @@ try
 		{
 			$sessionString = RemoveSpace( $sessionString )
 			$session = $sessionString.Split()
-			if ( $session[1].Equals( "SESSIONSNAMN" ) ) { continue }
+			if ( $session[1].Equals( $( $msgTable.StrSessionTitle ) ) ) { continue }
 			# Use [1] because if the user is disconnected there will be no session ID
 			$result = logoff $session[1]
-			$Info += "User ""$session[0]"" automatically logged off.`n"
+			$Info += "$( $session[0] ) $( $msgTable.StrLoggedOff ).`n"
 		}
 		$Info
 	}
 }
 catch [System.Management.Automation.RemoteException]
 {
+	WriteErrorLog -LogText $_
 	$Info = "No user logged on."
 }
+catch { WriteErrorLog -LogText $_ }
 
 Write-Host $Info
 $outputFile = WriteOutput -Output $Info
 
-WriteLog -LogText "$CaseNr $ComputerName > $( $Info.Count ) användare`r`n`t$outputFile"
+WriteLog -LogText "$ComputerName > $( $Info.Count ) $( $msgTable.LogUsers )`r`n`t$outputFile" | Out-Null
 EndScript
