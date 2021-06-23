@@ -4,29 +4,26 @@
 .Author Smorkster (smorkster)
 #>
 
-Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -Argumentlist $args[1]
+Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
-$CaseNr = Read-Host "Related casenumber (if any) "
-$NameImput = Read-Host "Printername or printergroup, ex. Pr_F4_00"
+Write-Host "$( $msgTable.StrScriptTitle )`n"
+$prtName = Read-Host $msgTable.StrQName
 
-if ( $Printers = Get-ADObject -LDAPFilter "(&(ObjectClass=printQueue)(Name=$NameImput*))" -Properties * | Select-Object Name, location, portName, shortServerName, driverName, printColor, url )
+if ( $Printers = Get-ADObject -LDAPFilter "(&(ObjectClass=printQueue)(Name=$prtName*))" -Properties * | Select-Object Name, location, portName, shortServerName, driverName, printColor, url )
 {
 	$Printers
-	$Printers | ForEach-Object `
+	$Printers | Foreach-Object `
 	{
-		$output += "$( $_.name )`r`n`tLocation: $( $_.location )`r`n`tIP: $( $_.portname )`r`n`tServer: $( $_.shortservername )`r`n`tDriver: $( $_.drivername )`r`n`tColor print: $( $_.printcolor )`r`n`tURL: $( $_.url )`r`n`r`n"
+		$output += "$( $_.name )`r`n`t$( $msgTable.StrPropLoc ): $( $_.location )`r`n`t$( $msgTable.StrPropIp ): $( $_.portname )`r`n`t$( $msgTable.StrPropServ ): $( $_.shortservername )`r`n`t$( $msgTable.StrPropDriv ): $( $_.drivername )`r`n`t$( $msgTable.StrPropClr ): $( $_.printcolor )`r`n`t$( $msgTable.StrPropUrl ): $( $_.url )`r`n`r`n"
 	}
-	$outputFile = WriteOutput -output $output
-	$logText = "$NameImput
- > $( $Printers.Count ) printer`r`n`tOutput: $outputFile"
+	$outputFile = WriteOutput -Output $output
+	$logText = "$prtName > $( $Printers.Count )`r`n`tOutput: $outputFile"
 }
 else
 {
-	Write-Host "No printerqueues found from searchterm '$NameImput
-'"
-	$logText = "$NameImput
- > No printer"
+	Write-Host "$( $msgTable.ErrNoFound ) '$prtName'"
+	$logText = "$prtName > $( $msgTable.StrLogNoFound )"
 }
 
-WriteLog -LogText "$CaseNr $logText"
+WriteLog -LogText $logText | Out-Null
 EndScript
