@@ -7,11 +7,39 @@
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 Write-Host "$( $msgTable.StrTitle )`n"
+$searchWord = Read-Host $msgTable.QGName
+Write-Host $msgTable.StrSearching
+$list = [System.Collections.ArrayList]::new()
+[array] $Groups = Get-ADGroup -LDAPFilter "(&(Name=*$searchWord*User*)(|(Name=*_R)(Name=*_C)))"
 
-$grpName = Read-Host "$( $msgTable.QGName ) "
+if ( $Groups.Count -eq 0 )
+{
+	$logText = "$searchWord $( $msgTable.LogNoGroups )"
+	Write-Host $msgTable.StrNoGroups
+}
+else
+{
+	[array]$selectedGroups = $Groups | Select-Object Name, @{ Name = $msgTable.StrGrpType; Expression = {
+			if ( $_.Name -match "_R" ) { $msgTable.StrRead }
+			else { $msgTable.StrWrite } } } | `
+		Out-GridView -PassThru -Title $msgTable.StrGrpSelectionTitle
+	if ( $selectedGroups.Count -eq 0 )
+	{
+		$logText = "$searchWord $( $msgTable.LogAborted )"
+		Write-Host $msgTable.StrAborted
+	}
+	else
+	{
+		$selectedGroups | Sort-Object Name | ForEach-Object {
+			[array]$Users = Get-ADGroupMember -Identity $_.Name
+			if ( $Users.Count -eq 0 ) { $msgTable.StrNoUsers }
+			else { [void] $list.Add( [pscustomobject]@{ "Name" = $_.Name; "Users" = $Users.Name } ) }
+		}
+		$listOutput = $list | ForEach-Object { "$( $msgTable.StrGrpName ) $( $_.Name )`n$( $_.Users | Sort-Object | ForEach-Object { "`t$_`n" } )" }
+		$listOutput
+		$logText = "$searchWord $( $selectedGroups.Count ) $( $msgTable.LogSelectedCount ) `r`n`t$( WriteOutput -Output $listOutput )"
+	}
+}
 
-Get-ADGroupMember -Identity $grpName | Foreach-Object { $members += "$_.ObjectClass`t$_.Name`r`n" }
-
-WriteOutput -Output "Grupp $grpName :`r`n$members"
-WriteLog -LogText "$grpName`r`n`t$outputFile" | Out-Null
+WriteLog -LogText $logText | Out-Null
 EndScript
