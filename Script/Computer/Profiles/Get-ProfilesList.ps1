@@ -9,7 +9,7 @@ Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 $ComputerName = $args[2]
 
-$profiles = Invoke-Command -ComputerName $ComputerName -Scriptblock `
+[array]$profiles = Invoke-Command -ComputerName $ComputerName -Scriptblock `
 {
 	$HKLMprofile = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\"
 	$keys = Get-ChildItem $HKLMprofile -Name -Recurse -Include 'S-1-5-21-*'
@@ -18,14 +18,18 @@ $profiles = Invoke-Command -ComputerName $ComputerName -Scriptblock `
 		$key = Join-Path -Path $HKLMprofile -ChildPath $key
 		@{ p = ( Get-ItemProperty $key ).ProfileImagePath ; t = ( Get-Item ( Get-ItemProperty $key ).ProfileImagePath ).CreationTime }
 	}
-}
-
-$profiles | Select-Object @{ Name = $msgTable.StrProfLoc; Expression = { $_.p } }, `
-	@{ Name = $msgTable.StrUser; Expression = { try { ( Get-ADUser ( $_.p -split "\\" )[-1] ).Name } catch { WriteErrorLog -LogText $_ } } }, `
+} | Select-Object @{ Name = $msgTable.StrUser; Expression = { try { ( Get-ADUser ( $_.p -split "\\" )[-1] ).Name } catch { WriteErrorLog -LogText $_ } } }, `
+	@{ Name = $msgTable.StrProfLoc; Expression = { $_.p } }, `
 	@{ Name = $msgTable.StrAge; Expression = { ( [DateTime]::Now - $_.t ).Days } } | `
-	Sort-Object ( $msgTable.StrAge ) -Descending | Format-Table -AutoSize
+	Sort-Object @{ Expression = { $_.$( $msgTable.StrAge ) }; Ascending = $false }, @{ Expression = { $_.$( $msgTable.StrUser ) }; Ascending = $true } | Format-Table -AutoSize
 
-$outputFile = WriteOutput -Output $profiles
+if ( 0 -eq $profiles.Count )
+{ $output = $msgTable.LogNoProfiles }
+else
+{ $output = ( $profiles | Out-String ).Trim() }
+
+$output | Out-Host
+$outputFile = WriteOutput -Output "$( $msgTable.StrCompName ) $ComputerName`n$output"
 
 WriteLog -LogText "$ComputerName > $( $profiles.Count )`r`n`t$outputFile" | Out-Null
 EndScript
