@@ -8,8 +8,16 @@ Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 $Destination = Read-Host $msgTable.QIP
 
-$Unit = nslookup $Destination
-$Unit | Out-Host
+try
+{
+	$Response = Resolve-DnsName -Name $Destination -Type A_AAAA -ErrorAction Stop
+	$Device = ( $Response.NameHost -split "\w" )[0].ToUpper()
+}
+catch
+{
+	$Device = $msgTable.NoDevice
+}
 
-WriteLog -LogText "$Destination > $Unit" | Out-Null
+Write-Host $Device
+WriteLog -LogText "$Destination > $Device" | Out-Null
 EndScript
