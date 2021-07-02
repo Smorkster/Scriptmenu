@@ -1,11 +1,17 @@
 ConvertFrom-StringData @'
-StrIsInstalled = Java är installerat
-StrIsInstalledLog = installerat
-StrIsNotInstalled = Java är inte installerat
-StrIsNotInstalledLog = inte installerat
+CodeDepPropName = OrgAcc
+ErrNoConnect = Kunde inte ansluta till datorn
+LogIsInstalled = installerad
+LogIsInstalledSysman = medlem i installationsgrupp i SysMan
+LogIsNoInstalled = inte installerad
+LogIsNotInstalledSysman = inte medlem i installationsgrupp i SysMan
+LogNoOtherComp = Inga datorer
+LogOtherComp = Andra datorer samma kostnadsställe
 QListOtherComp = Visa datorer på samma kostnadsställe med Java installerat? (Y/N)
-StrOtherCompLog = Andra datorer samma kostnadsställe
-CodeDepPropName = sllEkKost
+StrIsInstalled = Java är installerat
+StrIsNotInstalled = Java är inte installerat
 StrOtherComp = Datorer med Java installerat på kostnadsställe
-StrNoOtherComp = Inga datorer
+StrTitleInstalled = Installerat på datorn
+StrTitleScript = Kontrollerar ifall Java är installerat på
+StrTitleSysman = Installerat enligt SysMan
 '@
