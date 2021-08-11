@@ -1,17 +1,11 @@
-# A module for functions operating at the console
-# Use this to import module:
-# Import-Module "$( $args[0] )\Modules\ConsoleOps.psm1" -Force
+<#
+.Synopsis A module for functions operating at the console
+.Description Use this to import module: Import-Module "$( $args[0] )\Modules\ConsoleOps.psm1" -Force -ArgumentList $args[1]
+.State Prod
+.Author Smorkster (smorkster)
+#>
 
 param ( $culture = "sv-SE" )
-#####################################################
-# Initiates sleep with a progressbar and defined text
-function StartWait
-{
-	param( $SecondsToWait, $MessageText )
-	$MessageText = "$( $IntmsgTable.StartWait1 ) $SecondsToWait $( $IntmsgTable.StartWait2 ) $MessageText"
-	1..$SecondsToWait | foreach { Write-Progress -Activity $MessageText -PercentComplete ( ( $_ / $SecondsToWait ) * 100 ); Start-Sleep 1 }
-	Write-Progress -Activity $MessageText -Completed
-}
 
 ################################################################
 # Reads input from the console. The data is pasted with Ctrl + V
@@ -19,6 +13,7 @@ function StartWait
 function GetConsolePasteInput
 {
 	param ( [switch] $Folders )
+
 	$Quit = New-Object -ComObject wscript.shell
 
 	$Users1 = @()
@@ -44,7 +39,29 @@ function GetConsolePasteInput
 	return $Users2
 }
 
+#####################################################
+# Initiates sleep with a progressbar and defined text
+function StartWait
+{
+	param ( $SecondsToWait, $MessageText )
+
+	$MessageText = "$( $IntmsgTable.StartWait1 ) $SecondsToWait $( $IntmsgTable.StartWait2 ) $MessageText"
+	1..$SecondsToWait | ForEach-Object { Write-Progress -Activity $MessageText -PercentComplete ( ( $_ / $SecondsToWait ) * 100 ); Start-Sleep 1 }
+	Write-Progress -Activity $MessageText -Completed
+}
+
+##########################################
+# Use speech synthesizer to play a message
+function TextToSpeech
+{
+	param ( $Text )
+
+	$Voice = New-Object -TypeName System.Speech.Synthesis.SpeechSynthesizer
+	$Voice.Speak( $Text )
+}
+
+Add-Type -AssemblyName System.Speech
 $RootDir = ( Get-Item $PSCommandPath ).Directory.Parent.FullName
-Import-LocalizedData -BindingVariable IntmsgTable -UICulture $culture -FileName "$( ( $PSCommandPath.Split( "\" ) | select -Last 1 ).Split( "." )[0] ).psd1" -BaseDirectory "$RootDir\Localization"
+Import-LocalizedData -BindingVariable IntmsgTable -UICulture $culture -FileName "$( ( $PSCommandPath.Split( "\" ) | Select-Object -Last 1 ).Split( "." )[0] ).psd1" -BaseDirectory "$RootDir\Localization\$culture\Modules"
 
 Export-ModuleMember -Function *

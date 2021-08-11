@@ -95,7 +95,7 @@ Applications to be used by scripts are placed in the *Apps*-folder
 <br>
 
 ## Localization
-The FileOps module (see below) has functionality for embedding localization in scripts. Localization means that scripts can have text strings depending on the language specified for the scriptmenu (in SDGUI.ps1). That is, if the language should be swedish, culture will be set as "sv-SE". To see available cultures, run this code:
+The FileOps-module (see below) has functionality for embedding localization in scripts. Localization means that scripts can have text strings depending on the language specified for the scriptmenu (in SDGUI.ps1). That is, if the language should be swedish, culture will be set as "sv-SE". To see available cultures, run this code:
 
     [System.Globalization.CultureInfo]::GetCultures( "AllCultures" )
 
@@ -112,7 +112,7 @@ Scripts that use localization MUST have its localization-file placed as follows:
 Example:
 If the script file "Test.ps1" is located in Script\Computer, and uses swedish for the textstring, the file is located at:
 
-`Localization\sv-SE\Computer\Test.psd1`
+`Localization\sv-SE\Script\Computer\Test.psd1`
 
 The filecontent **MUST** start with:
 
@@ -182,7 +182,7 @@ Is imported with:
 This module is the one most used, since it contains functions for handling files for input/output/log.
 The module also loads any localization file created for scripts. If there is a psd1-file with the same name and under the same folder structure as the calling script, the module will load the file and export the data in a hashtable named $msgTable. From this, scripts can retrieve the text strings.
 
-#### Function *WriteLog*
+#### Function *WriteLog* **[Deprecated]**
 Writes to logfile for operations in scripts. It writes to a file with path based on year, month and with the same name as the script that is calling.
 Each line is preceded with default logdata *"2020-08-01 00:00 Admin1 [Domain] => "* followed by logtext from script.
 
@@ -190,11 +190,32 @@ Each line is preceded with default logdata *"2020-08-01 00:00 Admin1 [Domain] =>
   * LogText [string] - Text to be written to log
 
 ##### Examples
-Function call: `WriteLog -LogText "Comp1 1.8"`
-
+Function call: `WriteLog -LogText "Comp1 1.8"`<br>
 Written text: *2020-08-01 12:34 Admin1 [Domain] => Comp1 1.8*
+Returns filepath: *G:\Scriptmenu\Log\2020\08\Get-InstalledJava - log.txt*
 
-Filename: *Log\2020\08\Get-InstalledJava - log.txt*
+#### Function *WriteLogTest*
+Writes to log file for the calling script. This must always be used script, to enable seeing how scripts are used. The logging is supplemented by the module with date, time and username and is formatted into a Json-string.
+
+##### Parameters
+  * Text [**string**] [**Required**] - Text that describes what is done in the script
+  * UserInput [**string**] [**Required**] - What are the procedures for running the script
+  * Success [**bool**] [**Required**] - Indicate if the operation was successful or not
+  * ErrorLogHash [**hashtable**] - The hashtable returned from *WriteErrorlogTest*. This contains the path for the error log and the logging time for the error log
+  * OutputPath [**string**] - Path of output file written at runtime
+
+##### Returns
+File path
+
+##### Examples
+Function call: `WriteLogTest -Text "Changed user account" -UserInput "ABCD" -Success $ true`<br>
+Returns filepath: *G:\ScriptMenu\Logs\2021\01\ScriptName - log.txt*
+
+Function call: `WriteLogTest -Text "Changed user account" -UserInput "ABCD" -Success $false -ErrorLogHash $hash`<br>
+Returns filepath: *G:\Scriptmenu\Logs\2021\01\ScriptName - log.txt*
+
+Function call: `WriteLogTest -Text "Modified user account" -UserInput "ABCD" -Success $false -OutputPath`<br>
+Returns filepath: *G:\Scriptmenu\Logs\2021\01\ScriptName - log.txt*
 
 #### Function *GetUserInput*
 Creates a file in the *Input*-folder to which the user can enter data for the script. The file will have a default text at the top, defined by the calling script. When the function is called, Notepad will be opened, and the script will continue when Notepad is closed. Function then returns the filecontent, with the defined default text excluded.
@@ -208,9 +229,9 @@ The inputfile is created, if it does not exist, in a folder with the users name 
 The text entered in the textfile, with "default text" excluded.
 
 ##### Examples
-Function call: `GetUserInput -DefaultText "List usernames"`
-
-Filename: *Input\Admin1\Get-Users.txt*
+Function call: `GetUserInput -DefaultText "List usernames"`<br>
+Filepath for input: *G:\Scriptmenu\Input\Admin1\Get-Users.txt*<br>
+Returns: "ABCD"
 
 #### Function *WriteOutput*
 Writes outputtext from script. Usable for when writing output that gets to long for a consolewindow, the output is to long for logfile or if output is to be saved for tracing backlog.
@@ -225,21 +246,17 @@ Writes outputtext from script. Usable for when writing output that gets to long 
 Full filepath for the outputfile
 
 ##### Examples
-Function call: `WriteOutput -Output "List usernames"`
+Function call: `WriteOutput -Output "List usernames"`<br>
+Returns filepath: *G:\Scriptmenu\Output\Admin1\Get-InstalledJava 2020-08-01 12.34.56.txt*
 
-Filename: *Output\Admin1\Get-InstalledJava 2020-08-01 12.34.56.txt*
+Function call: `WriteOutput -Output "Users with ..." -FileNameAddition "Java users"`<br>
+Return filepath: *G:\Scriptmenu\Output\Admin1\Java users Get-InstalledJava 2020-08-01 12.34.56.txt*
 
-Function call: `WriteOutput -Output "Users with ..." -FileNameAddition "Java users"`
+Function call: `WriteOutput -Output "Users with ..." -FileExtension "csv"`<br>
+Returns filepath: *G:\Scriptmenu\Output\Admin1\Get-InstalledJava 2020-08-01 12.34.56.csv*
 
-Filename: *Output\Admin1\Java users Get-InstalledJava 2020-08-01 12.34.56.txt*
-
-Function call: `WriteOutput -Output "Users with ..." -FileExtension "csv"`
-
-Filename: *Output\Admin1\Get-InstalledJava 2020-08-01 12.34.56.csv*
-
-Function call: `WriteOutput -Output $topList -Scoreboard -FileExtension "csv"`
-
-Filename: *Output\Scoreboard\Get-InstalledJava 2020-08-01 12.34.56.csv*
+Function call: `WriteOutput -Output $topList -Scoreboard -FileExtension "csv"`<br>
+Returns filepath: *G:\Scriptmenu\Output\Scoreboard\Get-InstalledJava 2020-08-01 12.34.56.csv*
 
 
 #### Function *ShowMessageBox*
@@ -255,7 +272,8 @@ Shows a messagebox
 Which button in the messagebox that was clicked.
 
 ##### Examples
-Function call: `ShowMessageBox -Text "Message" -Title "Messagetitle" -Button "Cancel" -Icon "Stop"`
+Function call: `ShowMessageBox -Text "Message" -Title "Messagetitle" -Button "OKCancel" -Icon "Stop"`
+Returns: OK
 
 #### Function *EndScript*
 Writes to scriptconsole that the script is finished and the consolewindow can be closed.
@@ -263,7 +281,7 @@ Writes to scriptconsole that the script is finished and the consolewindow can be
 ##### Examples
 Function call: `EndScript`
 
-#### Function *WriteErrorlog*
+#### Function *WriteErrorlog* [**Deprecated**]
 Writes errors to an errorlog. The filename will be formated with year, month, scriptname and date.
 
 ##### Parameters
@@ -273,9 +291,28 @@ Writes errors to an errorlog. The filename will be formated with year, month, sc
 Filepath to errorlog-file.
 
 ##### Examples
-Function call: `WriteErrorLog`
+Function call: `WriteErrorLog -LogText "Error"`<br>
+Filename: *G:\Scriptmenu\ErrorLogs\2020\08\Get-InstalledJava - Errorlog 20200801123456.txt*
 
-Filename: *ErrorLogs\2020\08\Get-InstalledJava - Errorlog 20200801123456.txt*
+#### Function *WriteErrorLogTest*
+Writes to the error log file for the calling script. This should be used as much as possible in scripts to enable reading and correct any errors or handle errors correctly. The logging is supplemented by the module with date, time and username and formatted into a Json string.
+
+##### Parameters
+  * LogText [**string**] [**Required**] - Error message or custom error text from the calling script
+  * UserInput [**string**] [**Required**] - Specified by the user when executing the script
+  * Severity [**string**] [**Required**] - Category of error that have occurred. This can be any of the following:
+    * UserInputFail - Error occurred due to what the administrator specified
+    * ScriptLogicFail - Error occurred due to error in the code in the script
+    * ConnectionFail - Connection to another computer or server failed
+    * PermissionFail - The administrator does not have the right authorization
+    * OtherFail - Other, undefined error
+
+##### Returns
+File path of the errorlog
+
+##### Example
+Function call: `WriteErrorlogTest -LogText "User Account Error" -UserInput "ABCD" -Severity "ScriptLogicFail"`<br>
+Returns filepath: *G:\Scriptmenu\ErrorLogs\2021\01\ScriptName - ErrorLog.txt"
 
 <br>
 

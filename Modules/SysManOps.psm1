@@ -1,6 +1,11 @@
-# A module for functions operating with SysMan 
-# Use this to import module:
-# Import-Module "$( $args[0] )\Modules\SysManOps.psm1" -Force
+<#
+.Synopsis A module for functions operating with SysMan
+.Description Use this to import module: Import-Module "$( $args[0] )\Modules\SysManOps.psm1" -Force -ArgumentList $args[1]
+.State Prod
+.Author Smorkster (smorkster)
+#>
+
+param ( $culture = "sv-SE" )
 
 ########################################################################
 # Changes installed version of a deployed application for given computer
@@ -8,8 +13,8 @@ function ChangeInstallation
 {
 	param( $ComputerName, $OldVersion, $NewVersion )
 
-	$Application = ( Get-ADObject -LDAPFilter "(&(objectclass=group)(name=$OldVersion))" | select -ExpandProperty name ).Replace( "_I", "" )
-	$NewApplication = ( Get-ADObject -LDAPFilter "(&(objectclass=group)(name=$NewVersion))" | select -ExpandProperty name ).Replace( "_I", "" )
+	$Application = ( Get-ADObject -LDAPFilter "(&(objectclass=group)(name=$OldVersion))" | Select-Object -ExpandProperty name ).Replace( "_I", "" )
+	$NewApplication = ( Get-ADObject -LDAPFilter "(&(objectclass=group)(name=$NewVersion))" | Select-Object -ExpandProperty name ).Replace( "_I", "" )
 
 	$SystemID = ( ( Invoke-WebRequest -Uri "$( $ServerUrl )/api/System?name=$( $Application )" -UseDefaultCredentials -ContentType "application/json" ) | ConvertFrom-Json).ID
 	$NewSystemID = ( ( Invoke-WebRequest -Uri "$( $ServerUrl )/api/System?name=$( $NewApplication )" -UseDefaultCredentials -ContentType "application/json" ) | ConvertFrom-Json).ID
@@ -46,7 +51,7 @@ function GetSysManUserId
 $nudate = Get-Date -Format "yyyy-MM-dd HH:mm"
 $RootDir = ( Get-Item $PSCommandPath ).Directory.Parent.FullName
 $CallingScript = ( Get-Item $MyInvocation.PSCommandPath ).BaseName
-Import-LocalizedData -BindingVariable IntmsgTable -UICulture $culture -FileName "$( ( $PSCommandPath.Split( "\" ) | select -Last 1 ).Split( "." )[0] ).psd1" -BaseDirectory "$RootDir\Localization"
+Import-LocalizedData -BindingVariable IntmsgTable -UICulture $culture -FileName "$( ( $PSCommandPath.Split( "\" ) | Select-Object -Last 1 ).Split( "." )[0] ).psd1" -BaseDirectory "$RootDir\Localization\$culture\Modules"
 $ServerUrl = $IntmsgTable.SysManServerUrl
 
 Export-ModuleMember -Function *

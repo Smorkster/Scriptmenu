@@ -1,8 +1,12 @@
-﻿# A module for functions creating and working with GUI's
-# Use this to import module:
-# Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force
+﻿<#
+.Synopsis A module for functions creating and working with GUI's
+.Description Use this to import module: Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -ArgumentList $args[1]
+.State Prod
+.Author Smorkster (smorkster)
+#>
 
 param ( $culture = "sv-SE" )
+
 function CreateWindow
 {
 	<#
@@ -47,6 +51,7 @@ function CreateWindowExt
 		The hashtable contains these collections that can be used inside scripts:
 		Vars - An array with the names of each named control
 		Data - Hashtable to save variables, collections or objects inside scripts
+		Jobs - Hashtable to store PSJobs
 		Output - A string that can be used for output data
 		DC - Hashtable with each bound datacontext for the named controls listed properties. This is defined from $ControlsToBind when calling the function
 	.Parameter ControlsToBind
@@ -69,6 +74,7 @@ function CreateWindowExt
 	$syncHash = [hashtable]::Synchronized( @{} )
 	$syncHash.Data = [hashtable]( @{} )
 	$syncHash.DC = [hashtable]( @{} )
+	$syncHash.Jobs = [hashtable]( @{} )
 	$syncHash.Output = ""
 	$syncHash.Window, $syncHash.Vars = CreateWindow
 
@@ -94,7 +100,7 @@ function CreateWindowExt
 			# Connect the bindings
 			for ( $i = 0; $i -lt $control.Props.Count; $i++ )
 			{
-				$p = "$( $control.Props[$i].PropName.TrimEnd( "Property" ) )Property"
+				$p = "$( $control.Props[$i].PropName -replace "Property" )Property"
 				try
 				{
 					[void][System.Windows.Data.BindingOperations]::SetBinding( $syncHash.$n, $( $syncHash.$n.DependencyObjectType.SystemType )::$p, $Bindings.$n[ $i ] )
@@ -114,8 +120,6 @@ function CreateWindowExt
 	return $syncHash
 }
 
-########################################################
-# Show a small window with text that automaticaly closes
 function ShowSplash
 {
 	<#
@@ -127,17 +131,23 @@ function ShowSplash
 		How long the text should be shown. Defaults is 1.5 seconds
 	.Parameter BorderColor
 		The color of the border of the window
+	.Parameter SelfAdmin
+		The script calling will administrate opening and closing
 	#>
-	param ( [string] $Text, [double] $Duration = 1.5, [string] $BorderColor = "Green" )
+	param ( [string] $Text, [double] $Duration = 1.5, [string] $BorderColor = "Green", [switch] $SelfAdmin )
 	$splash = [System.Windows.Window]@{ WindowStartupLocation = "CenterScreen" ; WindowStyle = "None"; ResizeMode = "NoResize"; SizeToContent = "WidthAndHeight" }
 	$splash.AddChild( [System.Windows.Controls.Label]@{ Content = $Text ; BorderBrush = $BorderColor; BorderThickness = 5 } )
-	$splash.Show()
-	Start-Sleep -Seconds $Duration
-	$splash.Close()
+	if ( $SelfAdmin ) { return $splash }
+	else
+	{
+		$splash.Show()
+		Start-Sleep -Seconds $Duration
+		$splash.Close()
+	}
 }
 
 $RootDir = ( Get-Item $PSCommandPath ).Directory.Parent.FullName
-Import-LocalizedData -BindingVariable IntmsgTable -UICulture $culture -FileName "$( ( $PSCommandPath.Split( "\" ) | Select-Object -Last 1 ).Split( "." )[0] ).psd1" -BaseDirectory "$RootDir\Localization"
+Import-LocalizedData -BindingVariable IntmsgTable -UICulture $culture -FileName "$( ( $PSCommandPath.Split( "\" ) | Select-Object -Last 1 ).Split( "." )[0] ).psd1" -BaseDirectory "$RootDir\Localization\$culture\Modules"
 
 try { $CallingScript = ( Get-Item $MyInvocation.PSCommandPath ) } catch {}
 try { $Host.UI.RawUI.WindowTitle = "$( $IntmsgTable.ConsoleWinTitlePrefix ): $( ( ( Get-Item $MyInvocation.PSCommandPath ).FullName -split "Script" )[1] )" } catch {}
