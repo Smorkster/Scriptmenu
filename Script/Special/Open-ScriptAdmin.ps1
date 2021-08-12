@@ -291,7 +291,7 @@ $syncHash.btnOpenErrorLog.Add_Click( {
 } )
 $syncHash.btnReadErrorLogs.Add_Click( {
 	$splash = ShowSplash -Text $syncHash.Data.msgTable.StrSplReadErrorLogs -SelfAdmin
-	Get-ChildItem "$BaseDir\ErrorLogs" -Recurse -File | ForEach-Object {
+	Get-ChildItem "$BaseDir\ErrorLogs" -Recurse -File -Filter "*.json" | ForEach-Object {
 		$n = $_.BaseName -replace " - ErrorLog"
 		if ( -not ( $syncHash.Data.ErrorLogs.Keys -contains $n ) )
 		{ $syncHash.Data.ErrorLogs.Add( $n, [System.Collections.ArrayList]::new() ) | Out-Null }
@@ -302,7 +302,7 @@ $syncHash.btnReadErrorLogs.Add_Click( {
 } )
 $syncHash.btnReadLogs.Add_Click( {
 	$splash = ShowSplash -Text $syncHash.Data.msgTable.StrSplReadLogs -SelfAdmin
-	Get-ChildItem "$BaseDir\Logs" -Recurse -File | ForEach-Object {
+	Get-ChildItem "$BaseDir\Logs" -Recurse -File -Filter "*.json" | ForEach-Object {
 		$n = $_.BaseName -replace " - Log"
 		if ( -not ( $syncHash.Data.Logs.Keys -contains $n ) )
 		{ $syncHash.Data.Logs.Add( $n, [System.Collections.ArrayList]::new() ) | Out-Null }

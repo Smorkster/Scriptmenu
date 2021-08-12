@@ -170,7 +170,7 @@ function WriteLogTest
 	$log = [Log]::new( $Text, $UserInput, $Success )
 	if ( $ErrorLogHash ) { $log.ErrorLogFile = $ErrorLogHash.ErrorLogPath ; $log.ErrorLogDate = $ErrorLogHash.ErrorLogDate }
 	if ( $OutputPath ) { $log.OutputFile = $OutputPath }
-	$LogFilePath = Get-LogFilePath -TopFolder "Logs" -FileName "$( $CallingScript.BaseName ) - log.txt"
+	$LogFilePath = Get-LogFilePath -TopFolder "Logs" -FileName "$( $CallingScript.BaseName ) - log.json"
 	Add-Content -Path $LogFilePath -Value ( $log.ToJson() )
 	return $LogFilePath
 }
@@ -198,7 +198,7 @@ function WriteErrorlogTest
 	param ( [parameter( ValueFromPipeline = $true )] $LogText, $UserInput, $Severity )
 
 	$OutputEncoding = ( New-Object System.Text.UnicodeEncoding $False, $False ).psobject.BaseObject
-	$ErrorLogFilePath = Get-LogFilePath -TopFolder "ErrorLogs" -FileName "$( $CallingScript.BaseName ) - Errorlog.txt"
+	$ErrorLogFilePath = Get-LogFilePath -TopFolder "ErrorLogs" -FileName "$( $CallingScript.BaseName ) - Errorlog.json"
 	$el = [ErrorLog]::new( $LogText, $UserInput, $Severity )
 	Add-Content -Path $ErrorLogFilePath -Value $el.ToJson()
 	return @{ ErrorlogPath = $ErrorLogFilePath ; ErrorlogDate = $el.LogDate }
