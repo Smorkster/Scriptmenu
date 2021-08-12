@@ -57,28 +57,6 @@ function AddReportTool
 	[void] $tc.AddChild( $ti )
 }
 
-####################################################
-# Check if user is part of admingroup for Scriptmenu
-function CheckForAdmin
-{
-	if ( $msgTable.AdmList -match $env:USERNAME )
-	{
-		$Admins.Visibility = [System.Windows.Visibility]::Visible
-		$btnCheckForUpdates.Add_Click( {
-			$ProgramRunspace = [System.Management.Automation.PowerShell]::Create() # Create new runspace
-			if ( ( Get-Item $PSScriptRoot ).Parent.Name -eq "Development" )
-			{ $script = "Update-Scripts.ps1" }
-			else
-			{ $script = "Development\Update-Scripts.ps1" }
-			$scriptArguments = @( "$( ( Get-Item $PSScriptRoot ).Parent.FullName )\$script", ( Get-Item $PSScriptRoot ).Parent.FullName )
-			[void]$ProgramRunspace.AddScript( { param( $arg ); Start-Process powershell -WindowStyle Hidden -ArgumentList $arg } ).AddArgument( $scriptArguments )
-			$run = $ProgramRunspace.BeginInvoke() # Run runspace
-			do { Start-Sleep -Milliseconds 50 } until ( $run.IsCompleted )
-			$ProgramRunspace.Dispose()
-		} )
-	}
-}
-
 #######################################################################
 # Create controls to hold computerinfo and buttons for computer-scripts
 function CreateComputerInfo
@@ -346,7 +324,6 @@ function FulHack
 	$tc.Items.Insert( ( $tc.Items.Count ), $tItem )
 	$Window.Add_ContentRendered( { $Window.Top = 50; $Window.Activate() } )
 	Set-Variable -Name tcComputer_Default -Value ( Get-Variable "tc$( $msgTable.ComputerFolder )" ).Value -Scope script
-	#try { Set-Variable -Name tcO365_Default -Value ( Get-Variable "tc$( $msgTable.O365Folder )" ).Value -Scope script -ErrorAction SilentlyContinue } catch {}
 }
 
 #########################################
@@ -358,7 +335,7 @@ function GetFiles
 	Get-ChildItem -File -Filter "*ps1" -Path $dirPath.FullName | Where-Object { $_.Name -ne ( Get-Item $PSCommandPath ).Name } | `
 		Select-Object -Property @{ Name = "Name"; Expression = { $_.Name } }, `
 			@{ Name = "Path"; Expression = { $_.FullName } }, `
-			@{ Name = "Group"; Expression = { ( $_.Name -split "-" )[0] } }, `
+			@{ Name = "Group"; Expression = { ( $_.BaseName -split "-" )[0] } }, `
 			@{ Name = "Synopsis"; Expression = { & $Get "Synopsis" } }, `
 			@{ Name = "Description"; Expression = { & $Get "Description" } }, `
 			@{ Name = "Requires"; Expression = { ( & $Get "Requires" ) -split "\W" | Where-Object { $_ } } }, `
@@ -532,16 +509,18 @@ function StartWinRMOnRemoteComputer
 ############################## Script start
 Add-Type -AssemblyName PresentationFramework
 $culture = "sv-SE"
-$BaseDir = ( ( Get-Item $PSCommandPath ).Directory.Parent.FullName -split "\\" | Select-Object -SkipLast 1 ) -join "\"
+$BaseDir = ( Get-Item $PSCommandPath ).Directory.Parent.FullName
 if ( ( [System.Globalization.CultureInfo]::GetCultures( "AllCultures" ) ).Name -contains $culture ) { $LocalizeCulture = $culture }
 else
 {
 	[System.Windows.MessageBox]::Show( "'$culture' is not a valid localization language.`nWill use default 'sv-SE'" )
 	$LocalizeCulture = "sv-SE"
 }
-Import-Module "$( ( Get-Item $PSCommandPath ).Directory.Parent.FullName )\Modules\FileOps.psm1" -Force -ArgumentList $LocalizeCulture
-Import-Module "$( ( Get-Item $PSCommandPath ).Directory.Parent.FullName )\Modules\GUIOps.psm1" -Force -ArgumentList $LocalizeCulture
+Import-Module "$BaseDir\Modules\FileOps.psm1" -Force -ArgumentList $LocalizeCulture
+Import-Module "$BaseDir\Modules\GUIOps.psm1" -Force -ArgumentList $LocalizeCulture
 
+$splash = ShowSplash -Text $msgTable.StrSplash -SelfAdmin
+$splash.Show()
 $userGroups = ( Get-ADUser $env:USERNAME -Properties memberof ).memberof | ForEach-Object { ( ( $_ -split "=" )[1] -split "," )[0] }
 $Script:ComputerObj = @{}
 $Window, $vars = CreateWindow
@@ -552,9 +531,8 @@ $vars | ForEach-Object { Set-Variable -Name $_ -Value $Window.FindName( $_ ) }
 Push-Location ( Get-Item $PSCommandPath ).Directory.FullName
 $MainContent.AddChild( ( GetFolderItems "" ) )
 FulHack
-CheckForAdmin
 AddReportTool
-$Window.Add_Loaded( { $Window.Activate() } )
+$Window.Add_Loaded( { $Window.Activate(); $splash.Close() } )
 
 [void] $Window.ShowDialog()
 Pop-Location
