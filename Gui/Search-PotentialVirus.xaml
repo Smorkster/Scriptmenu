@@ -38,11 +38,6 @@
                             </ControlTemplate>
                         </Setter.Value>
                     </Setter>
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding Name}" Value="Files matching filter">
-                            <Setter Property="Background" Value="Red"/>
-                        </DataTrigger>
-                    </Style.Triggers>
                 </Style>
             </GroupStyle.ContainerStyle>
         </GroupStyle>
