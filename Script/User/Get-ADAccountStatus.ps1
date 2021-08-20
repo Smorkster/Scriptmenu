@@ -17,10 +17,8 @@ function LookUpUser
 	{
 		$LookedUpUser = Get-ADUser $syncHash.tbID.Text –Properties pwdlastset, enabled, lockedout, description, accountExpires, msDS-UserPasswordExpiryTimeComputed | Select-Object Name, pwdlastset, enabled, lockedout, description, accountExpires, @{ Name = "ExpiryDate"; Expression = { [datetime]::FromFileTime( $_."msDS-UserPasswordExpiryTimeComputed" ) } }
 	}
-	catch
-	{
-		WriteErrorLog -LogText "$( $syncHash.tbID.Text ) - $( $msgTable.ErrLogExtendPassword )`r`n`t$( $_.Exception.Message )"
-	}
+	catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException] { }
+	catch { WriteErrorLogTest -LogText $_.Exception.Message -UserInput $syncHash.tbID.Text -Severity "OtherFail" }
 
 	if ( $null -ne $LookedUpUser )
 	{
@@ -94,7 +92,7 @@ function LookUpUser
 				}
 			}
 		}
-		WriteLog -LogText "$( $syncHash.tbID.Text.ToUpper() ) LookUp, status: $status" | Out-Null
+		WriteLogTest -Text "LookUp, status: $status" -UserInput $syncHash.tbID.Text -Success $true -ErrorLogHash $eh | Out-Null
 	}
 	else
 	{
@@ -110,15 +108,18 @@ function Extend
 	{
 		Set-ADUser -Identity $syncHash.tbID.Text -Replace @{ pwdLastSet = 0 }
 		Set-ADUser -Identity $syncHash.tbID.Text -Replace @{ pwdLastSet = -1 }
-		WriteLog -LogText "$( $syncHash.tbID.Text.ToUpper() ) - $( $msgTable.WPasswordExtended )" | Out-Null
+		WriteLogTest -Text $msgTable.WPasswordExtended -UserInput $syncHash.tbID.Text -Success $true | Out-Null
 		Print -Text $msgTable.WLPasswordExtended
 	}
 	catch
 	{
-		$errorlog = WriteErrorLog -LogText "$( $syncHash.tbID.Text ) - $( $msgTable.ErrLogExtendPassword )`r`n`t$( $_.Exception.Message )"
-		WriteLog -LogText "$( $syncHash.tbID.Text.ToUpper() ) - $( $msgTable.ErrExtendPassword )`r`n`tErrorlog: $errorlog" | Out-Null
+		if ( $_.Exception.Message -eq "Insufficient access rights to perform the operation" ) { $severity = "PermissionFail" }
+		else { $severity = "OtherFail" }
+
+		$errorlog = WriteErrorLogTest -LogText "$( $msgTable.ErrLogExtendPassword )`n`n$_" -UserInput $syncHash.tbID.Text -Severity $severity
+		WriteLogTest -Text $msgTable.ErrExtendPassword -UserInput $syncHash.tbID.Text -Success $false -ErrorLogPath $errorlog | Out-Null
 		Print -Text "$( $msgTable.ErrLExtendPassword )`n`n$( $_.Exception.Message )`n`n" -Color "Red"
-		ShowMessageBox -Text $msgTable.ErrMessageExtendPassword -Title "Error!" -Button "OK" -Icon "Error"
+		ShowMessageBox -Text $msgTable.ErrMessageExtendPasswordPermission -Title "Error!" -Button "OK" -Icon "Error"
 	}
 
 	LookUpUser
@@ -131,15 +132,18 @@ function Unlock
 	try
 	{
 		Unlock-ADAccount $syncHash.tbID.Text -Confirm:$false
-		WriteLog -LogText "$( $syncHash.tbID.Text.ToUpper() ) - $( $msgTable.WUnlocked )" | Out-Null
+		WriteLogTest -Text  $msgTable.WUnlocked -UserInput $syncHash.tbID.Text -Success $true | Out-Null
 		Print -Text $msgTable.WLUnlocked
 	}
 	catch
 	{
-		$errorlog = WriteErrorLog -LogText "$( $syncHash.tbID.Text ) - $( $msgTable.ErrLogUnlock )`r`n`t$( $_.Exception.Message )"
-		WriteLog -LogText "$( $syncHash.tbID.Text.ToUpper() ) - $( $msgTable.ErrUnlock )`r`n`tErrorlog: $errorlog" | Out-Null
+		if ( $_.Exception.Message -eq "Insufficient access rights to perform the operation" ) { $severity = "PermissionFail" }
+		else { $severity = "OtherFail" }
+
+		$errorlog = WriteErrorLogTest -LogText "$( $msgTable.ErrLogUnlock )`n`n$_" -UserInput $syncHash.tbID.Text -Severity $severity
+		WriteLog -Text $msgTable.ErrUnlock -UserInput $syncHash.tbID.Text -Success $false -ErrorlogPath $errorlog | Out-Null
 		Print -Text "$( $msgTable.ErrLUnlock )`n`n$( $_.Exception.Message )" -Color "Red"
-		ShowMessageBox -Text $msgTable.ErrMessageUnlock -Title "Error!" -Button "OK" -Icon "Error"
+		ShowMessageBox -Text $msgTable.ErrMessageUnlockPermission -Title "Error!" -Button "OK" -Icon "Error"
 	}
 
 	LookUpUser
@@ -152,15 +156,18 @@ function Enable
 	try
 	{
 		Enable-ADAccount $syncHash.tbID.Text -Confirm:$false
-		WriteLog -LogText "$( $syncHash.tbID.Text.ToUpper() ) > $( $msgTable.WActivate )" | Out-Null
+		WriteLogTest -Text $msgTable.WActivate -UserInput $syncHash.tbID.Text -Success $true | Out-Null
 		Print -Text $msgTable.WLActivate
 	}
 	catch
 	{
-		$errorlog = WriteErrorLog -LogText "$( $syncHash.tbID.Text ) - $( $msgTable.ErrLogActivate )`r`n`tError: $( $_.Exception.Message )"
-		WriteLog -LogText "$( $syncHash.tbID.Text.ToUpper() ) - $( $msgTable.ErrActivate )`r`n`tErrorlog: $errorlog" | Out-Null
-		Print -Text "$( $msgTable.ErrLActivate )`n`n$( $_.Exception.Message )." -Color "Red"
-		ShowMessageBox -Text $msgTable.ErrMessageActivate -Title "Error!" -Button "OK" -Icon "Error"
+		if ( $_.Exception.Message -eq "Insufficient access rights to perform the operation" ) { $severity = "PermissionFail" }
+		else { $severity = "OtherFail" }
+
+		$errorlog = WriteErrorLogTest -LogTex "$( $msgTable.ErrLogActivate )`n`n$_" -UserInput $syncHash.tbID.Text -Severity $severity
+		WriteLogTest -Text $msgTable.ErrActivate -UserInput $syncHash.tbID.Text -Success $false -ErrorlogPath $errorlog | Out-Null
+		Print -Text "$( $msgTable.ErrMessageActivate )`n`n$( $_.Exception.Message )." -Color "Red"
+		ShowMessageBox -Text $msgTable.ErrMessageActivatePermission -Title "Error!" -Button "OK" -Icon "Error"
 	}
 
 	LookUpUser
@@ -182,43 +189,29 @@ function Print
 }
 
 ############################### Script start
-Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -Argumentlist $args[1]
-Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -Argumentlist $args[1]
+Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
+Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -ArgumentList $args[1]
 
 $controls = New-Object System.Collections.ArrayList
-[void]$controls.Add( @{ CName = "Window"
-	Props = @(
-		@{ PropName = "Title"; PropVal = $msgTable.ContentWTitle }
-	) } )
-[void]$controls.Add( @{ CName = "lblID"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentlblID }
-	) } )
-[void]$controls.Add( @{ CName = "btnCancel"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentbtnCancel }
-	) } )
-[void]$controls.Add( @{ CName = "btnExtend"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentbtnExtend }
-	) } )
-[void]$controls.Add( @{ CName = "btnUnlock"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentbtnUnlock }
-	) } )
-[void]$controls.Add( @{ CName = "btnActivate"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentbtnActivate }
-	) } )
+[void]$controls.Add( @{ CName = "btnActivate" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnActivate } ) } )
+[void]$controls.Add( @{ CName = "btnCancel" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnCancel } ) } )
+[void]$controls.Add( @{ CName = "btnExtend" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnExtend } ) } )
+[void]$controls.Add( @{ CName = "btnUnlock" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnUnlock } ) } )
+[void]$controls.Add( @{ CName = "lblID" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblID } ) } )
+[void]$controls.Add( @{ CName = "Window" ; Props = @( @{ PropName = "Title"; PropVal = $msgTable.ContentWindow } ) } )
 
 $syncHash = CreateWindowExt $controls
 
-$syncHash.tbID.Add_TextChanged( { if ( $syncHash.tbID.Text.Length -ge 4 ) { LookUpUser } else { $syncHash.spOutput.Children.Clear() } } )
+$syncHash.tbID.Add_TextChanged( {
+	if ( ( ( $syncHash.tbID.Text.Length -eq 4 ) -or ( $syncHash.tbID.Text -match $msgTable.CodeIdRegEx ) ) -and ( $syncHash.tbID.Text -ne $msgTable.CodeIdMatch ) ) { LookUpUser }
+	else { $syncHash.spOutput.Children.Clear() }
+} )
 $syncHash.btnExtend.Add_Click( { Extend } )
 $syncHash.btnUnlock.Add_Click( { Unlock } )
 $syncHash.btnActivate.Add_Click( { Enable } )
 $syncHash.btnCancel.Add_Click( { $syncHash.spOutput.Children.Clear() ; $syncHash.tbID.Text = "" } )
-$syncHash.Window.Add_ContentRendered( { $syncHash.Window.Top = 80; $syncHash.Window.Activate() } )
+$syncHash.Window.Add_ContentRendered( { $syncHash.Window.Top = 80; $syncHash.Window.Activate() ; $syncHash.tbID.Focus() } )
 
 [void] $syncHash.Window.ShowDialog()
 $syncHash.Window.Close()
+#$global:syncHash = $syncHash
