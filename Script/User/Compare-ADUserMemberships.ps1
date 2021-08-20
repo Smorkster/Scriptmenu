@@ -4,7 +4,7 @@
 .Author Smorkster (smorkster)
 #>
 
-Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -Argumentlist $args[1]
+Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 Write-Host "$( $msgTable.WAlternatives ):`n"
 Write-Host "[1] - $( $msgTable.WAlternative1 )."
@@ -13,13 +13,15 @@ do
 {
 	$Choice = Read-Host "$( $msgTable.QAlternative )"
 }
-until ( ( $Choice -eq 1 ) -or ( $Choice -eq 2 ) )
+until ( $Choice -in 1, 2 )
 
 Write-Host "`n"
 
 $UsersIn = @()
-$Users = @()
+$Users = [System.Collections.ArrayList]::new()
+$InputNotFound = @()
 $AllGroups = @()
+$success = $true
 
 if ( $Choice -eq 1 )
 {
@@ -35,71 +37,73 @@ elseif ( $Choice -eq 2 )
 else
 {
 	Write-Host "$( $msgTable.ErrID )" -ForegroundColor Red
+	$success = $false
 }
 
-if ( $UsersIn.Count -gt 1 )
+$UsersIn | Select-Object -Unique | ForEach-Object {
+	try
+	{
+		$a = Get-ADUser $_
+		$b = ( Get-ADPrincipalGroupMembership -Identity $a | Select-Object -ExpandProperty Name )
+		$Users.Add( [pscustomobject]@{ "User" = $a; "Groups" = $b } )
+	}
+	catch { $InputNotFound += $_ }
+}
+
+if ( $Users.Count -gt 1 )
 {
-	foreach ( $u in $UsersIn )
-	{
-		$user = New-Object -TypeName psobject
-		$user | Add-Member -MemberType NoteProperty -Name Groups -Value ( Get-ADPrincipalGroupMembership -Identity $u | Select-Object -ExpandProperty Name )
-		$user | Add-Member -MemberType NoteProperty -Name UserName -Value $u
-		$Users += $user
-		$AllGroups += $user.Groups
-	}
+	$AllGroups = $Users.Groups | Select-Object -Unique
 
-	$AllGroups = $AllGroups | Sort-Object | Select-Object -Unique
-
-	$groups = @()
-	foreach ( $g in $Allgroups )
+	if ( $AllGroups.Count -gt 0 )
 	{
-		$group = New-Object -TypeName psobject
-		$group | Add-Member -MemberType NoteProperty -Name GroupName -Value $g
-		$group | Add-Member -MemberType NoteProperty -Name Users -Value @()
-		foreach ($u in $users)
+		$groups = @()
+		foreach ( $g in $AllGroups )
 		{
-			if ( $u.Groups -contains $group.Groupname )
+			$group = [pscustomobject]@{ "GroupName" = $g; Users = @() }
+
+			foreach ( $u in $Users )
 			{
-				$group.Users += $u.UserName
+				if ( $u.Groups -contains $group.Groupname )
+				{
+					$group.Users += $u
+				}
 			}
+			$groups += $group
 		}
-		$groups += $group
-	}
 
-	$users | Select-Object UserName
-	$file = @()
-	Write-Host "`n$( $msgTable.WGroups )`n------"
-	foreach ( $g in $groups )
-	{
-		Write-Host "$( $g.GroupName ): " -NoNewline
-		$row = [pscustomobject]@{ "GroupName" = $g.GroupName }
-		if ( $g.Users.Count -eq $users.Count )
+		$file = @()
+		Write-Host "`n$( $msgTable.WGroups )`n------"
+		foreach ( $g in ( $groups.GetEnumerator() | Sort-Object GroupName ) )
 		{
-			if ( $users.Count -eq 2 )
-			{ $members = $msgTable.WBoth }
+			Write-Host "$( $g.GroupName ): " -NoNewline
+			$row = [pscustomobject]@{ "GroupName" = $g.GroupName; "Members" = $null }
+			if ( $g.Users.Count -eq $Users.Count )
+			{
+				if ( $Users.Count -eq 2 )
+				{ $members = $msgTable.WBoth }
+				else
+				{ $members = $msgTable.WAll }
+			}
 			else
-			{ $members = $msgTable.WAll }
+			{
+				$members = ""
+				$g.Users | ForEach-Object { $members += "$( $_.User.Name ) " }
+			}
+			Write-Host $members.Trim()
+			$row.Members = $members.Trim()
+			$file += $row
 		}
-		else
-		{
-			$members = ""
-			$g.Users | ForEach-Object { $members += "$_ " }
-		}
-		Write-Host $members.Trim()
-		Add-Member -InputObject $row -MemberType NoteProperty -Name "Members" -Value $members.Trim()
-		$file += $row
 	}
 
 	if ( $file )
 	{
 		# Output
-		if ( $UsersIn.Count -eq 2 )
-		{ $fna += "$( $UsersIn[0] ), $( $UsersIn[1] )" }
-		else
-		{ $fna += "$( $usersIn.Count.ToString() ) $( $msgTable.WUserCount )" }
+		if ( $UsersIn.Count -eq 2 ) { $fna += "$( $UsersIn[0] ), $( $UsersIn[1] )" }
+		else { $fna += "$( $usersIn.Count.ToString() ) $( $msgTable.WUserCount )" }
+
 		$file = $file | ConvertTo-Csv -NoTypeInformation -Delimiter ';'
 
-		$outputFile = WriteOutput -FileNameAddition $fna -Output $file -FileExtension "csv"
+		$outputFile = WriteOutput -Output $file -FileExtension "csv"
 		Write-Host "`n$( $msgTable.WSummary ) '$outputFile'"
 
 		$logText = "$fna`r`n`t$( $msgTable.WLogOutputTitle ): $outputFile"
@@ -107,8 +111,11 @@ if ( $UsersIn.Count -gt 1 )
 }
 else
 {
-	$logText = $msgTable.ErrToFew
+	Write-Host ( $logText = $msgTable.ErrToFew )
+
+	$success = $false
+	$errorlog = WriteErrorLogTest -LogText $logText -UserInput "$Users `n`n $AllGroups" -Severity "UserInputFail"
 }
 
-WriteLog -LogText $logText | Out-Null
+WriteLogTest -Text $logText -UserInput "$UsersIn" -Success $success -OutputPath $outputFile -ErrorLogHash $errorlog | Out-Null
 EndScript

@@ -10,6 +10,7 @@ WAlternative2 = Compare 2 or more users and / or groups, the ID is specified in 
 WAlternatives = Alternative
 WBoth = both are members
 WGroups = Groups
+WLogOutputTitle = Output
 WSummary = Results written to file
 WUserCount = users
 '@
