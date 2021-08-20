@@ -2,7 +2,6 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
-        Title="SDGUI"
         MinWidth="550"
         SizeToContent="WidthAndHeight"
         Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
@@ -16,7 +15,7 @@
         </Style>
         <Style TargetType="DataGridRow">
             <Style.Triggers>
-                <DataTrigger Binding="{Binding Name}" Value="DontInstall">
+                <DataTrigger Binding="{Binding Name}">
                     <Setter Property="Background" Value="Red"/>
                 </DataTrigger>
             </Style.Triggers>
@@ -27,16 +26,16 @@
                     <ControlTemplate TargetType="GroupBox">
                         <Grid Margin="5">
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
                             <Border Grid.Row="0" BorderThickness="1,1,0,0" CornerRadius="0">
                                 <Border.BorderBrush>
                                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                                         <LinearGradientBrush.GradientStops>
                                             <GradientStopCollection>
-                                                <GradientStop Color="#FF000000" Offset="0.0" />
-                                                <GradientStop Color="#00F0F0F0" Offset="1.1" />
+                                                <GradientStop Color="#FF000000" Offset="0.0"/>
+                                                <GradientStop Color="#00F0F0F0" Offset="1.1"/>
                                             </GradientStopCollection>
                                         </LinearGradientBrush.GradientStops>
                                     </LinearGradientBrush>

@@ -9,7 +9,7 @@
 function AddReportTool
 {
 	$ti = [System.Windows.Controls.TabItem]@{ Header = "$( $msgTable.ContentFeedbackHeader )"; Background = "#FFFF9C9C" }
-	$sp = New-Object System.Windows.Controls.StackPanel
+	$sp = [System.Windows.Controls.StackPanel]@{}
 	$spScript = [System.Windows.Controls.StackPanel]@{ Orientation = "Horizontal" }
 	$spSubject = [System.Windows.Controls.StackPanel]@{ Orientation = "Horizontal" }
 	$cb = [System.Windows.Controls.ComboBox]@{ Height = "25"; Width = "300" }
@@ -55,6 +55,44 @@ function AddReportTool
 	[void] $sp.AddChild( $btnSend )
 	[void] $ti.AddChild( $sp )
 	[void] $tc.AddChild( $ti )
+}
+
+function AddOutputTool
+{
+	$ti = [System.Windows.Controls.TabItem]@{ Header = "$( $msgTable.ContentOutputToolHeader )"; Background = "LightGreen" }
+	$g = [System.Windows.Controls.Grid]@{}
+	$g.RowDefinitions.Add( ( [System.Windows.Controls.RowDefinition]@{ Height = "Auto" } ) )
+	$g.RowDefinitions.Add( ( [System.Windows.Controls.RowDefinition]@{ Height = "Auto" } ) )
+	$padding = [System.Windows.Thickness]::new( 5 )
+	$margin = 5
+	$spB = [System.Windows.Controls.StackPanel]@{ Orientation = "Horizontal" }
+	$b = [System.Windows.Controls.Button]@{ Content = $msgTable.ContentBtnOutputList; Padding = $padding; Margin = $margin }
+	$script:bF = [System.Windows.Controls.Button]@{ Content = $msgTable.ContentBtnOutputOpenFile; Padding = $padding; Margin = $margin; IsEnabled = $false }
+	$script:dg = [System.Windows.Controls.DataGrid]@{ SelectionMode = "Single"; AutoGenerateColumns = $false }
+	$dgC = [System.Windows.Controls.DataGridTextColumn]@{ Header = $msgTable.ContentBtnOutputListColumn; Binding = ( [System.Windows.Data.Binding]@{ Path = "FileName" } ) }
+	$dg.Columns.Add( $dgC )
+	$spB.AddChild( $b )
+	$spB.AddChild( $bf )
+	$g.AddChild( $spB )
+	$g.AddChild( $dg )
+
+	[System.Windows.Controls.Grid]::SetRow( $spB, 0 )
+	[System.Windows.Controls.Grid]::SetRow( $dg, 1 )
+
+	$dg.Add_SelectionChanged( { $bF.IsEnabled = $this.SelectedItems.Count -gt 0 } )
+	$b.Add_Click( {
+		$files = Get-ChildItem "$BaseDir\Output\$( $env:USERNAME )" | Sort-Object -Property LastWriteTime -Descending
+		if ( $files.Count -gt 0 ) { $dg.ItemsSource = $files | ForEach-Object { [psobject]@{ "FileName" = $_.Name; "Tag" = $_.FullName } } }
+		else { $dg.ItemsSource = [pscustomobject]@{ "FileName" = $msgTable.StrNoOutputfiles } }
+		WriteLogTest -Text $msgTable.StrOFListing -UserInput $msgTable.StrOFListing -Success $true
+	} )
+	$bf.Add_Click( {
+		Start-Process -FilePath $Editor -ArgumentList """$( $dg.SelectedItem.Tag )"""
+		WriteLogTest -Text $msgTable.StrOFOpenFile -UserInput $dg.SelectedItem.Tag -Success $true
+	} )
+
+	$ti.AddChild( $g )
+	$tc.AddChild( $ti )
 }
 
 #######################################################################
@@ -322,7 +360,11 @@ function FulHack
 	$tItem.Background = "Gold"
 	$tc.Items.RemoveAt( $tc.Items.IndexOf( $tiScoreboard ) )
 	$tc.Items.Insert( ( $tc.Items.Count ), $tItem )
+
 	$Window.Add_ContentRendered( { $Window.Top = 50; $Window.Activate() } )
+
+	$Window.Resources[[System.Windows.Controls.DatagridRow]].Triggers[0].Value = $msgTable.StrDGRTriggerName
+
 	Set-Variable -Name tcComputer_Default -Value ( Get-Variable "tc$( $msgTable.ComputerFolder )" ).Value -Scope script
 }
 
@@ -522,8 +564,11 @@ Import-Module "$BaseDir\Modules\GUIOps.psm1" -Force -ArgumentList $LocalizeCultu
 $splash = ShowSplash -Text $msgTable.StrSplash -SelfAdmin
 $splash.Show()
 $userGroups = ( Get-ADUser $env:USERNAME -Properties memberof ).memberof | ForEach-Object { ( ( $_ -split "=" )[1] -split "," )[0] }
+if ( Test-Path "C:\Program Files (x86)\Notepad++\notepad++.exe" ) { $Editor = "C:\Program Files (x86)\Notepad++\notepad++.exe" }
+else { $Editor = "notepad" }
 $Script:ComputerObj = @{}
 $Window, $vars = CreateWindow
+
 SetTitle -Add -Text $( $msgTable.StrScriptSuite )
 if ( $PSCommandPath -match "Development" ) { SetTitle -Add " - Developer edition" }
 $vars | ForEach-Object { Set-Variable -Name $_ -Value $Window.FindName( $_ ) }
@@ -531,10 +576,10 @@ $vars | ForEach-Object { Set-Variable -Name $_ -Value $Window.FindName( $_ ) }
 Push-Location ( Get-Item $PSCommandPath ).Directory.FullName
 $MainContent.AddChild( ( GetFolderItems "" ) )
 FulHack
+AddOutputTool
 AddReportTool
 $Window.Add_Loaded( { $Window.Activate(); $splash.Close() } )
 
 [void] $Window.ShowDialog()
 Pop-Location
 $Window.Close()
-#$global:window = $window
