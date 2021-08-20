@@ -201,8 +201,8 @@ Writes to log file for the calling script. This must always be used script, to e
   * Text [**string**] [**Required**] - Text that describes what is done in the script
   * UserInput [**string**] [**Required**] - What are the procedures for running the script
   * Success [**bool**] [**Required**] - Indicate if the operation was successful or not
-  * ErrorLogHash [**hashtable**] - The hashtable returned from *WriteErrorlogTest*. This contains the path for the error log and the logging time for the error log
-  * OutputPath [**string**] - Path of output file written at runtime
+  * ErrorLogHash [**hashtable** / **array of hashtables**] - Hashtable or hashtables returned from *WriteErrorlogTest*. This contains the path for the error log and the logging time for the error log
+  * OutputPath [**string** / **array of strings**] - Path or paths of output file written at runtime
 
 ##### Returns
 File path
@@ -214,7 +214,7 @@ Returns filepath: *G:\ScriptMenu\Logs\2021\01\ScriptName - log.txt*
 Function call: `WriteLogTest -Text "Changed user account" -UserInput "ABCD" -Success $false -ErrorLogHash $hash`<br>
 Returns filepath: *G:\Scriptmenu\Logs\2021\01\ScriptName - log.txt*
 
-Function call: `WriteLogTest -Text "Modified user account" -UserInput "ABCD" -Success $false -OutputPath`<br>
+Function call: `WriteLogTest -Text "Modified user account" -UserInput "ABCD" -Success $false -OutputPath $outputfile`<br>
 Returns filepath: *G:\Scriptmenu\Logs\2021\01\ScriptName - log.txt*
 
 #### Function *GetUserInput*
