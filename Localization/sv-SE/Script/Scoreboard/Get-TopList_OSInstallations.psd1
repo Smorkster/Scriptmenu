@@ -1,6 +1,7 @@
 ConvertFrom-StringData @'
 CodeAllowedCompOrgs = Org1, Org2, Org3
 CodeAllowedCompRoles = Role1, Role2, Role3
+CodeCompTypeRegEx = *_PC-Type*
 CodeSysManUrl = "http://test.domain.com/SysMan/api/Log?name=&take=10000&skip=0&startDate=$processingStart&endDate=$processingEnd"
 ContentbtnEndDate = End date
 ContentbtnExport = Export to CSV

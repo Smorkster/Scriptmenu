@@ -1,12 +1,16 @@
 <Window
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
         Height="500" MinHeight="500" Width="1200" MinWidth="1200"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
         SizeToContent="Width"
         Name="Window">
     <Window.Resources>
+        <sys:String x:Key="CompTypeNotFound">N/A</sys:String>
+        <sys:String x:Key="CompTypeOtherType">N/A</sys:String>
+        <sys:String x:Key="CompTypeError">N/A</sys:String>
         <Style TargetType="Button">
             <Setter Property="Margin" Value="5"/>
         </Style>
@@ -26,18 +30,20 @@
                 <Trigger Property="ItemsControl.AlternationIndex" Value="1">
                     <Setter Property="Background" Value="#FDF0F0F0" />
                 </Trigger>
-                <DataTrigger Binding="{Binding Type}" Value="">
+                <DataTrigger Binding="{Binding Type}">
                     <Setter Property="FontStyle" Value="Italic"/>
                     <Setter Property="Foreground" Value="LightGray"/>
                 </DataTrigger>
-                <DataTrigger Binding="{Binding Type}" Value="">
+                <DataTrigger Binding="{Binding Type}">
                     <Setter Property="FontStyle" Value="Italic"/>
                 </DataTrigger>
-                <DataTrigger Binding="{Binding Type}" Value="">
+                <DataTrigger Binding="{Binding Type}">
                     <Setter Property="FontStyle" Value="Italic"/>
                     <Setter Property="Foreground" Value="Red"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding WrongType}" Value="1">
+                    <Setter Property="FontStyle" Value="Italic"/>
+                    <Setter Property="Foreground" Value="Red"/>
                 </DataTrigger>
             </Style.Triggers>
             <Setter Property="TextBlock.TextWrapping" Value="Wrap"/>

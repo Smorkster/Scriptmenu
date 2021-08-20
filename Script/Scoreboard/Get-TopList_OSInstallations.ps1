@@ -272,7 +272,7 @@ function UserView_SelectionChanged
 					try
 					{
 						$ofs = "`n"
-						$r = Get-ADComputer ( $in.Computer ) -Properties MemberOf -ErrorAction Stop | Select-Object -ExpandProperty MemberOf | Where-Object { $_ -like "*_Wrk*PR*_PC*" } | ForEach-Object { ( ( $_ -split "=" )[1] -split "," )[0] }
+						$r = Get-ADComputer ( $in.Computer ) -Properties MemberOf -ErrorAction Stop | Select-Object -ExpandProperty MemberOf | Where-Object { $_ -like $syncHash.msgTable.CodeCompTypeRegEx } | ForEach-Object { ( ( $_ -split "=" )[1] -split "," )[0] }
 						if ( $r.Count -eq 0 )
 						{ $t = $syncHash.msgTable.StrOtherCompRole }
 						else
@@ -358,66 +358,21 @@ Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -Argumentlist $args[1]
 Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -Argumentlist $args[1]
 
 $controls = New-Object System.Collections.ArrayList
-[void]$controls.Add( @{ CName = "Progress"
-	Props = @(
-		@{ PropName = "Value"; PropVal = [double] 0 }
-	) } )
-[void]$controls.Add( @{ CName = "UserView"
-	Props = @(
-		@{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new( ) }
-	) } )
-[void]$controls.Add( @{ CName = "DescriptionView"
-	Props = @(
-		@{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new( ) }
-	) } )
-[void]$controls.Add( @{ CName = "UserHeader"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentUserCol }
-	) } )
-[void]$controls.Add( @{ CName = "InstallationsHeader"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentInstCol }
-	) } )
-[void]$controls.Add( @{ CName = "DescComputer"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentDescCompCol }
-	) } )
-[void]$controls.Add( @{ CName = "DescDate"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentDescDateCol }
-	) } )
-[void]$controls.Add( @{ CName = "DescRole"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentDescRoleCol }
-	) } )
-[void]$controls.Add( @{ CName = "DescDescription"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentDescDescriptionCol }
-	) } )
-[void]$controls.Add( @{ CName = "DescWT"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentDescWTCol }
-	) } )
-[void]$controls.Add( @{ CName = "btnStartDate"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentbtnStartDate }
-	) } )
-[void]$controls.Add( @{ CName = "btnEndDate"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentbtnEndDate }
-	) } )
-[void]$controls.Add( @{ CName = "btnStart"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentbtnStart }
-	) } )
-[void]$controls.Add( @{ CName = "btnExport"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentbtnExport }
-	) } )
-[void]$controls.Add( @{ CName = "Window"
-	Props = @(
-		@{ PropName = "Title"; PropVal = $msgTable.StrWinTitle }
-	) } )
+[void]$controls.Add( @{ CName = "btnEndDate" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnEndDate } ) } )
+[void]$controls.Add( @{ CName = "btnExport" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnExport } ) } )
+[void]$controls.Add( @{ CName = "btnStart" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnStart } ) } )
+[void]$controls.Add( @{ CName = "btnStartDate" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnStartDate } ) } )
+[void]$controls.Add( @{ CName = "DescComputer" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentDescCompCol } ) } )
+[void]$controls.Add( @{ CName = "DescDate" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentDescDateCol } ) } )
+[void]$controls.Add( @{ CName = "DescDescription" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentDescDescriptionCol } ) } )
+[void]$controls.Add( @{ CName = "DescriptionView" ; Props = @( @{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new( ) } ) } )
+[void]$controls.Add( @{ CName = "DescRole" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentDescRoleCol } ) } )
+[void]$controls.Add( @{ CName = "DescWT" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentDescWTCol } ) } )
+[void]$controls.Add( @{ CName = "InstallationsHeader" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentInstCol } ) } )
+[void]$controls.Add( @{ CName = "Progress" ; Props = @( @{ PropName = "Value"; PropVal = [double] 0 } ) } )
+[void]$controls.Add( @{ CName = "UserHeader" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentUserCol } ) } )
+[void]$controls.Add( @{ CName = "UserView" ; Props = @( @{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new( ) } ) } )
+[void]$controls.Add( @{ CName = "Window" ; Props = @( @{ PropName = "Title"; PropVal = $msgTable.StrWinTitle } ) } )
 
 $syncHash = CreateWindowExt $controls
 
@@ -426,9 +381,9 @@ $syncHash.installations = New-Object System.Collections.ArrayList
 
 # Set listviewitems style-triggers to localized strings
 # Indexes (1 and 2-4) are indexes of style elements in XAML-file
-$syncHash.Window.Resources.Item( ( $syncHash.Window.Resources.Keys.Item( 1 ) ) ).triggers[2].value = $syncHash.msgTable.StrComputerNotFound
-$syncHash.Window.Resources.Item( ( $syncHash.Window.Resources.Keys.Item( 1 ) ) ).triggers[3].value = $syncHash.msgTable.StrOtherCompRole
-$syncHash.Window.Resources.Item( ( $syncHash.Window.Resources.Keys.Item( 1 ) ) ).triggers[4].value = $syncHash.msgTable.StrErrorADLookup
+$syncHash.Window.Resources[[System.Windows.Controls.ListViewItem]].Triggers[2].Value = $syncHash.msgTable.StrComputerNotFound
+$syncHash.Window.Resources[[System.Windows.Controls.ListViewItem]].Triggers[3].Value = $syncHash.msgTable.StrOtherCompRole
+$syncHash.Window.Resources[[System.Windows.Controls.ListViewItem]].Triggers[4].Value = $syncHash.msgTable.StrErrorADLookup
 
 $syncHash.btnEndDate.Add_Click( { BtnEndDate_Click } )
 $syncHash.btnStartDate.Add_Click( { BtnStartDate_Click } )
@@ -444,4 +399,3 @@ $syncHash.Window.Add_Closed( { Get-EventSubscriber | Unregister-Event } )
 
 [void] $syncHash.Window.ShowDialog()
 $syncHash.Window.Close()
-$global:syncHash = $syncHash
