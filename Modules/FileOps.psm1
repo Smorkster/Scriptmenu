@@ -31,9 +31,9 @@ class Log
 	[ValidateNotNullOrEmpty()] [string] $LogText
 	[ValidateNotNullOrEmpty()] [string] $UserInput
 	[ValidateNotNullOrEmpty()] [Success] $Success
+	[array] $ErrorLogDate
 	[string] $ErrorLogFile
-	[string] $ErrorLogDate
-	[string] $OutputFile
+	[array] $OutputFile
 	[string] $LogDate
 	[string] $Operator
 
@@ -140,7 +140,7 @@ function WriteOutput
 	param ( $FileNameAddition, $Output, $FileExtension = "txt", [switch] $Scoreboard )
 	if ( $Scoreboard ) { $Folder = "Scoreboard" } else { $Folder = $env:USERNAME }
 
-	$FileName = "{0}{1}, {2}.{3}" -f "$( if ( $FileNameAddition ) { "$FileNameAddition " } )", $CallingScript.BaseName, ( Get-Date -Format "yyyy-MM-dd HH.mm.ss" ), $FileExtension
+	$FileName = "{0} {1}, {2}.{3}" -f $CallingScript.BaseName, "$( if ( $FileNameAddition ) { "$FileNameAddition " } )", ( Get-Date -Format "yyyy-MM-dd HH.mm.ss" ), $FileExtension
 	$OutputFilePath = Get-LogFilePath -TopFolder "Output" -SubFolder $Folder -FileName $FileName
 	Set-Content -Path $OutputFilePath -Value ( $Output )
 	return $OutputFilePath
@@ -165,13 +165,22 @@ function WriteLog
 function WriteLogTest
 {
 	[cmdletbinding()]
-	param ( $Text, $UserInput, $Success, $ErrorLogHash, $OutputPath )
+	param (
+		[Parameter(Mandatory = $true)][string]$Text,
+		[Parameter(Mandatory = $true)][string]$UserInput,
+		[Parameter(Mandatory = $true)][bool]$Success,
+		[array]$ErrorLogHash,
+		[array]$OutputPath
+	)
 
-	$log = [Log]::new( $Text, $UserInput, $Success )
-	if ( $ErrorLogHash ) { $log.ErrorLogFile = $ErrorLogHash.ErrorLogPath ; $log.ErrorLogDate = $ErrorLogHash.ErrorLogDate }
+	$mtx = New-Object System.Threading.Mutex( $false, "WriteLogTest $( $CallingScript.Name )" )
+	$log = [Log]::new( $Text, $UserInput, [Success][int]$Success )
+	if ( $ErrorLogHash ) { $log.ErrorLogFile = $ErrorLogHash.ErrorLogFile ; $log.ErrorLogDate = $ErrorLogHash.ErrorLogDate }
 	if ( $OutputPath ) { $log.OutputFile = $OutputPath }
 	$LogFilePath = Get-LogFilePath -TopFolder "Logs" -FileName "$( $CallingScript.BaseName ) - log.json"
+	$mtx.WaitOne()
 	Add-Content -Path $LogFilePath -Value ( $log.ToJson() )
+	$mtx.ReleaseMutex()
 	return $LogFilePath
 }
 
@@ -195,13 +204,15 @@ function WriteErrorlog
 # Returns path to the file
 function WriteErrorlogTest
 {
-	param ( [parameter( ValueFromPipeline = $true )] $LogText, $UserInput, $Severity )
+	param ( [string] $LogText, [string] $UserInput, [ValidateScript( { [ErrorSeverity].GetEnumNames() -contains $_ } )] $Severity )
 
+	$mtx = New-Object System.Threading.Mutex( $false, "WriteLogTest $( $CallingScript.Name )" )
 	$OutputEncoding = ( New-Object System.Text.UnicodeEncoding $False, $False ).psobject.BaseObject
 	$ErrorLogFilePath = Get-LogFilePath -TopFolder "ErrorLogs" -FileName "$( $CallingScript.BaseName ) - Errorlog.json"
 	$el = [ErrorLog]::new( $LogText, $UserInput, $Severity )
+	$mtx.WaitOne()
 	Add-Content -Path $ErrorLogFilePath -Value $el.ToJson()
-	return @{ ErrorlogPath = $ErrorLogFilePath ; ErrorlogDate = $el.LogDate }
+	return @{ "ErrorLogFile" = $ErrorLogFilePath ; "ErrorLogDate" = $el.LogDate }
 }
 
 ##################################################################################
@@ -224,12 +235,20 @@ function EndScript
 {
 	$dummy = Read-Host "`n$( $IntmsgTable.FileOpsEndScript )"
 	if ( $dummy -ne "" )
-	{ Add-Content -Path "$RootDir\Logs\DummyQuitting.txt" -Value "$nudate $env:USERNAME $( $CallingScript.BaseName ) - $dummy" }
+	{
+		$mtx = New-Object System.Threading.Mutex( $false, "EndScript $( $CallingScript.Name )" )
+		$mtx.WaitOne()
+		Add-Content -Path "$RootDir\Logs\DummyQuitting.txt" -Value "$nudate $env:USERNAME $( $CallingScript.BaseName ) - $dummy"
+		$mtx.ReleaseMutex()
+	}
 }
 
 $nudate = Get-Date -Format "yyyy-MM-dd HH:mm"
 $RootDir = ( Get-Item $PSCommandPath ).Directory.Parent.FullName
-try { $CallingScript = Get-Item $MyInvocation.PSCommandPath } catch {}
+try
+{
+	$CallingScript = Get-Item $MyInvocation.PSCommandPath
+} catch {}
 
 Import-LocalizedData -BindingVariable IntmsgTable -UICulture $culture -FileName "$( ( $PSCommandPath.Split( "\" ) | Select-Object -Last 1 ).Split( "." )[0] )" -BaseDirectory "$RootDir\Localization\$culture\Modules"
 try {
