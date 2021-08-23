@@ -4,14 +4,16 @@
 .Author Smorkster (smorkster)
 #>
 
-Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -Argumentlist $args[1]
+Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 $UserInput = Read-Host $msgTable.QID
+$success = $true
 
 if ( !( dsquery User -samid $UserInput ) )
 {
 	Write-Host "`n$( $msgTable.ErrWID ) $UserInput!" -ForegroundColor Red
-	$outputFile = "$UserInput $( $msgTable.ErrID )"
+	$errorHash = WriteErrorLogTest -LogText $msgTable.ErrID -UserInput $UserInput -Severity "UserInputFail"
+	$success = $false
 }
 else
 {
@@ -51,9 +53,9 @@ if ( $output )
 	Start-Process notepad $outputFile
 }
 
-if ( ( Read-Host "$( $msgTable.QQuestion )? ( Y / N )" ) -eq "Y" )
+if ( ( $copy = Read-Host "$( $msgTable.QQuestion )? ( Y / N )" ) -eq "Y" )
 {
-	$cloneTarget = Read-Host "$( $msgTable.QQID ):"
+	$cloneTarget = Read-Host "$( $msgTable.QQID )"
 	$message = @("$( $msgTable.MQ1 ) $( $User.Name ) $( $msgTable.MQ2 ):")
 	$GaiaGroups | Sort-Object | ForEach-Object { $message += "`t$( $_ )" }
 	$message += "$( $msgTable.MQ3 ) [ $( ( Get-ADUser $cloneTarget ).Name ) ]."
@@ -65,5 +67,5 @@ if ( ( Read-Host "$( $msgTable.QQuestion )? ( Y / N )" ) -eq "Y" )
 	Write-Host "$( $msgTable.WQCopy )"
 }
 
-WriteLog -LogText "$UserInput`r`n`t$( $msgTable.WLogOutputTitle ): $outputFile" | Out-Null
+WriteLogTest -Text "$( $msgTable.LogMessage ) $UserInput `n$( $msgTable.LogMessageCloneTarget ): $cloneTarget`n$( $msgTable.LogMessageCopy ): $copy" -Success $success -UserInput $UserInput -ErrorLogHash $errorHash -OutputPath $outputFile | Out-Null
 EndScript

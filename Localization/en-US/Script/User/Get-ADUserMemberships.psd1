@@ -1,6 +1,9 @@
 ﻿ConvertFrom-StringData @'
 ErrID = does not exist
 ErrWID = Cannot find any user with ID
+LogMessage = Retrieved the groups for
+LogMessageCloneTarget = Clonsetarget
+LogMessageCopy = Copied the question
 MQ1 = The user
 MQ2 = has the following authorization groups in AD
 MQ3 = These are the folder permissions you want us to assign to
