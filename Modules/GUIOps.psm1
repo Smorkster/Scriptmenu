@@ -6,7 +6,6 @@
 #>
 
 param ( $culture = "sv-SE" )
-
 function CreateWindow
 {
 	<#

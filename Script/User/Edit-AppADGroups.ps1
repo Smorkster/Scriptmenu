@@ -32,6 +32,7 @@ function CheckUser
 	else
 	{
 		$syncHash.ErrorUsers += $Id
+		$syncHash.Data.ErrorHashes += WriteErrorLogTest -LogText "$( $syncHash.Data.msgTable.ErrMessageGetUser )" -UserInput $Id -Severity "UserInputFail"
 		return "NotFound"
 	}
 }
@@ -125,7 +126,7 @@ function CreateLogText
 	}
 
 	$LogText += "`n------------------------------"
-	WriteToLog -Text $LogText
+	$syncHash.lbLog.Items.Insert( 0, $LogText )
 }
 
 ##########################################
@@ -173,18 +174,8 @@ function Get-RandomCharacters
 {
 	param ( $length, $characters )
 	$random = 1..$length | ForEach-Object { Get-Random -Maximum $characters.Length }
-	$private:ofs = ""
+	$private:OFS = ""
 	return [string]$characters[$random]
-}
-
-########################################
-# Randomize order of charaters in string
-function ScrambleString
-{
-	param ( [string]$inputString )
-	$characterArray = $inputString.ToCharArray()
-	$scrambledStringArray = $characterArray | Get-Random -Count $characterArray.Length
-	return -join $scrambledStringArray
 }
 
 #############################################
@@ -236,19 +227,28 @@ function PerformPermissions
 				$syncHash.Window.Title = "$( $syncHash.Data.msgTable.WProgressTitle ) $( [Math]::Floor( $loopCounter / $syncHash.lbGroupsChosen.Items.Count * 100 ) )%"
 				if ( $syncHash.AddUsers )
 				{
-					Add-ADGroupMember -Identity $Group -Members $syncHash.AddUsers.Id -Confirm:$false
+					try { Add-ADGroupMember -Identity $Group -Members $syncHash.AddUsers.Id -Confirm:$false }
+					catch { $syncHash.Data.ErrorHashes += WriteErrorLogTest -LogText $_ -UserInput "$Group`n$( $OFS = ", "; $syncHash.AddUsers.Id )" -Severity "UserInputFail" }
 				}
 
 				if ( $syncHash.RemoveUsers )
 				{
-					Remove-ADGroupMember -Identity $Group -Members $syncHash.RemoveUsers.Id -Confirm:$false
+					try { Remove-ADGroupMember -Identity $Group -Members $syncHash.RemoveUsers.Id -Confirm:$false }
+					catch { $syncHash.Data.ErrorHashes += WriteErrorLogTest -LogText $_ -UserInput "$Group`n$( $OFS = ", "; $syncHash.AddUsers.Id )" -Severity "UserInputFail" }
 				}
 				$loopCounter++
 			}
 			foreach ( $u in ( $syncHash.AddUsers | Where-Object { $_.AD.otherMailbox -match $syncHash.Data.msgTable.WSpecOrg } ) )
 			{
-				Set-ADAccountPassword -Identity $u.AD -Reset -NewPassword ( ConvertTo-SecureString -AsPlainText $u.PW -Force )
-				Set-ADUser -Identity $u.AD -ChangePasswordAtLogon $false -Confirm:$false
+				try
+				{
+					Set-ADAccountPassword -Identity $u.AD -Reset -NewPassword ( ConvertTo-SecureString -AsPlainText $u.PW -Force )
+					Set-ADUser -Identity $u.AD -ChangePasswordAtLogon $false -Confirm:$false
+				}
+				catch
+				{
+					$syncHash.Data.ErrorHashes += WriteErrorLogTest -LogText "$( $syncHash.Data.msgTable.ErrMessageSetPassword )`n$_" -UserInput $u.AD.SamAccountName -Severity "UserInputFail"
+				}
 			}
 			CreateLogText
 			CreateMessage
@@ -266,11 +266,22 @@ function PerformPermissions
 # Resets variables
 function ResetVariables
 {
+	$syncHash.AddUsers = @()
 	$syncHash.ADGroups = @()
 	$syncHash.Duplicates = @()
 	$syncHash.ErrorUsers = @()
-	$syncHash.AddUsers = @()
+	$syncHash.Data.ErrorHashes = @()
 	$syncHash.RemoveUsers = @()
+}
+
+########################################
+# Randomize order of charaters in string
+function ScrambleString
+{
+	param ( [string]$inputString )
+	$characterArray = $inputString.ToCharArray()
+	$scrambledStringArray = $characterArray | Get-Random -Count $characterArray.Length
+	return -join $scrambledStringArray
 }
 
 #################################################
@@ -295,7 +306,7 @@ function SetUserSettings
 	}
 	catch
 	{
-		WriteErrorLog -LogText "$( $_Exception.Message )`n`t$( $_.InvocationInfo.Line )`n`t$( $_.InvocationInfo.PositionMessage ) "
+		WriteErrorLogTest -LogText $_ -UserInput $syncHash.Data.msgTable.ErrMessageSetSettings -Severity "PermissionFail"
 		ShowMessageBox -Text $syncHash.Data.msgTable.ErrScriptPermissions -Icon "Stop"
 		Exit
 	}
@@ -333,10 +344,17 @@ function UpdateAppGroupList
 	$item = $syncHash.cbApp.SelectedItem
 
 	$syncHash.GroupType = $item.Tag.GroupType
-	if ( $null -eq $item.Tag.Exclude )
-	{ $syncHash.GroupList = Get-ADGroup -LDAPFilter "$( $item.Tag.AppFilter )" | Select-Object -ExpandProperty Name | Sort-Object }
-	else
-	{ $syncHash.GroupList = Get-ADGroup -LDAPFilter "$( $item.Tag.AppFilter )" | Where-Object { $item.Tag.Exclude -notcontains $_.Name.Split( $item.Tag.split )[$item.Tag.index] } | Select-Object -ExpandProperty Name }
+	try
+	{
+		if ( $null -eq $item.Tag.Exclude )
+		{ $syncHash.GroupList = Get-ADGroup -LDAPFilter "$( $item.Tag.AppFilter )" | Select-Object -ExpandProperty Name | Sort-Object }
+		else
+		{ $syncHash.GroupList = Get-ADGroup -LDAPFilter "$( $item.Tag.AppFilter )" | Where-Object { $item.Tag.Exclude -notcontains $_.Name.Split( $item.Tag.split )[$item.Tag.index] } | Select-Object -ExpandProperty Name }
+	}
+	catch
+	{
+		$syncHash.Data.ErrorHashes += WriteErrorLogTest -LogText $_ -UserInput $syncHash.Data.msgTable.ErrMessageGetAppGroups -Severity "ConnectionFail"
+	}
 
 	UpdateAppGroupListItems
 	$syncHash.Window.Title = $syncHash.Data.msgTable.WTitle
@@ -362,44 +380,27 @@ function UndoInput
 	UpdateAppGroupList
 }
 
-###############################
-# Write the work to log listbox
-function WriteToLog
-{
-	param (
-		$Text
-	)
-
-	$syncHash.lbLog.Items.Insert( 0, $Text )
-}
-
 ######################################
 # Write finished operations to logfile
 function WriteToLogFile
 {
-	# One line per group/user
-	$LogText = @()
+	$OFS = ", "
 
-	foreach ( $group in $syncHash.lbGroupsChosen.Items )
-	{
-		foreach ( $u in $syncHash.AddUsers )
-		{
-			$t = "$( $u.Id ) > $( $syncHash.Data.msgTable.WNew ) '$group'"
-			if ( $_.AD.otherMailbox -match $syncHash.Data.msgTable.WSpecOrg ) { $t += " $( $syncHash.Data.msgTable.WNewPassword ): $( $_.PW )" }
-			$LogText += $t
-		}
-		foreach ( $u in $syncHash.RemoveUsers )
-		{
-			$LogText += "$( $u.Id ) > $( $syncHash.Data.msgTable.WRemove ) '$group'"
-		}
-	}
+	$LogText = "$( $syncHash.Data.msgTable.StrLogMessage ): $( $syncHash.cbApp.Text )`n"
+	if ( $syncHash.AddUsers.Count -gt 0 ) { $LogText += "$( $syncHash.Data.msgTable.LogMessageAdd ) $( syncHash.AddUsers.Id )" }
+	if ( $syncHash.RemoveUsers.Count -gt 0 ) { $LogText += "$( $syncHash.Data.msgTable.LogMessageRemove ) $( $syncHash.RemoveUsers.Id )" }
 
-	$LogText | ForEach-Object { WriteLog -LogText $_ | Out-Null }
+	$UserInput = ""
+	if ( $syncHash.txtUsersAddPermission.Text.Length -gt 0 ) { $UserInput += "$( $syncHash.Data.msgTable.LogInputAdd ) $( $syncHash.txtUsersAddPermission.Text -split "\W" )`n" }
+	if ( $syncHash.txtUsersRemovePermission.Text.Length -gt 0 ) { $UserInput += "$( $syncHash.Data.msgTable.LogInputRemove ) $( $syncHash.txtUsersRemovePermission.Text -split "\W" )`n" }
+	$UserInput += $syncHash.lbGroupsChosen.Items
+
+	WriteLogTest -Text $LogText -UserInput $UserInput -Success ( $syncHash.Data.ErrorHashes.Count -lt 1 ) -ErrorLogHash $syncHash.Data.ErrorHashes
 }
 
 ######################### Script start #########################
-Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -Argumentlist $args[1]
-Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -Argumentlist $args[1]
+Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
+Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -ArgumentList $args[1]
 
 $controls = New-Object System.Collections.ArrayList
 [void] $controls.Add( @{ CName = "btnPerform" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnPerform } ) } )
@@ -414,6 +415,7 @@ $controls = New-Object System.Collections.ArrayList
 
 $syncHash = CreateWindowExt $controls
 $syncHash.Data.msgTable = $msgTable
+$syncHash.Data.ErrorHashes = @()
 SetUserSettings
 
 $syncHash.btnPerform.Add_Click( { PerformPermissions } )
@@ -423,7 +425,7 @@ $syncHash.lbAppGroupList.Add_MouseDoubleClick( { GroupSelected } )
 $syncHash.lbGroupsChosen.Add_MouseDoubleClick( { GroupDeselected } )
 $syncHash.txtUsersAddPermission.Add_TextChanged( { CheckReady } )
 $syncHash.txtUsersRemovePermission.Add_TextChanged( { CheckReady } )
-$syncHash.Window.Add_ContentRendered( { $syncHash.Window.Title = $syncHash.Data.msgTable.WPreparing; $syncHash.Window.Top = 20; $syncHash.Window.Activate(); UpdateAppList; $syncHash.Window.Title = $syncHash.Data.msgTable.WTitle ; $syncHash.MainGrid.IsEnabled = $true } )
+$syncHash.Window.Add_ContentRendered( { $syncHash.Window.Title = $syncHash.Data.msgTable.WPreparing; $syncHash.Window.Top = 20; $syncHash.Window.Activate(); UpdateAppList; $syncHash.Window.Title = $syncHash.Data.msgTable.WTitle } )
 
 $syncHash.ErrorLogFilePath = ""
 $syncHash.HandledFolders = @()
@@ -431,3 +433,4 @@ $syncHash.LogFilePath = ""
 ResetVariables
 
 [void] $syncHash.Window.ShowDialog()
+#$global:syncHash = $syncHash
