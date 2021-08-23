@@ -4,12 +4,15 @@
 .Author Smorkster (smorkster)
 #>
 
-Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -Argumentlist $args[1]
+Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 $UserInput = Read-Host $( $msgTable.QID )
 
 Write-Host $msgTable.WSearching
-$result = Get-ChildItem G:\Lit\Servicedesk\LockedOut_Log -Filter '*LogLockedOut.txt' | Get-Content | Where-Object { ( $_ -split " " )[2] -eq $UserInput } | ForEach-Object { "$( ( $_ -split '\s+' )[0] ) $( ( $_ -split '\s+' )[1] ) $( ( $_ -split '\s+' )[3] ) " } | Select-Object -Unique | Sort-Object
+$result = ( Get-ChildItem G:\Lit\Servicedesk\LockedOut_Log -Filter '*LogLockedOut.txt' | Select-String -Pattern $UserInput ).Line | ForEach-Object {
+		$d, $t, $null, $c = $_ -split '\s+'
+		"$d $t $c"
+	} | Select-Object -Unique | Sort-Object
 
 if ( $result.Count -eq 0 )
 {
@@ -21,5 +24,5 @@ else
 	$result
 }
 
-WriteLog -LogText "$( $UserInput.ToUpper() )" | Out-Null
+WriteLogTest -Text "$( $msgTable.LogMessageCount ) $( $result.Count )" -UserInput $UserInput -Success $true | Out-Null
 EndScript
