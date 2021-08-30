@@ -19,5 +19,5 @@ catch
 }
 
 Write-Host $Device
-WriteLog -LogText "$Destination > $Device" | Out-Null
+WriteLogTest -Text "$Destination > $Device" -UserInput $Destination -Success $true | Out-Null
 EndScript
