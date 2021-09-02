@@ -10,19 +10,20 @@ Write-Host "`n$( $msgTable.StrTitleScript ) " -NoNewline
 Write-Host "$( $args[2] )" -Foreground Cyan
 
 $Computer = Get-ADComputer $args[2] -Properties *
+$Success = $true
 
 Start-Job -ScriptBlock { Get-CimInstance -ComputerName $args[0] -Filter "Name like '%Java%'" -ClassName win32_product | Select-Object -ExpandProperty Name } -ArgumentList $Computer.Name -Name GetJava | Out-Null
 
-Write-Host $msgTable.StrTitleSysman -Foreground Cyan
+Write-Host "`n$( $msgTable.StrTitleSysman )" -Foreground Cyan
 if ( $gpos = $Computer.MemberOf | Where-Object { $_ -like "*Java*_I*" } )
 {
-	Write-Host "`n$( $msgTable.StrIsInstalled ):`n"
+	Write-Host "$( $msgTable.StrIsInstalled )`n"
 	$gpos | ForEach-Object { ( ( $_ -split "=" )[1] -split "," )[0] }
 	$logText = $msgTable.LogIsInstalledSysman
 }
 else
 {
-	Write-Host "`n$( $msgTable.StrIsNotInstalled )"
+	Write-Host "$( $msgTable.StrIsNotInstalled )"
 	$logText = $msgTable.LogIsNotInstalledSysman
 }
 
@@ -30,34 +31,43 @@ try
 {
 	Write-Host "`n$( $msgTable.StrTitleInstalled )" -Foreground Cyan
 	$Installed = Wait-Job -Name GetJava | Receive-Job
-	$Installed | Out-Host
-	$logText += ", $( $msgTable.LogIsInstalled )"
+	if ( -not $Installed )
+	{
+		Write-Host $msgTable.StrIsNotInstalled
+		$logText += ", $( $msgTable.LogIsNotInstalled )"
+	}
+	else
+	{
+		$Installed | Out-Host
+		$logText += ", $( $msgTable.LogIsInstalled )"
+	}
 }
 catch
 {
 	Write-Host "`n$( $msgTable.ErrNoConnect )"
-	$logText += ", $( $msgTable.LogIsNotInstalled )"
+	$logText += ", $( $msgTable.ErrNoConnect )"
+	$Success = $false
 }
 
 Remove-Job -Name GetJava -ErrorAction SilentlyContinue
 
 if ( ( Read-Host "`n$( $msgTable.QListOtherComp )" ) -eq "Y" )
 {
-	$logText +="`r`n`t$( $msgTable.LogOtherComp ): "
+	$logText += "`n$( $msgTable.LogOtherComp ):"
 	if ( $sameLocation = Get-ADComputer -LDAPFilter "($( $msgTable.CodeDepPropName )=$( $Computer.( $msgTable.CodeDepPropName ) ))" -Properties MemberOf | Select-Object @{ Name = "Name"; Expression = { $_.Name } }, @{ Name = "Java"; Expression = { ( ( ( ( $_.MemberOf | Where-Object { $_ -like "*Java*_I*" } ) -split "=" )[1] ) -split "," )[0] } } | Where-Object { $_.Java -ne "" } | Sort-Object Name )
 	{
 		$sameLocation | Sort-Object Name | Out-Host
+		$logText += " $( @( $sameLocation ).Count )"
 
 		$output = @()
-		$sameLocation | ForEach-Object { $output += "$( $_.Name ) $( $_.Java )`r`n" }
-		$outputFile = WriteOutput -Output "$( $msgTable.StrOtherComp ) '$( $Computer.( $msgTable.CodeDepPropName ) )':`r`n$output"
-		$logText += $outputFile
+		$sameLocation | ForEach-Object { $output += "$( $_.Name ) $( $_.Java )`n" }
+		$outputFile = WriteOutput -Output "$( $msgTable.StrOtherComp ) '$( $Computer.( $msgTable.CodeDepPropName ) )':`n$output"
 	}
 	else
 	{
-		$logText += $msgTable.LogNoOtherComp
+		$logText += " $( $msgTable.LogNoOtherComp )"
 	}
 }
 
-WriteLog -LogText "$( $Computer.Name ), $logText" | Out-Null
+WriteLogTest -Text $logText -UserInput $Computer.Name -Success $Success -OutputPath $outputFile | Out-Null
 EndScript
