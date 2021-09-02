@@ -11,9 +11,8 @@ $ComputerName = $args[2]
 
 Write-Host "$( $msgTable.StrStart ) $ComputerName`n"
 
-$applications = wmic /node:$ComputerName product get name | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne "" -and $_ -ne "Name" } | Sort-Object
-$applications
+( $applications = Get-CimInstance -ClassName win32_product -ComputerName $ComputerName | Sort-Object Caption ) | Out-Host
 
-$outputFile = WriteOutput -Output $applications
-WriteLog -LogText "$ComputerName`r`n`t$outputFile" | Out-Null
+$outputFile = WriteOutput -Output ( $applications | Select-Object Caption, Description, Version, InstallDate, InstallLocation | ConvertTo-Csv -NoTypeInformation ) -FileExtension "csv"
+WriteLogTest -Text "$( $msgTable.LogAppCount ): $( @( $outputFile ).Count )" -UserInput $ComputerName -Success $true -OutputPath $outputFile | Out-Null
 EndScript
