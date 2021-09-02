@@ -1,12 +1,14 @@
 ConvertFrom-StringData @'
-ContentButton = Uninstall
+ContentbtnGetAppList = Get list of applications
+ContentbtnUninstall = Uninstall
+ContentDefWinTit = Getting list of applications
 ContentIdCol = Installation-ID
 ContentInstCol = Installdate
-ContentNameCol = Application-name
-ContentDefWinTit = Getting list of applications
-QUninstall = Are you sure to uninstall
+ContentNameCol = Applicationname
+ContentWindow = Uninstalling applications on
+QUninstall = Do you want to uninstall
 StrAppSum = applications
 StrDone = Applications uninstalled
-StrNoInstallDate = <Not present>
+StrNoInstallDate = <Not specified>
 StrUninstalling = Uninstalling
 '@
