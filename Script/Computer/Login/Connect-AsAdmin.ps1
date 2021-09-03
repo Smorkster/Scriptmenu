@@ -8,9 +8,8 @@
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 $ComputerName = $args[2]
-$CaseNr = Read-Host "Related casenumber (if any) "
 
 Start-Process -Filepath "C:\Windows\System32\mstsc.exe" -ArgumentList "/v:$ComputerName /f"
 
-WriteLog -LogText "$CaseNr $ComputerName"
+WriteLogTest -Text "." -UserInput $ComputerName -Success $true | Out-Null
 EndScript
