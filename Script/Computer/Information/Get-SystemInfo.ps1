@@ -9,11 +9,11 @@ Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 $ComputerName = $args[2]
 
-Write-Host "$( $msgTable.StrStart )"
+Write-Host "`n$( $msgTable.StrStart )"
 $info = ( systeminfo.exe /s $ComputerName ).Replace( "ÿ", ",").Replace( '„', 'ä' )
 
 $info | Out-Host
 $outputFile = WriteOutput -Output $info
 
-WriteLog -LogText "$ComputerName`r`n`t$outputFile" | Out-Null
+WriteLogTest -Text "-" -UserInput $ComputerName -Success $true -OutputPath $outputFile | Out-Null
 EndScript
