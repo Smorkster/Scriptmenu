@@ -13,9 +13,8 @@ $Message = Read-Host "$( $msgTable.StrMessage )"
 
 Invoke-Command -ComputerName $ComputerName -ArgumentList $Message -ScriptBlock ` {
 	Param( $Message )
-	$CmdMessage = { C:\windows\system32\msg.exe * "$Message" }
-	$CmdMessage | Invoke-Expression
+	{ C:\Windows\System32\msg.exe * "$Message" } | Invoke-Expression
 }
 
-WriteLog -LogText "$ComputerName > '$Message'" | Out-Null
+WriteLogTest -Text $Message -UserInput $ComputerName -Success $true | Out-Null
 EndScript
