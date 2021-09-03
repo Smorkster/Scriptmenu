@@ -8,8 +8,11 @@
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 $ComputerName = $args[2]
+$folder = Read-Host $msgTable.QFolderToOpen
+if ( $folder -eq "" ) { $folder = "C$" }
+else { $folder = $folder.Replace( "C:", "C$" ) }
 
-Start-Process -Filepath "C:\Windows\explorer.exe" -ArgumentList "\\$ComputerName\C$"
+Start-Process -Filepath "C:\Windows\explorer.exe" -ArgumentList "\\$ComputerName\$folder\"
 
-WriteLog -LogText "$ComputerName" | Out-Null
+WriteLogTest -Text $folder -UserInput $ComputerName -Success $true | Out-Null
 EndScript
