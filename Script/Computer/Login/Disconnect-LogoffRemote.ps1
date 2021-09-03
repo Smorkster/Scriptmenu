@@ -8,6 +8,7 @@
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 $ComputerName = $args[2]
+$Success = $true
 
 try
 {
@@ -27,7 +28,7 @@ try
 			$session = $sessionString.Split()
 			if ( $session[1].Equals( $( $msgTable.StrSessionTitle ) ) ) { continue }
 			# Use [1] because if the user is disconnected there will be no session ID
-			$result = logoff $session[1]
+			$null = logoff $session[1]
 			$Info += "$( $session[0] ) $( $msgTable.StrLoggedOff ).`n"
 		}
 		$Info
@@ -35,13 +36,18 @@ try
 }
 catch [System.Management.Automation.RemoteException]
 {
-	WriteErrorLog -LogText $_
+	$eh = WriteErrorlogTest -LogText $_ -UserInput $ComputerName -Severity "ConnectionFail"
 	$Info = "No user logged on."
+	$Success = $false
 }
-catch { WriteErrorLog -LogText $_ }
+catch
+{
+	$eh = WriteErrorlogTest -LogText $_ -UserInput $ComputerName -Severity "OtherFail"
+	$Success = $false
+}
 
 Write-Host $Info
 $outputFile = WriteOutput -Output $Info
 
-WriteLog -LogText "$ComputerName > $( $Info.Count ) $( $msgTable.LogUsers )`r`n`t$outputFile" | Out-Null
+WriteLogTest -Text $Info -UserInput $ComputerName -Success $Success -OutputPath $outputFile -ErrorLogHash $eh | Out-Null
 EndScript
