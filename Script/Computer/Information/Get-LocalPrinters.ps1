@@ -11,9 +11,9 @@ $ComputerName = $args[2]
 $Printers = @()
 
 
-$Printers = Get-WmiObject Win32_Printer -ComputerName $ComputerName | Select-Object Name
+$Printers = Get-CimInstance -ClassName Win32_Printer -ComputerName $ComputerName | Select-Object -ExpandProperty Name | Sort-Object
 $Printers | Out-Host
-$outputFile = WriteOutput -Output $Printers
 
-WriteLog -LogText "$ComputerName > $( $Printers.Count )`r`n`t$outputFile" | Out-Null
+$OFS = "`n"
+WriteLogTest -Text "$( $msgTable.LogNumPrinters ): $( $Printers.Count )`n$( $Printers )" -UserInput $ComputerName -Success $true -OutputPath $outputFile | Out-Null
 EndScript
