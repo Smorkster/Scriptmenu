@@ -1,4 +1,5 @@
 ConvertFrom-StringData @'
-StrServiceRestarted = Service for Remote Control was restarted
-StrComputerNotFound = No computer was found
+StrComputerNotFound = Computer was not found
+StrOtherError = Error occurred while connecting
+StrServiceRestarted = Remote Control service has restarted
 '@

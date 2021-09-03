@@ -1,25 +1,35 @@
 <#
 .Synopsis End active remote connection
 .Description Ends an active remote connection on given computer.
+.State Prod
 .Author Smorkster (smorkster)
 #>
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
-Try {
 $ComputerName = $args[2]
+$Success = $true
 
-	Get-Service -ComputerName $Computername -Name CmRcService | Restart-Service
+try
+{
+	Get-Service -ComputerName $Computername -Name CmRcService -ErrorAction Stop | Restart-Service
 	Write-Host -ForegroundColor Green $msgTable.StrServiceRestarted
-
 }
-Catch {
-
+catch [Microsoft.PowerShell.Commands.ServiceCommandException]
+{
 	Write-Host -ForegroundColor Yellow $msgTable.StrComputerNotFound
 	Write-Host -ForegroundColor Red $_.Exception.Message
-	WriteErrorLog -LogText $_
-
+	$eh = WriteErrorlogTest -LogText $_ -UserInput $ComputerName -Severity "ConnectionFail"
+}
+catch
+{
+	Write-Host -ForegroundColor Yellow $msgTable.StrOtherError
+	Write-Host -ForegroundColor Red $_.Exception.Message
+	$eh = WriteErrorlogTest -LogText $_ -UserInput $ComputerName -Severity "OtherFail"
 }
 
-WriteLog -LogText $ComputerName | Out-Null
-EndScript
+WriteLogTest -Text "." -UserInput $ComputerName -Success $Success -ErrorLogHash $eh | Out-Null
+
+[console]::ForegroundColor = "yellow"
+Read-Host("<press enter to exit>")
+[console]::ResetColor()
