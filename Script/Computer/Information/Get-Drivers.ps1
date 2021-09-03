@@ -10,22 +10,8 @@ Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 Write-Host $msgTable.StrStart
 $ComputerName = $args[2]
 
-$a = ( driverquery /s $ComputerName /v /fo list ) -replace [char]8221, "ö" -replace [char]255, ","
-$l = New-Object System.Collections.ArrayList
-foreach ( $b in $a )
-{
-	if ( $b -eq "" )
-	{
-		if ( @( $o | Get-Member -MemberType NoteProperty ).Count -eq 15 ) { [void] $l.add( $o ) }
-		$o = [pscustomobject]::new()
-	}
-	else
-	{
-		$x = $b -split "`:"
-		$o | Add-Member -MemberType NoteProperty -Name $x[0] -Value ( $x[1].Trim() )
-	}
-}
-$l = $l | Sort-Object "Display Name"
+$l = [System.Collections.ArrayList]::new()
+$l = ( driverquery /s $ComputerName /v /fo csv ) -replace [char]8221, "ö" -replace [char]255, "," | ConvertFrom-Csv | Sort-Object "DisplayName"
 
 $outputFile = WriteOutput -Output ( ( driverquery /s $ComputerName /v /fo table ) -replace [char]8221, "ö" -replace [char]255, "," )
 
@@ -36,5 +22,5 @@ switch ( ( Read-Host ( $msgTable.StrShow ) ) )
 	"3" { $l | Out-Host ; $View = 2 }
 }
 
-WriteLog -LogText "$ComputerName ($View)`r`n`t$outputFile" | Out-Null
+WriteLogTest -Text "$( $msgTable.LogViewType ) $View" -UserInput $ComputerName -OutputPath $outputFile | Out-Null
 EndScript
