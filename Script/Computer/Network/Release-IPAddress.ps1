@@ -11,5 +11,5 @@ $ComputerName = $args[2]
 
 Invoke-Command -Computername $ComputerName -Scriptblock { ipconfig /release | ipconfig /renew }
 
-WriteLog -LogText "$ComputerName" | Out-Null
+WriteLogTest -Text "." -UserInput $ComputerName -Success $true | Out-Null
 EndScript
