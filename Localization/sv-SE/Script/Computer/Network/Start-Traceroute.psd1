@@ -1,3 +1,6 @@
 ConvertFrom-StringData @'
-QTargetIP = Ange IP-adress
+LogIP = IP-adress mål
+LogComputerName = Datornamn mål
+LogTR = TraceRoute
+QTargetIP = Ange IP-adress eller datornamn
 '@

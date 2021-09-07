@@ -1,4 +1,6 @@
 ConvertFrom-StringData @'
-QTargetIP = Enter IP-ad
-dress
+LogIP = IP-address target
+LogComputerName = Computername target
+LogTR = TraceRoute
+QTargetIP = Enter the IP address or computer name
 '@

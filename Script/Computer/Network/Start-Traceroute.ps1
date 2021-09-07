@@ -11,11 +11,12 @@ $ComputerName = $args[2]
 
 $Destination = Read-Host "$( $msgTable.QTargetIP )"
 
-$Trace = Invoke-Command -Computername $ComputerName -Scriptblock { tracert $Destination }
+$Trace = Invoke-Command -Computername $ComputerName -Scriptblock { Test-NetConnection $using:Destination -TraceRoute }
 
-$outputFile = WriteOutput -Output $Trace
+$OFS = "`r`n`t"
+$outputFile = WriteOutput -Output "$( $msgTable.LogIP ): $( $Trace.RemoteAddress )`r`n$( $msgTable.LogComputerName ): $( $Trace.ComputerName )`r`n$( $msgTable.LogTR ): $( [string]$Trace.TraceRoute )"
 
 Start-Process notepad $outputFile -Wait
 
-WriteLog -LogText "$ComputerName`r`n`t$outputFile" | Out-Null
+WriteLogTest -Text $Destination -UserInput $ComputerName -Success $true -OutputPath $outputFile | Out-Null
 EndScript
