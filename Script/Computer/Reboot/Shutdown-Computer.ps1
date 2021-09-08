@@ -9,7 +9,13 @@ Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 $ComputerName = $args[2]
 
-Stop-Computer -ComputerName $ComputerName -Force
+try { Stop-Computer -ComputerName $ComputerName -Force -ErrorAction Stop }
+catch
+{
+	Write-Host $msgTable.ErrMessage
+	Write-Host $_
+	$eh = WriteErrorlogTest -LogTest $_ -UserInput $ComputerName -Severity "OtherFail"
+}
 
-WriteLog -LogText "$ComputerName" | Out-Null
+WriteLogTest -Text "." -UserInput $ComputerName -Success ( $null -eq $eh ) -ErrorLogHash $eh | Out-Null
 EndScript
