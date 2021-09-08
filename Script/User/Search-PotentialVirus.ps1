@@ -3,6 +3,7 @@
 .Requires Role_Servicedesk_Backoffice
 .Description Lists all files in folders a given user have accespermission to.
 .Author Smorkster (smorkster)
+
 #>
 
 ###################################################################
@@ -367,6 +368,7 @@ function UpdateUserInput
 }
 
 ####################### Script start
+Add-Type -AssemblyName PresentationFramework
 Import-Module "$( $args[0] )\Modules\ConsoleOps.psm1" -Force -ArgumentList $args[1]
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -ArgumentList $args[1]
@@ -557,15 +559,6 @@ $syncHash.lvHU.Add_Click( { Resort "lvMultiDotsH" "Updated" } )
 $syncHash.lvGN.Add_Click( { Resort "lvMultiDotsG" "Name" } )
 $syncHash.lvGC.Add_Click( { Resort "lvMultiDotsG" "Created" } )
 $syncHash.lvGU.Add_Click( { Resort "lvMultiDotsG" "Updated" } )
-
-# Open folder the selected file is located in
-$syncHash.menuOpenfolder.Add_Click( { OpenFileFolder } )
-
-# Search on Google for the fileextension
-$syncHash.menuSearchExtension.Add_Click( { SearchExtension } )
-
-# Search on Google for the filename
-$syncHash.menuSearchFileName.Add_Click( { SearchFileName } )
 
 # Radiobutton for all files is selected, set startdate to two months ago
 $syncHash.rbAll.Add_Checked( { $syncHash.DC.DatePickerStart[1] = ( Get-Date ).AddDays( -60 ) } )
