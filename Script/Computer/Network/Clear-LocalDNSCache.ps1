@@ -13,5 +13,5 @@ Invoke-Command -Computername $ComputerName -Scriptblock { ipconfig /flushdns }
 
 Write-Host "$( $msgTable.StrDone )"
 
-WriteLog -LogText "$ComputerName" | Out-Null
+WriteLogTest -Text "." -UserInput $ComputerName -Success $true | Out-Null
 EndScript
