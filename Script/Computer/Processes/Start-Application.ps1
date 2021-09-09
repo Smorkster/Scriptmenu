@@ -11,7 +11,17 @@ $ComputerName = $args[2]
 
 $Program = Read-Host "$( $msgTable.QApp )"
 
-Invoke-Command -ComputerName $ComputerName -Scriptblock { Start-Process $Using:Program }
+try
+{
+	$return = Invoke-Command -ComputerName $ComputerName -Scriptblock { Start-Process $Using:Program }
+	Write-Host "$( $msgTable.StrDone ) $Program"
+}
+catch
+{
+	$eh = WriteErrorlogTest -LogText $_ -UserInput $Program -Severity "OtherFail"
+	Write-Host $msgTable.StrErr
+	Write-Host $_
+}
 
-WriteLog -LogText "$ComputerName $Program" | Out-Null
+WriteLogTest -Text $return -UserInput $Program -Success ( $null -eq $eh ) | Out-Null
 EndScript

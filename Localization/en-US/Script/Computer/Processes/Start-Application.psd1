@@ -1,3 +1,5 @@
 ConvertFrom-StringData @'
-QApp = Enter application to start
+QApp = Specify programs to start
+StrDone = Launched application:
+StrErr = An error occurred
 '@
