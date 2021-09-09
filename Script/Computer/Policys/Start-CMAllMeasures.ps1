@@ -35,7 +35,7 @@ $eh = @()
 	try
 	{
 		$schedule = $_
-		$schedule
+		Invoke-WmiMethod -ComputerName $ComputerName -Namespace root\ccm -Class sms_client -Name TriggerSchedule $schedule
 	}
 	catch { $eh += WriteErrorlogTest -LogText $_ -UserInput "$ComputerName`n$schedule" -Severity "OtherFail" }
 }
