@@ -9,7 +9,8 @@ Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 $ComputerName = $args[2]
 
-Invoke-Command -ComputerName $ComputerName -Scriptblock { Restart-Service -Name 'CcmExec' ; Restart-Service -Name 'CmRcService' }
+$eh += Invoke-Command -ComputerName $ComputerName -Scriptblock { Restart-Service -Name 'CcmExec' }
+$eh += Invoke-Command -ComputerName $ComputerName -Scriptblock { Restart-Service -Name 'CmRcService' }
 
-WriteLog -LogText "$( $ComputerName.ToUpper() )" | Out-Null
+WriteLogTest -Text "." -UserInput $ComputerName -Success ( $null -eq $eh ) -ErrorLogHash $eh | Out-Null
 EndScript
