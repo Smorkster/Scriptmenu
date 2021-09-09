@@ -9,27 +9,40 @@ Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 $ComputerName = $args[2]
 
-$Info = Invoke-Command -ComputerName $ComputerName -ScriptBlock `
+try
 {
-	$CITask = Get-WmiObject -Query "SELECT * FROM CCM_CITask WHERE TaskState != ' PendingSoftReboot' AND TaskState != 'PendingHardReboot' AND TaskState != 'InProgress'" -namespace root\ccm\CITasks
-	if ( $CITask -ne $NULL )
+	$CITask = Get-WmiObject -Query "SELECT * FROM CCM_CITask WHERE TaskState != ' PendingSoftReboot' AND TaskState != 'PendingHardReboot' AND TaskState != 'InProgress'" -Namespace root\ccm\CITasks  -ComputerName $ComputerName
+
+	if ( $null -ne $CITask )
 	{
 		$CITask | Remove-WmiObject -Whatif
 		$CITask | Remove-WmiObject
-		$ret = $using:msgTable.StrCleared
+		Write-Host ( $ret = $msgTable.StrCleared )
 	}
 	else
 	{
-		$ret = $using:msgTable.StrEmpty
+		Write-Host ( $ret = $msgTable.StrEmpty )
 	}
-	
+
 	Start-Sleep -Seconds 10
-	Restart-Service -Name CcmExec -Force
-	$ret
+	try
+	{
+		Get-Service -Name CcmExec -ComputerName $ComputerName -ErrorAction Stop | Restart-Service -Force -ErrorAction Stop
+		Write-Host $msgTable.StrDone
+	}
+	catch
+	{
+		Write-Host ( $ret = $msgTable.ErrService )
+		Write-Host $_
+		$eh += WriteErrorlogTest -LogText $_ -UserInput "$ComputerName`n$( $msgTable.LogErrService )" -Severity "OtherFail"
+	}
+}
+catch
+{
+	Write-Host ( $ret = $msgTable.ErrMsg )
+	Write-Host $_
+	$eh += WriteErrorlogTest -LogText $_ -UserInput "$ComputerName`n$( $msgTable.LogErrMsg )" -Severity "OtherFail"
 }
 
-Write-Host $Info
-Write-Host "$( $msgTable.StrDone )"
-
-WriteLog -LogText "$( $ComputerName.ToUpper() )" | Out-Null
+WriteLog -Text $ret -UserInput $ComputerName -Success ( $null -eq $eh ) -ErrorLogHash $eh | Out-Null
 EndScript
