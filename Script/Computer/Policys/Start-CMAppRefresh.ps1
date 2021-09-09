@@ -7,12 +7,27 @@
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 $ComputerName = $args[2]
+$eh = @()
 
-Invoke-WmiMethod -ComputerName $ComputerName -Namespace root\ccm -Class sms_client -Name TriggerSchedule '{00000000-0000-0000-0000-000000000003}'
-Invoke-WmiMethod -ComputerName $ComputerName -Namespace root\ccm -Class sms_client -Name TriggerSchedule '{00000000-0000-0000-0000-000000000108}'
-Invoke-WmiMethod -ComputerName $ComputerName -Namespace root\ccm -Class sms_client -Name TriggerSchedule '{00000000-0000-0000-0000-000000000113}'
-Invoke-WmiMethod -ComputerName $ComputerName -Namespace root\ccm -Class sms_client -Name TriggerSchedule '{00000000-0000-0000-0000-000000000114}'
-Invoke-WmiMethod -ComputerName $ComputerName -Namespace root\ccm -Class sms_client -Name TriggerSchedule '{00000000-0000-0000-0000-000000000121}'
+'{00000000-0000-0000-0000-000000000003}',
+'{00000000-0000-0000-0000-000000000108}',
+'{00000000-0000-0000-0000-000000000113}',
+'{00000000-0000-0000-0000-000000000114}',
+'{00000000-0000-0000-0000-000000000121}' | ForEach-Object {
+	try
+	{
+		$schedule = $_
+		Invoke-WmiMethod -ComputerName $ComputerName -Namespace root\ccm -Class sms_client -Name TriggerSchedule $schedule
+	}
+	catch { $eh += WriteErrorlogTest -LogText $_ -UserInput "$ComputerName`n$schedule" -Severity "OtherFail" }
+}
 
-WriteLog -LogText "$( $ComputerName.ToUpper() )" | Out-Null
+Write-Host $msgTable.StrDone
+if ( $eh.Count -gt 0 )
+{
+	Write-Error "$( $eh.Count ) $( $msgTable.StrErrors )"
+	$Error.Exception.Message | ForEach-Object { "$_`n" }
+}
+
+WriteLogTest -Text "." -UserInput $ComputerName -Success ( $eh.Count -eq 0 ) -ErrorLogHash $eh | Out-Null
 EndScript
