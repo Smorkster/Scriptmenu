@@ -14,6 +14,7 @@ catch
 {
 	$eh = WriteErrorlogTest -LogText $_ -UserInput "." -Severity "OtherFail" -ComputerName $ComputerName
 	Write-Host $msgTable.StrErr
+	Write-Host $_
 }
 
 WriteLogTest -Success ( $null -eq $eh ) -ComputerName $ComputerName -ErrorLogHash $eh | Out-Null

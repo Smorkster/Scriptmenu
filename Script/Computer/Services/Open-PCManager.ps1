@@ -9,7 +9,13 @@ Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 $ComputerName = $args[2]
 
-C:\Windows\System32\Compmgmt.msc -a /computer=$ComputerName
+try { C:\Windows\System32\Compmgmt.msc -a /computer=$ComputerName }
+catch
+{
+	$eh = WriteErrorlogTest -LogText $_ -UserInput "." -Severity "OtherFail"
+	Write-Host $msgTable.StrErr
+	Write-Host $_
+}
 
-WriteLog -LogText "$ComputerName" | Out-Null
+WriteLogTest -Success ( $null -eq $eh ) -ComputerName $ComputerName -ErrorLogHash $eh | Out-Null
 EndScript
