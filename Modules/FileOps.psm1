@@ -21,6 +21,7 @@ enum ErrorSeverity {
 	ScriptLogicFail = 1
 	ConnectionFail = 2
 	PermissionFail = 3
+	ScriptAborted = 4
 	OtherFail = -1
 }
 
@@ -34,6 +35,7 @@ class Log
 	[array] $ErrorLogDate
 	[string] $ErrorLogFile
 	[array] $OutputFile
+	[string] $ComputerName
 	[string] $LogDate
 	[string] $Operator
 
@@ -54,6 +56,7 @@ class Log
 		$this.ErrorLogDate = $o.ErrorLogDate
 		$this.OutputFile = $o.OutputFile
 		$this.Operator = $o.Operator
+		$this.ComputerName = $o.ComputerName
 	}
 
 	[string] ToJson()
@@ -71,6 +74,7 @@ class ErrorLog
 	[ValidateNotNullOrEmpty()] [string] $ErrorMessage
 	[ValidateNotNullOrEmpty()] [string] $UserInput
 	[ValidateNotNullOrEmpty()] [ErrorSeverity] $Severity
+	[string] $ComputerName
 	[string] $LogDate
 	[string] $Operator
 
@@ -88,6 +92,7 @@ class ErrorLog
 		$this.Severity = $o.Severity
 		$this.LogDate = $o.LogDate
 		$this.Operator = $o.Operator
+		$this.ComputerName = $o.ComputerName
 	}
 
 	[string] ToJson()
@@ -166,11 +171,12 @@ function WriteLogTest
 {
 	[cmdletbinding()]
 	param (
-		[Parameter(Mandatory = $true)][string]$Text,
-		[Parameter(Mandatory = $true)][string]$UserInput,
+		[string]$Text,
+		[string]$UserInput,
 		[Parameter(Mandatory = $true)][bool]$Success,
 		[array]$ErrorLogHash,
-		[array]$OutputPath
+		[array]$OutputPath,
+		[string]$ComputerName
 	)
 
 	$mtx = New-Object System.Threading.Mutex( $false, "WriteLogTest $( $CallingScript.Name )" )
@@ -178,7 +184,7 @@ function WriteLogTest
 	if ( $ErrorLogHash ) { $log.ErrorLogFile = $ErrorLogHash.ErrorLogFile ; $log.ErrorLogDate = $ErrorLogHash.ErrorLogDate }
 	if ( $OutputPath ) { $log.OutputFile = $OutputPath }
 	$LogFilePath = Get-LogFilePath -TopFolder "Logs" -FileName "$( $CallingScript.BaseName ) - log.json"
-	$mtx.WaitOne()
+	$mtx.WaitOne() | Out-Null
 	Add-Content -Path $LogFilePath -Value ( $log.ToJson() )
 	$mtx.ReleaseMutex()
 	return $LogFilePath
@@ -204,7 +210,12 @@ function WriteErrorlog
 # Returns path to the file
 function WriteErrorlogTest
 {
-	param ( [string] $LogText, [string] $UserInput, [ValidateScript( { [ErrorSeverity].GetEnumNames() -contains $_ } )] $Severity )
+	param (
+		[Parameter(Mandatory = $true)][string] $LogText,
+		[Parameter(Mandatory = $true)][string] $UserInput,
+		[Parameter(Mandatory = $true)][ValidateScript( { [ErrorSeverity].GetEnumNames() -contains $_ } )] $Severity,
+		[string]$ComputerName
+	)
 
 	$mtx = New-Object System.Threading.Mutex( $false, "WriteLogTest $( $CallingScript.Name )" )
 	$OutputEncoding = ( New-Object System.Text.UnicodeEncoding $False, $False ).psobject.BaseObject
