@@ -8,9 +8,19 @@
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 $ComputerName = $args[2]
-$Adress = Read-Host "$( $msgTable.QAddress )"
+$Address = Read-Host "$( $msgTable.QAddress )"
 
-Invoke-Command -ComputerName $ComputerName -Scriptblock ` { Start-Process $Using:Adress }
+try
+{
+	Invoke-Command -ComputerName $ComputerName -ScriptBlock { Start-Process $Using:Address } -ErrorAction Stop
+	Write-Host $msgTable.StrDone
+}
+catch
+{
+	$eh = WriteErrorlogTest -LogText $_ -UserInput $Address -Severity "OtherFail" -ComputerName $ComputerName
+	Write-Host $msgTable.StrErr
+	Write-Host $_
+}
 
-WriteLog -LogText "$ComputerName > $Adress" | Out-Null
+WriteLogTest -UserInput $Address -ComputerName $ComputerName -Success ( $null -eq $eh ) -ErrorLogHash $eh | Out-Null
 EndScript
