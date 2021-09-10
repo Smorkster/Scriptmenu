@@ -13,15 +13,15 @@ $Program = Read-Host "$( $msgTable.QApp )"
 
 try
 {
-	$return = Invoke-Command -ComputerName $ComputerName -Scriptblock { Start-Process $Using:Program }
+	Invoke-Command -ComputerName $ComputerName -ScriptBlock { Start-Process $Using:Program }
 	Write-Host "$( $msgTable.StrDone ) $Program"
 }
 catch
 {
-	$eh = WriteErrorlogTest -LogText $_ -UserInput $Program -Severity "OtherFail"
+	$eh = WriteErrorlogTest -LogText $_ -UserInput $Program -Severity "OtherFail" -ComputerName $ComputerName
 	Write-Host $msgTable.StrErr
 	Write-Host $_
 }
 
-WriteLogTest -Text $return -UserInput $Program -Success ( $null -eq $eh ) | Out-Null
+WriteLogTest -UserInput $Program -Success ( $null -eq $eh ) -ComputerName $ComputerName | Out-Null
 EndScript
