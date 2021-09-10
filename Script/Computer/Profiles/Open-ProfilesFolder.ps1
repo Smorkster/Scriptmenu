@@ -11,5 +11,5 @@ $ComputerName = $args[2]
 
 explorer.exe \\$ComputerName\C$\Users
 
-WriteLog -LogText "$ComputerName" | Out-Null
+WriteLogTest -ComputerName $ComputerName -Success $true | Out-Null
 EndScript
