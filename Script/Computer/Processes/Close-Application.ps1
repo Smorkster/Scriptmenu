@@ -8,22 +8,26 @@
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 $ComputerName = $args[2]
-$failed = New-Object System.Collections.ArrayList
-$succesfull = New-Object System.Collections.ArrayList
+$failed = [System.Collections.ArrayList]::new()
+$successfull = [System.Collections.ArrayList]::new()
 
 Write-Host $msgTable.StrGetApps
 $apps = Get-CimInstance -ComputerName $ComputerName -ClassName win32_process | Select-Object Name, ProcessID | Sort-Object Name
 $apps | Out-Host
 
-$ProcIDs = ( Read-Host "$( $msgTable.QPID )" ) -replace " " -split ","
+$ProcIDs = ( Read-Host "$( $msgTable.QPID )" ) -split "\W" | Where-Object { $_ }
 
 foreach ( $p in $ProcIDs )
 {
 	if ( $apps.ProcessID -contains $p )
 	{
-		Write-Host "$( $msgTable.StrTerminatingApp ) '$( $apps.Where( { $_.ProcessID -eq "$p"} ).Name )' ($p)"
+		Write-Host "$( $msgTable.StrTerminatingApp ) '$( $apps.Where( { $_.ProcessID -eq "$p" } ).Name )' ($p)"
 		$term = Get-CimInstance -ComputerName $ComputerName -ClassName win32_process -Filter "ProcessID like '$p'" | Invoke-CimMethod -MethodName Terminate
-		if ( $term.ReturnValue -ne 0 )
+		if ( $term.ReturnValue -eq 0 )
+		{
+			[void] $successfull.Add( ( $apps.Where( { $_.ProcessID -eq "$p"} ).Name ) )
+		}
+		else
 		{
 			switch( $term.ReturnValue )
 			{
@@ -36,10 +40,6 @@ foreach ( $p in $ProcIDs )
 			}
 			[void] $failed.Add( [pscustomobject]@{ ID = $p ; $msgTable.StrErrCause = $t } )
 		}
-		else
-		{
-			[void] $succesfull.Add( ( $apps.Where( { $_.ProcessID -eq "$p"} ).Name ) )
-		}
 	}
 	else
 	{
@@ -47,11 +47,13 @@ foreach ( $p in $ProcIDs )
 	}
 }
 
+$OFS = ", "
 if ( $failed.Count -gt 0 )
 {
 	Write-Host "`n`n$( $msgTable.StrErrTitle )"
-	$failed | Out-Host
+	$failed | Sort-Object $msgTable.StrErrCause | Out-Host
+	$eh = WriteErrorlogTest -LogText ( $failed | Out-String ) -UserInput ( [string]$ProcIDs ) -Severity "OtherFail"
 }
 
-WriteLog -LogText "$ComputerName $succesfull" | Out-Null
+WriteLogTest -UserInput ( [string]$ProcIDs ) -Text "$( $successfull.Count ) $( $msgTable.LogAppsClosed )`n$( $successfull )$( if ( $failed.Count -gt 0 ) { "`n$( $failed.Count ) $( $msgTable.LogAppsFails )" } )" -ComputerName $ComputerName -Success ( $failed.Count -eq 0 ) -ErrorLogHash $eh | Out-Null
 EndScript
