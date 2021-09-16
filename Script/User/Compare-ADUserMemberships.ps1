@@ -25,8 +25,10 @@ $success = $true
 
 if ( $Choice -eq 1 )
 {
-	$UsersIn += Read-Host "1 ) $( $msgTable.QID ) "
-	$UsersIn += Read-Host "2 ) $( $msgTable.QID )"
+	do { $u = Read-Host "1 ) $( $msgTable.QID ) " } until ( $u )
+	$UsersIn += $u
+	do { $u = Read-Host "2 ) $( $msgTable.QID ) " } until ( $u )
+	$UsersIn += $u
 	Write-Host "`n"
 
 }
