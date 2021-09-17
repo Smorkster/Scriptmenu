@@ -329,8 +329,6 @@ function UpdateAppList
 			Exclude = $null
 			GroupType = "App2-grupper" } }
 	[void] $syncHash.cbApp.Items.Add( $app )
-
-	[void] $syncHash.cbApp.Items.Add( $app )
 }
 
 ##########################################################################
@@ -387,7 +385,7 @@ function WriteToLogFile
 	$OFS = ", "
 
 	$LogText = "$( $syncHash.Data.msgTable.StrLogMessage ): $( $syncHash.cbApp.Text )`n"
-	if ( $syncHash.AddUsers.Count -gt 0 ) { $LogText += "$( $syncHash.Data.msgTable.LogMessageAdd ) $( syncHash.AddUsers.Id )" }
+	if ( $syncHash.AddUsers.Count -gt 0 ) { $LogText += "$( $syncHash.Data.msgTable.LogMessageAdd ) $( $syncHash.AddUsers.Id )" }
 	if ( $syncHash.RemoveUsers.Count -gt 0 ) { $LogText += "$( $syncHash.Data.msgTable.LogMessageRemove ) $( $syncHash.RemoveUsers.Id )" }
 
 	$UserInput = ""
