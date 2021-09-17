@@ -11,7 +11,7 @@ $Destination = Read-Host $msgTable.QIP
 try
 {
 	$Response = Resolve-DnsName -Name $Destination -Type A_AAAA -ErrorAction Stop
-	$Device = ( $Response.NameHost -split "\w" )[0].ToUpper()
+	$Device = ( $Response.NameHost -split "\W" )[0].ToUpper()
 }
 catch
 {
