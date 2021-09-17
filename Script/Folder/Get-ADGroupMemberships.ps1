@@ -49,29 +49,26 @@ foreach ( $User in $UsersIn )
 				$X = $Group.Substring( 8 )
 				$Server = $X.Substring( 0, $X.IndexOf( '_' ) )
 				$Y = $X.Substring( $X.IndexOf( '_' ) )
-				if ( ( $Group.Substring( $Group.LastIndexOf( '_' ) ) -notcontains "_R" -or "_C" -or "_F" ) )
-				{
-					$Mapp = $Y.Substring( 1, $Y.Length -1 )
-				}
-				else
-				{
-					$Mapp = $Y.Substring( 1, $Y.Length -3 )
-				}
+				if ( $Group -notmatch "_R$|_C$|_F$" ) { $Mapp = $Y.Substring( 1, $Y.Length -1 ) }
+				else { $Mapp = $Y.Substring( 1, $Y.Length -3 ) }
 				$Path = "\\$Server\$Mapp"
 			}
 			else
 			{
-				if ( $Group -like "*_Grp_*" ) { $Type = "Grp_" }
-				elseif ( $Group -like "*_Gem_*" ) { $Type = "Gem_" }
-				elseif ( $Group -like "*_App_*" ) { $Type = "App_" }
+				switch ( $Group )
+				{
+					"*_Grp_*" { $Type = "Grp_" }
+					"*_Gem_*" { $Type = "Gem_" }
+					"*_App_*" { $Type = "App_" }
+				}
 
 				$Kund = $Group.SubString( 0, 3 )
 				$X = $Group.Substring( $Group.LastIndexOf( 'Grp_' ) )
-				if ( ( $Group.Substring( $Group.LastIndexOf( '_' ) ) -eq "_R" -or "_C" -or "_F" ) ) { $Y = $Group.Substring( $Group.LastIndexOf( '_' ) ) }
+				if ( ( $Group -match "_R$|_C$|_F$" ) ) { $Y = $Group.Substring( $Group.LastIndexOf( '_' ) ) }
 				else { $Y = "" }
 
-				$Z = $X.Replace( "Grp_", "" )
-				$Mapp = $Z.Replace( "$Y", "" )
+				$Z = $X.Replace( $Type, "" )
+				$Mapp = $Z.Replace( $Y, "" )
 				$Path = "G:\$Kund\$Mapp"
 			}
 
@@ -86,14 +83,14 @@ foreach ( $User in $UsersIn )
 		}
 
 		# Remove pathway created due to groups giving read-permission for DFS-links
-		$Read = $Read | Where-Object { $_ -Notlike "*\R" } | Where-Object { $_ -Notlike "*\Ext" }
-		$Other = $Other | Where-Object { $_ -Notlike "*\R" } | Where-Object { $_ -Notlike "*\Ext" }
+		$Read = $Read | Where-Object { $_ -Notlike "*\R" -and $_ -Notlike "*\Ext" }
+		$Other = $Other | Where-Object { $_ -Notlike "*\R" -and $_ -Notlike "*\Ext" }
 
 		# Sort and remove duplicates in each array
 		$Read = $Read | Sort-Object | Select-Object -Unique
 		$Change = $Change | Sort-Object | Select-Object -Unique
 		$Full = $Full | Sort-Object | Select-Object -Unique
-		$Other = $Other | Sort-Object | Where-Object { $Read -notcontains $_ } | Where-Object { $Change -notcontains $_ } | Where-Object { $Full -notcontains $_ } | Select-Object -Unique
+		$Other = $Other | Sort-Object | Where-Object { $Read -notcontains $_ -and $Change -notcontains $_ -and $Full -notcontains $_ } | Select-Object -Unique
 
 		$outputInfo = "$( $msgTable.StrOutInfo1 )`r`n$( $msgTable.StrOutInfo2 )`r`n$( $msgTable.StrOutInfo3 )"
 		$outputInfo += "`r`n`r`n$User $( $msgTable.StrOutTitle )`r`n"
@@ -112,11 +109,11 @@ foreach ( $User in $UsersIn )
 		$outputFile = WriteOutput -FileNameAddition $User -Output $outputInfo
 		Write-Host "$( $msgTable.StrOutPath )`n$outputFile"
 		$OutputFiles += $outputFile
-		$LogText += "$User $outputFile`n`t"
+		$LogText += "$( $msgTable.LogUserFile ) $User - $( ( $outputFile -split "\\" )[-1] )`n"
 	}
 }
 
-WriteLogTest -Text $LogText.Trim() -UserInput ( [string]$UsersIn ) -Success $success -ErrorLogHash $ErrorHashes -OutputPath $OutputFiles | Out-Null
+WriteLogTest -Text "$( $LogText.Trim() )`n`n$( $msgTable.LogSummary )" -UserInput ( [string]$UsersIn ) -Success $success -ErrorLogHash $ErrorHashes -OutputPath $OutputFiles | Out-Null
 
 if ( ( Read-Host "`n$( $msgTable.StrOpenFiles )" ) -eq "Y" )
 {

@@ -1,6 +1,8 @@
 ConvertFrom-StringData @'
 ErrLogUesrNotFound = finns inte i AD
-StrEnd = Nu är hela skriptet färdigt och alla användare har fått en egen lista utskriven i Output-mappen. Du kan använda Output-tabben i SDValmeny för att öppna filerna.
+LogSummary = Se respektive utfil för sammanfattning
+LogUserFile = Användare
+StrEnd = Nu är hela skriptet färdigt och alla användare har fått en egen lista utskriven i Output-mappen. Du kan använda Output-tabben i Scriptmenu för att öppna filerna.
 StrNotepad = Notepad öppnas, ange användare
 StrNotepadTitle = Ange id för användare, ett per rad
 StrOpenFiles = Vill du öppna alla filerna nu? (Y\\N)

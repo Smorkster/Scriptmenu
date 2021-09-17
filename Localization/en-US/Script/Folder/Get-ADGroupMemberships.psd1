@@ -1,5 +1,7 @@
 ConvertFrom-StringData @'
 ErrLogUesrNotFound = does not exist in AD
+LogSummary = See the respective output file for a summary
+LogUserFile = User
 StrEnd = The entire script is now complete and all users have their own list written to the Output folder. You can use the Output-tab in the Scriptmenu to open the files.
 StrNotepad = Notepad opens, enter users
 StrNotepadTitle = Enter user ID, one per line
@@ -14,6 +16,6 @@ StrOutTitleChange = Change-permission
 StrOutTitleFull = Full-permission
 StrOutTitleRead = Läs-permission
 StrOutTitleUnknown = Unknown permission
-StrTitle = This script retrieves and sorts all permission groups for one or more users. All file permissions are then exported to one TXT file per user
+StrTitle = This script retrieves and sorts all permission groups for one or more users. All file permissions are then exported to one TXT file per user.
 StrUserNotFound = Did not find a user with id:
 '@
