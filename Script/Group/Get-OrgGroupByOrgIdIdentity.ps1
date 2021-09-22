@@ -8,25 +8,19 @@ Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 $UserInput = Read-Host "$( $msgTable.QID )"
 
-if ( $UserInput.Length -eq 4 )
-{
-	$Filter = "($( $msgTable.CodeOrgIdPropName )=$( $msgTable.CodeOrgIdPropPrefix )-$UserInput)"
-}
-else
-{
-	$Filter = "(Name=$UserInput)"
-}
+if ( $UserInput.Length -eq 4 ) { $Filter = "($( $msgTable.CodeOrgIdPropName )=$( $msgTable.CodeOrgIdPropPrefix )-$UserInput)" }
+else { $Filter = "(Name=$UserInput)" }
 
-$Group = Get-ADGroup -LDAPFilter $Filter -Properties ( $msgTable.CodeOrgIdPropName ) | Select-Object @{ Name = ( $msgTable.CodePropTitleOrg ); Expression = { $_.Name } }, @{ Name = ( $msgTable.CodePropTitleId ); Expression = { $_.( $msgTable.CodeOrgIdPropName ) -replace "$( $msgTable.CodeOrgIdPropPrefix )-", "" } }
-
-if ( $null -eq $Group )
+try
 {
-	Write-Host "$( $msgTable.StrNotFound ) $UserInput"
-}
-else
-{
+	$Group = Get-ADGroup -LDAPFilter $Filter -Properties ( $msgTable.CodeOrgIdPropName ) | Select-Object @{ Name = ( $msgTable.CodePropTitleOrg ); Expression = { $_.Name } }, @{ Name = ( $msgTable.CodePropTitleId ); Expression = { $_.( $msgTable.CodeOrgIdPropName ) -replace "$( $msgTable.CodeOrgIdPropPrefix )-", "" } }
 	$Group | Out-Host
 }
+catch
+{
+	Write-Host "$( $msgTable.StrNotFound ) $UserInput"
+	$eh = WriteErrorlogTest -LogText $_ -UserInput $UserInput -Severity "UserInputFail"
+}
 
-WriteLog -LogText "$UserInput" | Out-Null
+WriteLogTest -Text $Group.Name -UserInput $UserInput -Success ( $null -eq $eh ) -ErrorLogHash $eh | Out-Null
 EndScript
