@@ -9,58 +9,81 @@ Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 Import-Module ActiveDirectory
 
 $output = ""
+$failGroups = @()
+$failUsers = @()
 
 Write-Host "`n $( $msgTable.StrTitle ) `n" -ForegroundColor Cyan
 Write-Host "`n`n$( $msgTable.QGroups )"
-$Groups = GetConsolePasteInput
+$GroupsIn = GetConsolePasteInput -Folders
+[array]$Groups = $GroupsIn | ForEach-Object {
+	try { Get-ADGroup -Identity $_ }
+	catch
+	{
+		$eh += WriteErrorlogTest -LogText $_ -UserInput "Get-ADGroup $_" -Severity "UserInputFail"
+		$failGroups += $_
+	}
+}
 
 Start-Sleep -Seconds 1
 Write-Host "`n`n$( $msgTable.QUsers )"
-$Users = GetConsolePasteInput
-
-foreach ( $GroupId in $Groups )
-{
-	# Get group and its users
-	$Group = Get-ADGroup $GroupId
-	$GroupMembers = $Group | Get-ADGroupMember | Select-Object -ExpandProperty SamAccountName
-	Write-Host "$( $msgTable.StrGettingUsers ) $Group `n" -ForegroundColor Cyan
-
-	$UserRemoval = @()
-	$AllUsers = @()
-	$nRow = ""
-	$Row = ""
-
-	foreach ( $UserId in $Users )
+$UsersIn = GetConsolePasteInput
+[array]$Users = $UsersIn | ForEach-Object {
+	try { Get-ADUser -Identity $_ }
+	catch
 	{
-		$AllUsers += $UserId
-		# If list contains user, add user to array for removal
-		if ( ( $GroupMembers -contains $UserId ) )
-		{
-			$UserRemoval += Get-ADUser $UserId
-		}
+		$eh += WriteErrorlogTest -LogText $_ -UserInput "Get-ADUser $_" -Severity "UserInputFail"
+		$failUsers += $_
 	}
-
-	# Remove user from groups, based on array
-	Write-Host "`n$( $msgTable.StrRemoveUser ) $( $Group.Name ): `n" -ForegroundColor Cyan
-
-	$output += "`r`nGruppnamn: $Group`r`n`t"
-	$UserRemoval | Remove-ADPrincipalGroupMembership -MemberOf $Group -Confirm:$false
-	foreach ( $User in $UserRemoval )
-	{
-		Write-Host "$User " -ForegroundColor Green -NoNewline
-		$Row += "$User, "
-	}
-	$AllUsers | ForEach-Object { if ( $UserRemoval.SamAccountName -notcontains $_ ) { $nRow += "$nRow " } }
-	if ( $nRow -ne "" )
-	{
-		Write-Host "$( $msgTable.StrNotMembers ):`n$nRow"
-	}
-	$output += $Row.Substring( 0, $Row.Length - 2 )
-	$output += "`r`n-------------------------------------------------"
 }
 
-$outputFile = WriteOutput -Output $output.Trim()
-Write-Host "$( $msgTable.StrSummaryPath ) '$outputFile'"
+$NumRem = 0
+$OFS = ", "
 
-WriteLog -LogText "$( $AllUsers.Count ) $( $msgTable.StrUsers ), $( $Groups.Count )`r`n`t$outputFile" | Out-Null
+foreach ( $Group in $Groups )
+{
+	try
+	{
+		Write-Host "$( $msgTable.StrGettingUsers ) $( $Group.Name ) `n" -ForegroundColor Cyan
+		# Get the groups users
+		$GroupMembers = $Group | Get-ADGroupMember
+
+		# Remove user from groups
+		Write-Host "`n$( $msgTable.StrRemoveUser ) $( $Group.Name ): `n" -ForegroundColor Cyan
+		$output += "`r`n$( $msgTable.OutputGroup ) $( $Group.Name )`r`n$( $msgTable.OutputUsers )`r`n"
+		foreach ( $User in ( $GroupMembers.Where( { $_.SamAccountName-in $Users.SamAccountName } ) ) )
+		{
+			Remove-ADPrincipalGroupMembership -MemberOf $Group -Identity $User -Confirm:$false
+			Write-Host "`t$( $User.Name )"
+			$Removed += $User
+			$output += "$( $User.Name )"
+			$NumRem += 1
+		}
+		$output += "`r`n`r`n-------------------------------------------------"
+	}
+	catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException]
+	{
+		$eh += WriteErrorlogTest -LogText $_ -UserInput "$( $msgTable.LogErrRetGroup ) $Group" -Severity "UserInputFail"
+	}
+	catch
+	{
+		$eh += WriteErrorlogTest -LogText $_ -UserInput "$( $msgTable.LogErrRetGroup ) $Group" -Severity "OtherFail"
+	}
+}
+
+if ( $output.Trim() -ne "" )
+{
+	$outputFile = WriteOutput -Output $output.Trim()
+	Write-Host "`n$( $msgTable.StrSummaryPath )`n$outputFile"
+	$logText = "$NumRem $$( $msgTable.LogRemCount )"
+}
+else
+{
+	Write-Host $msgTable.LogErrNoOutput
+	$logText = $msgTable.LogErrNoOutput
+}
+
+if ( $failGroups.Count -gt 0 ) { $logText += "`n`n$( $failGroups.Count ) $( $msgTable.LogFailGroups )`n$failGroups" }
+if ( $failUsers.Count -gt 0 ) { $logText += "`n`n$( $failUsers.Count ) $( $msgTable.LogFailUsers )`n$failUsers" }
+
+WriteLogTest -Text $logText -UserInput "$( $msgTable.LogUsers )`n$UsersIn`n`n$( $msgTable.LogGroups )`n$GroupsIn" -Success ( $null -eq $eh ) -ErrorLogHash $eh -OutputPath $outputFile | Out-Null
 EndScript
