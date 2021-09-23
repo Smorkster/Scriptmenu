@@ -8,22 +8,34 @@ Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 $ComputerName = Read-Host "$( $msgTable.QComputer )"
 
-$Computer = Get-ADComputer $ComputerName -Properties adminDescription
+try
+{
+	$Computer = Get-ADComputer $ComputerName -Properties adminDescription
 
-if ( $null -eq $Computer.adminDescription )
-{
-	Write-Host "$( $msgTable.StrNoLA )"
-	$logText = $msgTable.StrLogNoLA
-}
-else
-{
-	$logText = $Computer.adminDescription
-	foreach ( $data in ( $Computer.adminDescription -split ";" | Where-Object { $_ -ne "" } ) )
+	if ( $Computer.adminDescription -eq $null )
 	{
-		$split = $data -split ":"
-		Write-Host "$( $msgTable.StrOutDate ): $( $split[0] )`n$( $msgTable.StrOutUser ): $( $split[1] )"
+		Write-Host "$( $msgTable.StrNoLA )"
+		$logText = $msgTable.StrLogNoLA
+	}
+	else
+	{
+		foreach ( $data in ( $Computer.adminDescription -split ";" -split ":" | Where-Object { $_ } ) )
+		{
+			try
+			{
+				[datetime]::Parse( $data ) | Out-Null
+				$list += "$( $msgTable.StrOutDate ): $data`n"
+			}
+			catch { $list += "$( $msgTable.StrOutUser ): $data`n`n" }
+		}
+		$list | Out-Host
 	}
 }
+catch
+{
+	$eh = WriteErrorlogTest -LogText $_ -UserInput $ComputerName -Severity "UserInputFail"
+	Write-Host "$( $msgTable.ErrMsg ) '$ComputerName'"
+}
 
-WriteLog -LogText "$( $Computer.Name ) > $logText" | Out-Null
+WriteLogTest -Text "$( $Computer.adminDescription)`n`n$list" -ComputerName $ComputerName -Success ( $null -eq $eh ) -ErrorLogHash $eh | Out-Null
 EndScript
