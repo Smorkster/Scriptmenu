@@ -1,0 +1,36 @@
+ConvertFrom-StringData @'
+CodeAdNameReadSuffix = _User_R
+CodeAdNameWriteSuffix = _User_C
+CodeOrg1GrpPrefix = Org1_File_grp_
+CodeOrg2GrpPrefix = Org2_File_grp_
+CodeOrg3GrpPrefix = Org3_File_grp_
+ErrLogAdUserDisabled = New owner inactive in AD
+ErrLogAdUserNotFound = Control of new owner
+ErrLogPath = does not exist
+ErrMsgAdUserDisabled = is inactive in AD
+ErrMsgNoAdUser = Id for new owner is not in AD
+ErrMsgPath = Can't find folder with path
+LogAbortingInit = Canceled at start
+LogAbortingOwner = Canceled at new owner
+LogAdUserDisabled = Desired new owner, inactive in AD
+LogAdUserNotFound = Id for new owner is not in AD
+StrAborting = Exits the script
+StrCurrOwnerInfo = Current owner of the folder:
+StrCustomerInput = Specified organization:
+StrDiffOwnerInfo1 = has different folder owners. One for the Read- and one for the Change-group.
+StrDiffOwnerInfo2 = If you specify a new owner, it will be added to both groups.
+StrDiffOwnerReadTitle = Owner of the Read-group
+StrDiffOwnerWriteTitle = Owner of the Change-group
+StrInfoEnd = If you want to change owners, enter it below. Otherwise, cancel the script.
+StrInvalidOrgInput = Wrong customer! Enter a valid value to continue.
+StrNewOwnerInfo = Owner is now set to
+StrNoReadOwner = Owner of the Read group is missing
+StrNoWriteOwner = Owner of the Change group is missing
+StrOrg1 = Org1
+StrOrg2 = Org2
+StrOrg3 = Org3
+StrOwnerInput = Listed new owner:
+StrQName = Enter the folder name
+StrQNewOwner = Enter new owner ID, Q to cancel
+StrQOrg = Enter customer (Org1/Org2/Org3), Q to exit
+'@

@@ -12,7 +12,7 @@ try
 {
 	$Computer = Get-ADComputer $ComputerName -Properties adminDescription
 
-	if ( $Computer.adminDescription -eq $null )
+	if ( $null -eq $Computer.adminDescription )
 	{
 		Write-Host "$( $msgTable.StrNoLA )"
 		$logText = $msgTable.StrLogNoLA
@@ -28,7 +28,7 @@ try
 			}
 			catch { $list += "$( $msgTable.StrOutUser ): $data`n`n" }
 		}
-		$list | Out-Host
+		$logText = "$( $Computer.adminDescription)`n`n$list"
 	}
 }
 catch
@@ -37,5 +37,5 @@ catch
 	Write-Host "$( $msgTable.ErrMsg ) '$ComputerName'"
 }
 
-WriteLogTest -Text "$( $Computer.adminDescription)`n`n$list" -ComputerName $ComputerName -Success ( $null -eq $eh ) -ErrorLogHash $eh | Out-Null
+WriteLogTest -Text $logText -ComputerName $ComputerName -Success ( $null -eq $eh ) -ErrorLogHash $eh | Out-Null
 EndScript
