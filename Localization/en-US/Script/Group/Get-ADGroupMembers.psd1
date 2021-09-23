@@ -2,6 +2,7 @@ ConvertFrom-StringData @'
 LogAborted = Aborted
 LogNoGroups = No groups
 LogSelectedCount = groups selected
+LogSearchWord = Searchword:
 QGName = Enter groupname to search for
 StrAborted = No groups selected. Aborting search.
 StrGrpName = Groupname

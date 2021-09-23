@@ -7,39 +7,55 @@
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 Write-Host "$( $msgTable.StrTitle )`n"
-$searchWord = Read-Host $msgTable.QGName
-Write-Host $msgTable.StrSearching
+$searchWord = Read-Host "$( $msgTable.QGName )"
+Write-Host "$( $msgTable.StrSearching )`n"
 $list = [System.Collections.ArrayList]::new()
-[array] $Groups = Get-ADGroup -LDAPFilter "(&(Name=*$searchWord*User*)(|(Name=*_R)(Name=*_C)))"
+if ( -not ( [array] $Groups = Get-ADGroup -LDAPFilter "(Name=$searchWord)" ) )
+{
+	[array] $Groups = Get-ADGroup -LDAPFilter "(Name=*$searchWord*)"
+}
 
 if ( $Groups.Count -eq 0 )
 {
-	$logText = "$searchWord $( $msgTable.LogNoGroups )"
+	$logText = $msgTable.LogNoGroups
 	Write-Host $msgTable.StrNoGroups
 }
 else
 {
-	[array]$selectedGroups = $Groups | Select-Object Name, @{ Name = $msgTable.StrGrpType; Expression = {
-			if ( $_.Name -match "_R" ) { $msgTable.StrRead }
-			else { $msgTable.StrWrite } } } | `
-		Out-GridView -PassThru -Title $msgTable.StrGrpSelectionTitle
+	if ( $Groups.Count -gt 1 )
+	{
+		[array]$selectedGroups = $Groups | Select-Object Name, @{ Name = $msgTable.StrGrpType; Expression = {
+				if ( $_.Name -match "_R" ) { $msgTable.StrRead }
+				else { $msgTable.StrWrite } } } | `
+			Out-GridView -PassThru -Title $msgTable.StrGrpSelectionTitle
+	}
+	else { $selectedGroups = $Groups }
+
 	if ( $selectedGroups.Count -eq 0 )
 	{
-		$logText = "$searchWord $( $msgTable.LogAborted )"
+		$logText = $msgTable.LogAborted
 		Write-Host $msgTable.StrAborted
 	}
 	else
 	{
 		$selectedGroups | Sort-Object Name | ForEach-Object {
 			[array]$Users = Get-ADGroupMember -Identity $_.Name
-			if ( $Users.Count -eq 0 ) { $msgTable.StrNoUsers }
-			else { [void] $list.Add( [pscustomobject]@{ "Name" = $_.Name; "Users" = $Users.Name } ) }
+			$g = [pscustomobject]@{ "Name" = $_.Name; "Users" = "" }
+			if ( $Users.Count -eq 0 ) { $g.Users = $msgTable.StrNoUsers }
+			else { $g.Users = $Users.Name }
+			[void] $list.Add( $g )
 		}
-		$listOutput = $list | ForEach-Object { "$( $msgTable.StrGrpName ) $( $_.Name )`n$( $_.Users | Sort-Object | ForEach-Object { "`t$_`n" } )" }
-		$listOutput
-		$logText = "$searchWord $( $selectedGroups.Count ) $( $msgTable.LogSelectedCount ) `r`n`t$( WriteOutput -Output $listOutput )"
+
+		$list | ForEach-Object {
+			Write-Host $msgTable.StrGrpName -NoNewline
+			Write-Host " $( $_.Name )" -ForegroundColor Green
+			$_.Users | Sort-Object | ForEach-Object { Write-Host "`t$_" }
+		}
+		$OFS = "`n"
+		$logText = "$( $selectedGroups.Count ) $( $msgTable.LogSelectedCount )`n$( $list.Name )"
 	}
 }
+$outputFile = WriteOutput -Output ( $list | ForEach-Object { "$( $msgTable.StrGrpName ) $( $_.Name )`n$( $_.Users | Sort-Object | ForEach-Object { "`t$_" } )" } )
 
-WriteLog -LogText $logText | Out-Null
+WriteLogTest -Text $logText -UserInput "$( $msgTable.LogSearchWord ) $searchWord" -OutputPath $outputFile -Success $true | Out-Null
 EndScript
