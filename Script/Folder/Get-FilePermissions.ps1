@@ -4,6 +4,7 @@
 .Author Smorkster (smorkster)
 #>
 
+Import-Module "$( $args[0] )\Modules\ConsoleOps.psm1" -Force -ArgumentList $args[1]
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 function GetMember
@@ -23,35 +24,49 @@ function GetMember
 		}
 		catch
 		{
-			WriteErrorLog -LogText "GetMember:`n$_"
+			$eh += WriteErrorlogTest -LogText "GetMember:`n$_" -UserInput $Member -Severity "UserInputFail"
 			return $null
 		}
 	}
 }
 
 Write-Host " $( $msgTable.StrTitle )"
-$File = Read-Host "$( $msgTable.QPath )"
+$File = ( Read-Host "$( $msgTable.QPath )" ).Trim()
 
-$output = "$( $msgTable.StrOutTitle ):`n$File"
-$FileSystemRights = @{}
-$PermissionList = Get-Acl $File | Select-Object -ExpandProperty Access | Select-Object -Property @{ Name = "IdentityReference"; Expression = { ( [string]$_.IdentityReference -split "\\" )[1] } }, FileSystemRights
-$PermissionList | Group-Object FileSystemRights | Foreach-Object { $FileSystemRights += @{ $_.Name = New-Object System.Collections.ArrayList } }
-
-foreach ( $rightsType in $FileSystemRights.Keys )
+if ( Test-Path $File )
 {
-	$output += "`n`n===========================================`n$rightsType`n===========================================`n"
-	$toutput = @()
-	$rightsHolder = $PermissionList.Where( { $_.FileSystemRights -eq $rightsType } )
-	foreach ( $holder in $rightsHolder )
+	Write-Host $msgTable.StrSearching
+	$output = "$( $msgTable.StrOutTitle ):`r`n$File"
+	$FileSystemRights = @{}
+	$memCount = 0
+	$PermissionList = Get-Acl $File | Select-Object -ExpandProperty Access | Select-Object -Property @{ Name = "IdentityReference"; Expression = { ( [string]$_.IdentityReference -split "\\" )[1] } }, FileSystemRights
+	$PermissionList | Group-Object FileSystemRights | Foreach-Object { $FileSystemRights += @{ $_.Name = New-Object System.Collections.ArrayList } }
+
+	foreach ( $rightsType in $FileSystemRights.Keys )
 	{
-		$member = GetMember $holder.IdentityReference
-		if ( $null -ne $member )
-		{ $member | Where-Object { $_ -match "\(" } | Foreach-Object { $toutput += $_ } }
+		$output += "`r`n===========================================`r`n$rightsType`r`n==========================================`r`n"
+		$members = @()
+		$rightsHolder = $PermissionList.Where( { $_.FileSystemRights -eq $rightsType } )
+		foreach ( $holder in $rightsHolder )
+		{
+			$member = GetMember $holder.IdentityReference
+			if ( $null -ne $member )
+			{ $member | Where-Object { $_ -match "\(" } | Foreach-Object { $members += $_ } }
+		}
+		$members | Select-Object -Unique | Sort-Object | Foreach-Object { $output += "$_`r`n" ; $memCount += 1 }
 	}
-	$toutput | Select-Object -Unique | Sort-Object | Foreach-Object { $output += "$_`n" }
+
+	$outputfile = WriteOutput -Output $output
+	Write-Host "`n$( $msgTable.StrSumPath ) $outputfile"
+	$disp = AskDisplayOption -File $outputfile -NoGW
+	$logText = "$memCount $( $msgTable.LogMemCount ) $( $FileSystemRights.Keys.Count ) $LogRightsCount"
+}
+else
+{
+	Write-Host $msgTable.ErrMsgPathNotFound
+	$eh = WriteErrorlogTest -LogText "Path not found" -UserInput $File -Severity "UserInputFail"
+	$logText = $msgTable.LogErrPathNotFound
 }
 
-$outputfile = WriteOutput -Output $output
-WriteLog -LogText "$File`n`t$( $msgTable.StrLogSum ): $outputfile" | Out-Null
-Write-Host "$( $msgTable.StrSumPath ) $outputfile"
+WriteLogTest -Text $logText -UserInput "$( $msgTable.LogPath )$File`n$( $msgTable.LogDisplayOption ) $disp" -OutputPath $outputfile -Success ( $null -eq $eh ) -ErrorLoghash $eh | Out-Null
 EndScript
