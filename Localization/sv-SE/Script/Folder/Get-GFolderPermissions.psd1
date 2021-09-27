@@ -1,16 +1,16 @@
 ConvertFrom-StringData @'
-CodeGP = @{ "Kar" = "Kar_Fil_Gainaskar02_Grp_" ; "Sos" = "Sos_Fil_Gainassos01_Grp_" ; "Dan" = "Dan_Fil_Gainasdan01_Grp_" ; "Lit" = "Lit_Fil_Gainaslit01_Grp_" ; "Rev" = "Rev_Fil_Gainasrev01_Grp_" ; "Pnf" = "Pnf_Fil_Gainaspnf01_Grp_" ; "Trf" = "Trf_Fil_Gainastrf01_Grp_" }
-CodeOrgGrpMembers = switch ( $OrgGroup ) { "Kar_Org_K_Users" { $OrgGroupMembers = "Alla användare på hela Karolinska Universitetssjukhuset" };"Dan_Org_DS_Users" { $OrgGroupMembers = "Alla användare på hela Danderyds sjukhus" } ;"Sos_Org_Sos_Users" { $OrgGroupMembers = "Alla användare på hela Södersjukhuset" } }
-CodeOrgGrpMembersOutput = "Den EK-synkade gruppen $OrgGroup (Enheten med HSA-id $OrgGroupID i EK och dess underenheter) som innehåller följande person(er):"
-CodeOrgList = Kar, Sos, Dan, Lit, Rev, Pnf, Trf
+CodeGP = @{ "Org1" = "Org1_Fil_Grp_" ; "Org2" = "Org2_Fil_Grp_" ; "Org3" = "Org3_Fil_Grp_" }
+CodeOrgGrpMembers = switch ( $OrgGroup ) { "Org1_Users" { $OrgGroupMembers = "All users withing Org1" }; "Org2_Users" { $OrgGroupMembers = "All users within Org2" } ; "Org3_Users" { $OrgGroupMembers = "All users within Org3" } }
+CodeOrgGrpMembersOutput = "Den HR-synkade gruppen $OrgGroup (Avdelning med id $OrgGroupID och dess undergrupper), som innehåller följande person(er):"
+CodeOrgList = Org1, Org2, Org3
 LogFolders = Mappar:
 LogOpenSum = Öppna utfil:
 LogOrg = Kund:
-QCustomer = Ange kundgrupp ( Kar, Sos, Dan, Lit, Rev, Pnf, Trf )
+QCustomer = Ange kundgrupp ( Org1, Org2, Org3 )
 QFolders = Klistra in en lista med de mappar som du vill ha fram behörighererna på. Hela sökvägen, eller enbart mappnamnet, en per rad. Tryck sedan på ENTER två gånger.
 QOpenSum = Vill du öppna filen?
-StrAdIdPrefix = SE2321000016-
-StrAdIdPropPrefix = hsaIdentity
+StrAdIdPrefix = aidentity
+StrAdIdPropPrefix = aidentity
 StrGrpNameSuffixRead = _User_R
 StrGrpNameSuffixWrite = _User_C
 StrNoRead = <Inga läs-behörigheter>
