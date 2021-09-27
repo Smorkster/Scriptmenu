@@ -10,7 +10,7 @@ Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 do
 {
 	$Customer = Read-Host $msgTable.QCustomer
-} until ( $msgTable.CodeCustomerList -match $Customer )
+} until ( $msgTable.CodeOrgList -match $Customer )
 
 Write-Host $msgTable.QFolders
 $FoldersIn = GetConsolePasteInput -Folders
@@ -20,16 +20,16 @@ $Folders = @()
 
 foreach ( $Folder in $FoldersIn )
 {
-	if ( -not ( $Folder.StartsWith( "G:\$( ( Get-Culture ).TextInfo.ToTitleCase( $Customer ) )\" ) ) ) { $Folder = "G:\$Customer\$Folder" }
+	if ( -not ( $Folder.StartsWith( "G:\$Customer\" ) ) ) { $Folder = "G:\$Customer\$Folder" }
 
-	if ( -not ( Test-Path $Folder ) )
+	if ( Test-Path $Folder )
 	{
-		Write-Host "'$Folder' $( $msgTable.StrNotFound )"
-		$FailedFolders += $Folder
+		$Folders += $Folder
 	}
 	else
 	{
-		$Folders += $Folder
+		Write-Host "'$Folder' $( $msgTable.StrNotFound )"
+		$FailedFolders += $Folder
 	}
 }
 
@@ -128,7 +128,7 @@ foreach ( $Folder in $Folders )
 
 $outputFile = WriteOutput -Output $output
 Write-Host "$( $msgTable.StrOutSum ) '$outputFile'"
-if ( ( Read-Host "$( $msgTable.QOpenSum ) (Y/N)" ) -eq "Y" ) { Start-Process notepad $outputFile -Wait }
+if ( ( $openSum = Read-Host "$( $msgTable.QOpenSum ) ( Y / N )" ) -eq "Y" ) { Start-Process notepad $outputFile -Wait }
 
-WriteLog -LogText "$( $msgTable.StrSum ) > $outputFile" | Out-Null
+WriteLogTest -Text "$( $msgTable.StrSum )" -UserInput "$( $msgTable.LogFolders )`n$FoldersIn`n$( $msgTable.LogOrg ) $( $Customer )`n$( $msgTable.LogOpenSum ) $openSum" -Success $true -OutputPath $outputFile | Out-Null
 EndScript

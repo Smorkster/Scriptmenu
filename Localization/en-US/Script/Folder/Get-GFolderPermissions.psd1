@@ -1,25 +1,28 @@
 ConvertFrom-StringData @'
-QCustomer = Ange kundgrupp ( Org1, Org2, Org3 )
-QFolders = Klistra in en lista med de mappar som du vill ha fram behörighererna på. Hela sökvägen, eller enbart mappnamnet. Tyck sedan på ENTER två gånger.
-CodeCustomerList = Org1, Org2, Org3
-StrNotFound = hittas inte! Kontrollera mappnamnet och kör scriptet igen.
-StrSearching = Hämtar information och skriver till fil
-StrOutTitle = Listar behörigheterna för följande mappar under G:\
-StrOutNotFoundTitle = Följande mappar hittades inte, och kommer inte rapporteras:
 CodeGP = @{ "Org1" = "Org1_Fil_Grp_" ; "Org2" = "Org2_Fil_Grp_" ; "Org3" = "Org3_Fil_Grp_" }
-StrGrpNameSuffixWrite = _User_C
-StrGrpNameSuffixRead = _User_R
-StrOwner = Ägare:
-StrOwnerMissing = Ägare saknas
-StrReadPerm = Läs-behörighet:
-StrWritePerm = Skriv-behörighet:
-StrNoRead = <Inga läs-behörigheter>
-StrNoWrite = <Inga skriv-behörigheter>
-StrAdIdPropPrefix = adentity
+CodeOrgGrpMembers = switch ( $OrgGroup ) { "Org1_Users" { $OrgGroupMembers = "All users withing Org1" }; "Org2_Users" { $OrgGroupMembers = "All users within Org2" } ; "Org3_Users" { $OrgGroupMembers = "All users within Org3" } }
+CodeOrgGrpMembersOutput = "The HR-synced group $OrgGroup (Department with id $OrgGroupID and its subgroups), containing the following person(s):"
+CodeOrgList = Org1, Org2, Org3
+LogFolders = Folders:
+LogOpenSum = Open output file:
+LogOrg = Org:
+QCustomer = Enter org group ( Org1, Org2, Org3 )
+QFolders = Paste a list of the folders you want the permissions on. The entire path, or just the folder name, one per line. Then press ENTER twice.
+QOpenSum = Do you want to open the file?
 StrAdIdPrefix = aidentity
-CodeOrgGrpMembers = switch ( $OrgGroup ) { "Org1_Users" { $OrgGroupMembers = "Alla användare inom Org1" }; "Org2_Users" { $OrgGroupMembers = "Alla användare inom Org2" } ;"Org3_Users" { $OrgGroupMembers = "Alla användare inom Org3" } }
-CodeOrgGrpMembersOutput = "Den EK-synkade gruppen $OrgGroup (Enheten med HSA-id $OrgGroupID i EK och dess underenheter) som innehåller följande person(er):"
-StrOutSum = Resultat skrivet till
-QOpenSum = Vill du öppna filen?
-StrSum = Sammanfattning
+StrAdIdPropPrefix = aidentity
+StrGrpNameSuffixRead = _User_R
+StrGrpNameSuffixWrite = _User_C
+StrNoRead = <No read permissions>
+StrNotFound = not found! Check the folder name and run the script again.
+StrNoWrite = <No write permissions>
+StrOutNotFoundTitle = The following folders were not found, and will not be reported:
+StrOutSum = Results written to
+StrOutTitle = Lists the permissions for the following folders under G:\
+StrOwner = Owner:
+StrOwnerMissing = Owner not assigned
+StrReadPerm = Read permission:
+StrSearching = Retrieves information and writes to file
+StrSum = Summary
+StrWritePerm = Write permission:
 '@
