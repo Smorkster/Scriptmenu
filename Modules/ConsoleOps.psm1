@@ -7,6 +7,42 @@
 
 param ( $culture = "sv-SE" )
 
+#############################################################
+# Ask the user how data in specified file should be displayed
+# Returns the selected choise
+function AskDisplayOption
+{
+	param ( [string] $File, [switch] $NoFT, [switch] $NoGW )
+
+	if ( $NoFt )
+	{
+		switch ( Read-Host $IntmsgTable.QDisplayOpNoFT )
+		{
+			1 { Get-Content $File | Out-GridView ; $dt = "GW" }
+			2 { Start-Process notepad -ArgumentList $File ; $dt = "notepad" }
+		}
+	}
+	elseif ( $NoGW )
+	{
+		switch ( Read-Host $IntmsgTable.QDisplayOpNoGW )
+		{
+			1 { Get-Content $File | Format-Table ; $dt = "FT" }
+			2 { Start-Process notepad -ArgumentList $File ; $dt = "notepad" }
+		}
+	}
+	else
+	{
+		switch ( Read-Host $IntmsgTable.QDisplayOp )
+		{
+			1 { Get-Content $File | Format-Table ; $dt = "FT" }
+			2 { Get-Content $File | Out-GridView ; $dt = "GW" }
+			3 { Start-Process notepad -ArgumentList $File ; $dt = "notepad" }
+		}
+	}
+
+	return $dt
+}
+
 ################################################################
 # Reads input from the console. The data is pasted with Ctrl + V
 # Returns the input as an array, separated according to Split
