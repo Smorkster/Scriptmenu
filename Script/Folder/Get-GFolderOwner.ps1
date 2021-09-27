@@ -6,42 +6,35 @@
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
-$Folders = @()
-
 $UserInput = Read-Host "$( $msgTable.QID )"
 
 try
 {
-	$User = Get-ADUser -Identity $Input -Properties *
+	$User = Get-ADUser -Identity $UserInput -Properties *
 
-	$Groups = Get-ADGroup -LDAPFilter "(ManagedBy=$( $User.DistinguishedName ))" | Where-Object { $_ -like "*_Fil_*_Grp_*_User_*" } | Select-Object -ExpandProperty SamAccountName
-
-	foreach ( $Group in $Groups )
-	{
-		$Folders += "G:$( ( ( ( ( Get-ADGroup $Group -Properties Description | Select-Object -ExpandProperty Description ) -split "\$" )[1] ) -split "\." )[0] )"
-	}
+	$Folders = Get-ADGroup -LDAPFilter "(&(ManagedBy=$( $User.DistinguishedName ))(&(Name=*_Fil_*_Grp_*_User_*)(|(Name=*User_C)(Name=*User_R))))" -Properties Description  | ForEach-Object { ( ( $_.Description -split "\." )[0] -split "\$" )[1] } | Select-Object -Unique | ForEach-Object { "G:$_" }
 
 	Write-Host "`n$( $User.Name ) $( $msgTable.StrSumTitle ) " -NoNewline
 	if ( $Folders.Count -gt 0 )
 	{
 		Write-Host "$( $msgTable.StrOwner ):"
-		$Folders | Sort-Object -Unique
-		$outputFile = WriteOutput -Output $Folders
-		$logText = "$Input $outputFile"
+		$Folders | Sort-Object -Unique | Out-Host
+		$outputFile = WriteOutput -Output "$( $msgTable.OutIsOwnerOf )`n$Folders"
+		$logText = "$( $User.Name ) $( $msgTable.LogOwnerCount ) $( @( $Folders ).Count ) $( $msgTable.LogOwnerCount2 )"
 	}
 	else
 	{
 		Write-Host "$( $msgTable.StrNotOwner )."
-		$logText = "$User $( $msgTable.StrLogNotOwner )"
+		$logText = "$( $User.Name ) $( $msgTable.StrLogNotOwner )"
 	}
 }
 catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException]
 {
-	Write-Host "$( $msgTable.StrNoUser ) $Input"
-	$logText = "$Input $( $msgTable.StrLogNoUser )"
-	WriteErrorLog -LogText $_
+	Write-Host "$( $msgTable.StrNoUser ) $UserInput"
+	$logText = "$UserInput $( $msgTable.StrLogNoUser )"
+	$eh = WriteErrorlogTest -LogText $_ -UserInput $UserInput -Severity "UserInputFail"
 }
-catch { WriteErrorLog -LogText $_ }
+catch { $eh = WriteErrorlogTest -LogText $_ -UserInput $UserInput -Severity "OtherFail" }
 
-WriteLog -LogText "$logText" | Out-Null
+WriteLogTest -Text $logText -UserInput $UserInput -Success ( $null -eq $eh ) -ErrorLogHash $eh -OutputPath $outputFile | Out-Null
 EndScript

@@ -1,4 +1,7 @@
 ConvertFrom-StringData @'
+LogOwnerCount = is the owner over
+LogOwnerCount2 = folders. See output file for list
+OutIsOwnerOf = is the owner of these folders:
 QID = Enter user id
 StrLogNotOwner = not owner
 StrLogNoUser = not found in AD
