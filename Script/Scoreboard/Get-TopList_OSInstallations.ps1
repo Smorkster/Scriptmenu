@@ -150,8 +150,7 @@ function BtnStart_Click
 			}
 		}
 
-		$syncHash.installations | Sort-Object Installations -Descending | ForEach-Object `
-		{
+		$syncHash.installations | Sort-Object Installations -Descending | ForEach-Object {
 			$syncHash.DC.UserView[0].Add( [pscustomobject]@{ User = $_.User; Installations = $_.Installations } )
 		}
 		$syncHash.Window.Dispatcher.Invoke( [action] {
@@ -171,6 +170,7 @@ function BtnStart_Click
 		}, "Normal" )
 		$logs.Clear()
 	} ).AddArgument( $syncHash ) )
+	$syncHash.Done[0] = $true
 	$syncHash.collect.BeginInvoke()
 }
 
@@ -180,6 +180,7 @@ function BtnExport_Click
 {
 	$output = $syncHash.installations | Sort-Object Installations -Descending | ForEach-Object { [pscustomobject]@{ User = $_.User; OS_Installations = $_.Installations } } | ConvertTo-Csv -NoTypeInformation -Delimiter ";"
 	$outputFile = WriteOutput -Output $output -FileExtension "csv" -Scoreboard
+	WriteLogTest -Text $msgTable.LogExport -OutputPath $outputFile -Success $true | Out-Null
 	ShowMessageBox "$( $syncHash.msgTable.StrExportPathMessage )`n$outputFile"
 	$syncHash.btnExport.IsEnabled = $false
 }
@@ -378,6 +379,15 @@ $syncHash = CreateWindowExt $controls
 
 $syncHash.msgTable = $msgTable
 $syncHash.installations = New-Object System.Collections.ArrayList
+$syncHash.Done = [System.Collections.ObjectModel.ObservableCollection[Object]]::new( )
+$syncHash.Done.Add( $false )
+$syncHash.Done.Add_CollectionChanged( {
+	if ( $syncHash.Done[0] )
+	{
+		WriteLogTest -Text "$( $syncHash.Installations.Count ) $( $syncHash.msgTable.LogUserCount ) $( $syncHash.installations | ForEach-Object -Begin { $b = 0 } -Process { $b += $_.installations } -End { $b } ) $( $syncHash.msgTable.LogInstCount )" -UserInput "$( $syncHash.msgTable.LogSearchStart ) $( $syncHash.SelectedStart )`n$( $syncHash.msgTable.LogSearchEnd ) $( $syncHash.SelectedEnd )" -Success $true | Out-Null
+		$syncHash.Done[0] = $false
+	}
+} )
 
 # Set listviewitems style-triggers to localized strings
 # Indexes (1 and 2-4) are indexes of style elements in XAML-file
@@ -399,3 +409,4 @@ $syncHash.Window.Add_Closed( { Get-EventSubscriber | Unregister-Event } )
 
 [void] $syncHash.Window.ShowDialog()
 $syncHash.Window.Close()
+#$global:syncHash = $syncHash
