@@ -11,19 +11,21 @@ $prtName = Read-Host $msgTable.StrQName
 
 if ( $Printers = Get-ADObject -LDAPFilter "(&(ObjectClass=printQueue)(Name=$prtName*))" -Properties * | Select-Object Name, location, portName, shortServerName, driverName, printColor, url )
 {
-	$Printers
+	$Printers | Out-Host
 	$Printers | Foreach-Object `
 	{
 		$output += "$( $_.name )`r`n`t$( $msgTable.StrPropLoc ): $( $_.location )`r`n`t$( $msgTable.StrPropIp ): $( $_.portname )`r`n`t$( $msgTable.StrPropServ ): $( $_.shortservername )`r`n`t$( $msgTable.StrPropDriv ): $( $_.drivername )`r`n`t$( $msgTable.StrPropClr ): $( $_.printcolor )`r`n`t$( $msgTable.StrPropUrl ): $( $_.url )`r`n`r`n"
 	}
 	$outputFile = WriteOutput -Output $output
-	$logText = "$prtName > $( $Printers.Count )`r`n`tOutput: $outputFile"
+	$logText = "$( $Printers.Count )"
+	$success = $true
 }
 else
 {
-	Write-Host "$( $msgTable.ErrNoFound ) '$prtName'"
-	$logText = "$prtName > $( $msgTable.StrLogNoFound )"
+	Write-Host "$( $msgTable.ErrMsgNoneFound ) '$prtName'"
+	$success = $false
+	$logText = $msgTable.LogErrNoneFound
 }
 
-WriteLog -LogText $logText | Out-Null
+WriteLogTest -Text $logText -UserInput $prtName -Success $success -OutputPath $outputFile | Out-Null
 EndScript

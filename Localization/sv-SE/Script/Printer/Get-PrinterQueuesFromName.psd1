@@ -1,6 +1,6 @@
 ConvertFrom-StringData @'
-ErrNoFound = Inga skrivarköer hittades baserat på söktermen
-StrLogNoFound = Inga skrivare
+ErrMsgNoneFound = Inga skrivarköer hittades baserat på söktermen
+LogErrNoneFound = Inga skrivare
 StrPropClr = Färgutskrift
 StrPropDriv = Drivrutin
 StrPropIp = IP
