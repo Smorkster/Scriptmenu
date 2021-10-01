@@ -11,92 +11,92 @@ function LookUpUser
 	$syncHash.btnActivate.IsEnabled = $false
 	$syncHash.btnExtend.IsEnabled = $false
 	$syncHash.btnUnlock.IsEnabled = $false
-	$LookedUpUser = $null
+	$syncHash.LookedUpUser = $null
 
 	try
 	{
-		$LookedUpUser = Get-ADUser $syncHash.tbID.Text –Properties pwdlastset, enabled, lockedout, description, accountExpires, msDS-UserPasswordExpiryTimeComputed | Select-Object Name, pwdlastset, enabled, lockedout, description, accountExpires, @{ Name = "ExpiryDate"; Expression = { [datetime]::FromFileTime( $_."msDS-UserPasswordExpiryTimeComputed" ) } }
-	}
-	catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException] { }
-	catch { WriteErrorLogTest -LogText $_.Exception.Message -UserInput $syncHash.tbID.Text -Severity "OtherFail" }
+		$syncHash.LookedUpUser = Get-ADUser $syncHash.tbID.Text –Properties pwdlastset, enabled, lockedout, description, accountExpires, msDS-UserPasswordExpiryTimeComputed -ErrorAction Stop | Select-Object Name, pwdlastset, enabled, lockedout, description, accountExpires, @{ Name = "ExpiryDate"; Expression = { [datetime]::FromFileTime( $_."msDS-UserPasswordExpiryTimeComputed" ) } }, DistinguishedName
 
-	if ( $null -ne $LookedUpUser )
-	{
 		$syncHash.spOutput.Children.Clear()
-		Print -Text "$( $msgTable.WReadUser ) $( $LookedUpUser.Name )"
+		Print -Text "$( $syncHash.msgTable.StrReadUser ) $( $syncHash.LookedUpUser.Name )"
 
-		if ( ( $LookedUpUser.Description -match "$( $msgTable.WDescText )" ) )
+		if ( ( $syncHash.LookedUpUser.Description -match "$( $syncHash.msgTable.StrDoNotActivate )" ) )
 		{
-			Print -Text $msgTable.WBlockedUser -Color "Red"
-			$status = $msgTable.WLBlockedUser
+			Print -Text $syncHash.msgTable.StrUserBlocked -Color "Red"
+			$status = $syncHash.msgTable.LogBlockedUser
 		}
 		else
 		{
-			if ( $LookedUpUser.Enabled -eq $false )
+			if ( $syncHash.LookedUpUser.Enabled -eq $false )
 			{
-				Print -Text $msgTable.WDisabledUser -Color "Red"
-				$status = $msgTable.WLDisabledUser
+				Print -Text $syncHash.msgTable.StrUserDisabled -Color "Red"
+				$status = $syncHash.msgTable.LogDisabledUser
 				$syncHash.btnActivate.IsEnabled = $true
 			}
 
-			if ( $LookedUpUser.LockedOut -eq $true )
+			if ( $syncHash.LookedUpUser.LockedOut -eq $true )
 			{
-				Print -Text $msgTable.WLockedUser -Color "Red"
-				$status = $msgTable.WLLockedUser
+				Print -Text $syncHash.msgTable.StrLocked -Color "Red"
+				$status = $syncHash.msgTable.LogLocked
 				$syncHash.btnUnlock.IsEnabled = $true
 			}
 
-			if ( ( $LookedUpUser.Enabled -eq $true ) -and ( $LookedUpUser.LockedOut -eq $false ) )
+			if ( ( $syncHash.LookedUpUser.Enabled -eq $true ) -and ( $syncHash.LookedUpUser.LockedOut -eq $false ) )
 			{
-				Print -Text $msgTable.WActiveUser
-				$status = $msgTable.WLActiveUser
+				Print -Text $syncHash.msgTable.StrUserActive
+				$status = $syncHash.msgTable.StrActive
 			}
 
-			if ( $LookedUpUser.pwdlastset -eq 0 )
+			if ( $syncHash.LookedUpUser.pwdlastset -eq 0 )
 			{
-				Print -Text $msgTable.WPasswordChange -Color "Red"
-				$status = $msgTable.WLPasswordChange
+				Print -Text $syncHash.msgTable.StrPasswordChange -Color "Red"
+				$status = $syncHash.msgTable.LogPasswordChange
 			}
-			elseif ( $null -ne $LookedUpUser.ExpiryDate )
+			elseif ( $null -ne $syncHash.LookedUpUser.ExpiryDate )
 			{
-				if ( $LookedUpUser.ExpiryDate -lt ( Get-Date ) )
+				if ( $syncHash.LookedUpUser.ExpiryDate -lt ( Get-Date ) )
 				{
-					Print -Text "$( $msgTable.WExpiredPassword ) $( ( $LookedUpUser.ExpiryDate ).ToString( "yyyy-MM-dd" ) )"  -Color "Red"
-					$status = $msgTable.WLExpiredPassword
+					Print -Text "$( $syncHash.msgTable.StrExpiredPassword ) $( ( $syncHash.LookedUpUser.ExpiryDate ).ToString( "yyyy-MM-dd" ) )"  -Color "Red"
+					$status = $syncHash.msgTable.LogExpiredPassword
 					$syncHash.btnExtend.IsEnabled = $true
 				}
 				else
 				{
-					Print -Text "$( $msgTable.WFutureExpiry ) $( ( $LookedUpUser.ExpiryDate ).ToString( "yyyy-MM-dd" ) )."
+					Print -Text "$( $syncHash.msgTable.StrFutureExpiry ) $( ( $syncHash.LookedUpUser.ExpiryDate ).ToString( "yyyy-MM-dd" ) )."
 					$syncHash.btnExtend.IsEnabled = $true
-					$status = $msgTable.WLFutureExpiry
+					$status = $syncHash.msgTable.LogFutureExpiry
 				}
 			}
 			else
 			{
-				Print -Text $msgTable.WNeverEndingPassword
-				$status = $msgTable.WLNeverEndingPassword
+				Print -Text $syncHash.msgTable.StrNeverEndingPassword
+				$status = $syncHash.msgTable.LogNeverEndingPassword
 			}
 
-			if ( -not ( ( $LookedUpUser.accountExpires -eq 0 ) -or ( $LookedUpUser.accountExpires -eq 9223372036854775807 ) ) )
+			if ( -not ( ( $syncHash.LookedUpUser.accountExpires -eq 0 ) -or ( $syncHash.LookedUpUser.accountExpires -eq 9223372036854775807 ) ) )
 			{
-				if ( ( [DateTime]::FromFileTime( $LookedUpUser.accountExpires ) ) -lt ( Get-Date ) )
+				if ( ( [DateTime]::FromFileTime( $syncHash.LookedUpUser.accountExpires ) ) -lt ( Get-Date ) )
 				{
-					Print -Text "$( $msgTable.WManualExpiryEnded ) $( ( [DateTime]::FromFileTime( $LookedUpUser.accountExpires ) ).ToString( "yyyy-MM-dd" ) )" -Color "Red"
-					$status = $msgTable.WLManualExpiryEnded
+					Print -Text "$( $syncHash.msgTable.StrManualExpiryEnded ) $( ( [DateTime]::FromFileTime( $syncHash.LookedUpUser.accountExpires ) ).ToString( "yyyy-MM-dd" ) )" -Color "Red"
+					$status = $syncHash.msgTable.LogManualExpiryEnded
 				}
 				else
 				{
-					Print -Text "$( $msgTable.WManualExpiry ) $( ( [DateTime]::FromFileTime( $LookedUpUser.accountExpires ) ).ToString( "yyyy-MM-dd" ) )"
-					$status = $msgTable.WLManualExpiry
+					Print -Text "$( $syncHash.msgTable.StrManualExpiry ) $( ( [DateTime]::FromFileTime( $syncHash.LookedUpUser.accountExpires ) ).ToString( "yyyy-MM-dd" ) )"
+					$status = $syncHash.msgTable.LogManualExpiry
 				}
 			}
 		}
 		WriteLogTest -Text "LookUp, status: $status" -UserInput $syncHash.tbID.Text -Success $true -ErrorLogHash $eh | Out-Null
 	}
-	else
+	catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException]
 	{
-		Print -Text "ID $( $syncHash.tbID.Text ) $( $msgTable.WNotFoundInAd )" -Color "Red"
+		Print -Text "ID $( $syncHash.tbID.Text ) $( $syncHash.msgTable.StrNotFoundInAd )" -Color "Red"
+		WriteErrorlogTest -LogText $_.Exception.Message -UserInput $syncHash.tbID.Text -Severity "OtherFail"
+	}
+	catch
+	{
+		WriteErrorlogTest -LogText $_.Exception.Message -UserInput $syncHash.tbID.Text -Severity "OtherFail"
 	}
 }
 
@@ -108,18 +108,21 @@ function Extend
 	{
 		Set-ADUser -Identity $syncHash.tbID.Text -Replace @{ pwdLastSet = 0 }
 		Set-ADUser -Identity $syncHash.tbID.Text -Replace @{ pwdLastSet = -1 }
-		WriteLogTest -Text $msgTable.WPasswordExtended -UserInput $syncHash.tbID.Text -Success $true | Out-Null
-		Print -Text $msgTable.WLPasswordExtended
+		WriteLogTest -Text $syncHash.msgTable.LogPasswordExtended -UserInput $syncHash.tbID.Text -Success $true | Out-Null
+		Print -Text $syncHash.msgTable.StrPasswordExtended
 	}
 	catch
 	{
 		if ( $_.Exception.Message -eq "Insufficient access rights to perform the operation" ) { $severity = "PermissionFail" }
 		else { $severity = "OtherFail" }
 
-		$errorlog = WriteErrorLogTest -LogText "$( $msgTable.ErrLogExtendPassword )`n`n$_" -UserInput $syncHash.tbID.Text -Severity $severity
-		WriteLogTest -Text $msgTable.ErrExtendPassword -UserInput $syncHash.tbID.Text -Success $false -ErrorLogPath $errorlog | Out-Null
-		Print -Text "$( $msgTable.ErrLExtendPassword )`n`n$( $_.Exception.Message )`n`n" -Color "Red"
-		ShowMessageBox -Text $msgTable.ErrMessageExtendPasswordPermission -Title "Error!" -Button "OK" -Icon "Error"
+		$errorlog = WriteErrorLogTest -LogText "$( $syncHash.msgTable.ErrLogExtendPassword )`n`n$_" -UserInput $syncHash.tbID.Text -Severity $severity
+		WriteLogTest -Text $syncHash.msgTable.LogErrExtendPassword -UserInput $syncHash.tbID.Text -Success $false -ErrorLogPath $errorlog | Out-Null
+		Print -Text "$( $syncHash.msgTable.ErrMsgExtendPassword )`n`n$( $_.Exception.Message )`n`n" -Color "Red"
+		if ( $syncHash.LookedUpUser.DistinguishedName -match $syncHash.msgTable.CodeOuSpecDep )
+		{ ShowMessageBox -Text $syncHash.msgTable.ErrMsgExtendPasswordPermissionSpecDep -Title "Error!" -Button "OK" -Icon "Error" }
+		else
+		{ ShowMessageBox -Text $syncHash.msgTable.ErrMsgExtendPasswordPermission -Title "Error!" -Button "OK" -Icon "Error" }
 	}
 
 	LookUpUser
@@ -132,18 +135,21 @@ function Unlock
 	try
 	{
 		Unlock-ADAccount $syncHash.tbID.Text -Confirm:$false
-		WriteLogTest -Text  $msgTable.WUnlocked -UserInput $syncHash.tbID.Text -Success $true | Out-Null
-		Print -Text $msgTable.WLUnlocked
+		WriteLogTest -Text  $syncHash.msgTable.LogUnlocked -UserInput $syncHash.tbID.Text -Success $true | Out-Null
+		Print -Text $syncHash.msgTable.StrUnlocked
 	}
 	catch
 	{
 		if ( $_.Exception.Message -eq "Insufficient access rights to perform the operation" ) { $severity = "PermissionFail" }
 		else { $severity = "OtherFail" }
 
-		$errorlog = WriteErrorLogTest -LogText "$( $msgTable.ErrLogUnlock )`n`n$_" -UserInput $syncHash.tbID.Text -Severity $severity
-		WriteLog -Text $msgTable.ErrUnlock -UserInput $syncHash.tbID.Text -Success $false -ErrorlogPath $errorlog | Out-Null
-		Print -Text "$( $msgTable.ErrLUnlock )`n`n$( $_.Exception.Message )" -Color "Red"
-		ShowMessageBox -Text $msgTable.ErrMessageUnlockPermission -Title "Error!" -Button "OK" -Icon "Error"
+		$errorlog = WriteErrorLogTest -LogText "$( $syncHash.msgTable.ErrLogUnlock )`n`n$_" -UserInput $syncHash.tbID.Text -Severity $severity
+		WriteLogTest -Text $syncHash.msgTable.LogErrUnlock -UserInput $syncHash.tbID.Text -Success $false -ErrorlogPath $errorlog | Out-Null
+		Print -Text "$( $syncHash.msgTable.ErrMsgUnlock )`n`n$( $_.Exception.Message )" -Color "Red"
+		if ( $syncHash.LookedUpUser.DistinguishedName -match $syncHash.msgTable.CodeOuSpecDep )
+		{ ShowMessageBox -Text $syncHash.msgTable.ErrMsgUnlockPermissionSpecDep -Title "Error!" -Button "OK" -Icon "Error" }
+		else
+		{ ShowMessageBox -Text $syncHash.msgTable.ErrMsgUnlockPermission -Title "Error!" -Button "OK" -Icon "Error" }
 	}
 
 	LookUpUser
@@ -156,18 +162,21 @@ function Enable
 	try
 	{
 		Enable-ADAccount $syncHash.tbID.Text -Confirm:$false
-		WriteLogTest -Text $msgTable.WActivate -UserInput $syncHash.tbID.Text -Success $true | Out-Null
-		Print -Text $msgTable.WLActivate
+		WriteLogTest -Text $syncHash.msgTable.LogActivated -UserInput $syncHash.tbID.Text -Success $true | Out-Null
+		Print -Text $syncHash.msgTable.StrActivated
 	}
 	catch
 	{
 		if ( $_.Exception.Message -eq "Insufficient access rights to perform the operation" ) { $severity = "PermissionFail" }
 		else { $severity = "OtherFail" }
 
-		$errorlog = WriteErrorLogTest -LogTex "$( $msgTable.ErrLogActivate )`n`n$_" -UserInput $syncHash.tbID.Text -Severity $severity
-		WriteLogTest -Text $msgTable.ErrActivate -UserInput $syncHash.tbID.Text -Success $false -ErrorlogPath $errorlog | Out-Null
-		Print -Text "$( $msgTable.ErrMessageActivate )`n`n$( $_.Exception.Message )." -Color "Red"
-		ShowMessageBox -Text $msgTable.ErrMessageActivatePermission -Title "Error!" -Button "OK" -Icon "Error"
+		$errorlog = WriteErrorLogTest -LogTex "$( $syncHash.msgTable.ErrLogActivate )`n`n$_" -UserInput $syncHash.tbID.Text -Severity $severity
+		WriteLogTest -Text $syncHash.msgTable.LogErrActivate -UserInput $syncHash.tbID.Text -Success $false -ErrorlogPath $errorlog | Out-Null
+		Print -Text "$( $syncHash.msgTable.ErrMsgActivate )`n`n$( $_.Exception.Message )." -Color "Red"
+		if ( $syncHash.LookedUpUser.DistinguishedName -match $syncHash.msgTable.CodeOuSpecDep )
+		{ ShowMessageBox -Text $syncHash.msgTable.ErrMsgActivatePermissionSpecDep -Title "Error!" -Button "OK" -Icon "Error" }
+		else
+		{ ShowMessageBox -Text $syncHash.msgTable.ErrMsgActivatePermission -Title "Error!" -Button "OK" -Icon "Error" }
 	}
 
 	LookUpUser
@@ -179,11 +188,7 @@ function Print
 {
 	param ( $Text, $Color = "Green" )
 
-	$tbOutput = New-Object System.Windows.Controls.TextBlock
-	$tbOutput.Foreground = $Color
-	$tbOutput.Margin = "10,5,0,5"
-	$tbOutput.Text = "$( Get-Date -Format 'HH:mm:ss' ) $Text"
-	$tbOutput.TextWrapping = "WrapWithOverflow"
+	$tbOutput = [System.Windows.Controls.TextBlock]@{ Foreground = $Color; Margin = "10,5,0,5"; Text = "$( Get-Date -Format 'HH:mm:ss' ) $Text"; TextWrapping = "WrapWithOverflow" }
 	$syncHash.spOutput.AddChild( $tbOutput )
 	$syncHash.spOutput.UpdateLayout()
 }
@@ -201,9 +206,10 @@ $controls = New-Object System.Collections.ArrayList
 [void]$controls.Add( @{ CName = "Window" ; Props = @( @{ PropName = "Title"; PropVal = $msgTable.ContentWindow } ) } )
 
 $syncHash = CreateWindowExt $controls
+$syncHash.msgTable = $msgTable
 
 $syncHash.tbID.Add_TextChanged( {
-	if ( ( ( $syncHash.tbID.Text.Length -eq 4 ) -or ( $syncHash.tbID.Text -match $msgTable.CodeIdRegEx ) ) -and ( $syncHash.tbID.Text -ne $msgTable.CodeIdMatch ) ) { LookUpUser }
+	if ( ( ( $syncHash.tbID.Text.Length -eq 4 ) -or ( $syncHash.tbID.Text -match "^gai(kat|sys)\w{4}" ) ) -and ( $syncHash.tbID.Text -ne $syncHash.msgTable.CodeIdMatch ) ) { LookUpUser }
 	else { $syncHash.spOutput.Children.Clear() }
 } )
 $syncHash.btnExtend.Add_Click( { Extend } )
