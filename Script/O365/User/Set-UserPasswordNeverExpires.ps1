@@ -4,18 +4,18 @@
 .Author Smorkster (smorkster)
 #>
 
-Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -Argumentlist $args[1]
+Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 $w = [System.Windows.Window]@{ SizeToContent = "WidthAndHeight" }
 $spmain = [System.Windows.Controls.StackPanel]@{ Orientation = "Vertical" ; Margin = 5 }
 
 $spControls = [System.Windows.Controls.StackPanel]@{ Orientation = "Horizontal" }
-$spControls.AddChild( ( $lblID = [System.Windows.Controls.Label]@{ Content = $msgTable.ContentlblID } ) )
+$spControls.AddChild( ( [System.Windows.Controls.Label]@{ Content = $msgTable.ContentlblID } ) )
 $spControls.AddChild( ( $tbID = [System.Windows.Controls.Textbox]@{ Width = 50 ; VerticalContentAlignment = "Center" ; HorizontalContentAlignment = "Center" } ) )
 $spControls.AddChild( ( $btnSave = [System.Windows.Controls.Button]@{ Content = $msgTable.ContentbtnSave ; IsEnabled = $false } ) )
 
 $spSetting = [System.Windows.Controls.StackPanel]@{ Orientation = "Vertical" }
-$spSetting.AddChild( ( $lblSetting = [System.Windows.Controls.Label]@{ Content = $msgTable.ContentlblSetting } ) )
+$spSetting.AddChild( ( [System.Windows.Controls.Label]@{ Content = $msgTable.ContentlblSetting } ) )
 $spSetting.AddChild( ( $spRBs = [System.Windows.Controls.StackPanel]@{ Orientation = "Vertical" } ) )
 $spRBs.AddChild( ( $rbNone = [System.Windows.Controls.RadioButton]@{ Content = $msgTable.ContentrbNone ; Margin = "0,0,0,10" } ) )
 $spRBs.AddChild( ( $rbDisabled = [System.Windows.Controls.RadioButton]@{ Content = $msgTable.ContentrbDisabled } ) )
@@ -42,17 +42,27 @@ $tbID.Add_TextChanged( {
 			}
 			else { $lres.Content = $msgTable.ErrAzureADNotFound }
 		}
-		catch { $lres.Content = $msgTable.ErrADNotFound }
+		catch
+		{
+			$lres.Content = $msgTable.ErrADNotFound
+			$eh += WriteErrorlogTest -LogText $_ -UserInput $script:az.ObjectId -Severity "OtherFail"
+		}
+		WriteLogTest -Text $msgTable.LogGetUsr -UserInput $tbID.Text -Success ( $null -eq $eh ) -ErrorLogHash $eh | Out-Null
 	}
 } )
 $btnSave.Add_Click( {
 	try
 	{
 		Set-AzureADUser -ObjectId $script:az.ObjectId -PasswordPolicies DisablePasswordExpiration
-		WriteLog -LogText $this.Text
 		$lres.Content = $msgTable.StrDone
 	}
-	catch { $lres.Content = $_.Exception.Message }
+	catch
+	{
+		$lres.Content = $_.Exception.Message
+		$eh += WriteErrorlogTest -LogText $_ -UserInput $script:az.ObjectId -Severity "OtherFail"
+	}
+	WriteLogTest -Text $msgTable.LogPwdSet -UserInput $script:az.ObjectId -Success ( $null -eq $eh ) -ErrorLogHash $eh | Out-Null
 } )
 $w.Add_ContentRendered( { $this.Activate() ; $tbID.Focus() } )
 [void] $w.ShowDialog()
+#$global:az = $az
