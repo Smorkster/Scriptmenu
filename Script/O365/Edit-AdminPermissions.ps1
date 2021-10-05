@@ -44,16 +44,22 @@ $syncHash.btnAddAdminPermission.Add_Click( {
 		$a = Get-EXORecipient -Identity $syncHash.DC.tbAddAdminPermission[0] -ErrorAction Stop
 		if ( $a.RecipientTypeDetails -in ( "EquipmentMailbox","RoomMailbox","SharedMailbox","UserMailbox" ) )
 		{
-			Add-MailboxPermission -Identity $a.PrimarySmtpAddress -User $syncHash.AdmAccount -AccessRights FullAccess
-			Add-Content -Value $a.PrimarySmtpAddress -Path "$( $env:USERPROFILE )\O365Admin.txt"
-			$syncHash.PermissionList.Add( $a.PrimarySmtpAddress )
+			try
+			{
+				Add-MailboxPermission -Identity $a.PrimarySmtpAddress -User $syncHash.AdmAccount -AccessRights FullAccess
+				Add-Content -Value $a.PrimarySmtpAddress -Path "$( $env:USERPROFILE )\O365Admin.txt"
+				$syncHash.PermissionList.Add( $a.PrimarySmtpAddress )
+			}
+			catch { $eh = WriteErrorlogTest -LogText $error[0].Exception.Message -UserInput $syncHash.DC.tbAddAdminPermission[0] -Severity "OtherFail" }
 		}
 		else { throw }
 	}
 	catch
 	{
 		ShowMessageBox -Text $syncHash.Data.msgTable.StrNoRecipientFound
+		$eh = WriteErrorlogTest -LogText $syncHash.Data.msgTable.ErrLogNotMailbox -UserInput $syncHash.DC.tbAddAdminPermission[0] -Severity "OtherFail"
 	}
+	WriteLogTest -Text $syncHash.Data.msgTable.LogNewAdmPerm -UserInput $syncHash.DC.tbAddAdminPermission[0] -Success ( $null -eq $eh ) -ErrorLogHash $eh | Out-Null
 } )
 $syncHash.btnRemoveAdminPermission.Add_Click( {
 	if ( ( ShowMessageBox -Text $syncHash.Data.msgTable.StrRemoveContinueQuestion -Button "YesNo" -Icon "Warning" ) -eq "Yes" )
@@ -61,11 +67,19 @@ $syncHash.btnRemoveAdminPermission.Add_Click( {
 		for ( $i = 0; $i -lt $syncHash.lbAdminPermissions.SelectedItems.Count; $i++ )
 		{
 			$syncHash.DC.Window[0] = "$( $syncHash.Data.msgTable.StrRemovingPerm ) $( $i + 1 )/$( $syncHash.lbAdminPermissions.SelectedItems.Count ) ($( $syncHash.lbAdminPermissions.SelectedItems[$i] ))"
-			Remove-MailboxPermission -Identity $syncHash.lbAdminPermissions.SelectedItems[$i] -User $syncHash.AdmAccount -AccessRights FullAccess -Confirm:$false
-			$syncHash.PermissionList.Remove( $syncHash.lbAdminPermissions.SelectedItems[$i] )
+			try
+			{
+				Remove-MailboxPermission -Identity $syncHash.lbAdminPermissions.SelectedItems[$i] -User $syncHash.AdmAccount -AccessRights FullAccess -Confirm:$false -ErrorAction Stop
+				$syncHash.PermissionList.Remove( $syncHash.lbAdminPermissions.SelectedItems[$i] )
+			}
+			catch
+			{
+				$eh += WriteErrorlogTest -LogText "$( $syncHash.Data.msgTable.ErrLogRemovePerm )`n$_" -UserInput $syncHash.lbAdminPermissions.SelectedItems[$i] -Severity "OtherFail"
+			}
 		}
 		$syncHash.DC.Window[0] = ""
 		Set-Content -Value $syncHash.PermissionList -Path "$( $env:UserProfile )\O365Admin.txt" -Force
+		WriteLogTest -Text $syncHash.Data.msgTable.LogRemovePerm -Success ( $null -eq $eh ) -ErrorLogHash $eh | Out-Null
 	}
 } )
 $syncHash.btnSearchAdminPermission.Add_Click( {
@@ -76,7 +90,7 @@ $syncHash.btnSearchAdminPermission.Add_Click( {
 		$allmailboxes = Get-EXORecipient -ResultSize Unlimited -RecipientTypeDetails EquipmentMailbox
 		for ( $i = 0; $i -lt $allmailboxes.Count; $i++ )
 		{
-			if ( ( Get-MailboxPermission -Identity $allmailboxes[$i].primarysmtpaddress ).User -match $syncHash.AdmAccount )
+			if ( ( Get-MailboxPermission -Identity $allmailboxes[$i].PrimarySmtpAddress ).User -match $syncHash.AdmAccount )
 			{
 				$tot.Add( $allmailboxes[$i].PrimarySmtpAddress )
 			}
@@ -86,6 +100,7 @@ $syncHash.btnSearchAdminPermission.Add_Click( {
 		$syncHash.PermissionList = $tot
 		Set-Content -Value $syncHash.PermissionList -Path "$( $env:UserProfile )\O365Admin.txt" -Force
 		TextToSpeech -Text $syncHash.Data.msgTable.StrSearchFinished
+		WriteLogTest -Text $syncHash.Data.msgTable.LogSearchedAdmin -Success $true | Out-Null
 		$syncHash.DC.Window[0] = ""
 	}
 } )
