@@ -3,6 +3,7 @@
 .Description Main script for collecting and accessing scripts related to Office 365
 .Author Smorkster (smorkster)
 #>
+
 param ( $culture = "sv-SE" )
 
 #####################################################################
@@ -34,7 +35,7 @@ function CheckConnection
 # Connect to O365-online services
 function ConnectO365
 {
-	"ExchangeOnlineManagement", "ActiveDirectory" | ForEach-Object { Import-Module $_ }
+	"ExchangeOnlineManagement", "ActiveDirectory" | Import-Module
 	try { $syncHash.azureAdAccount = Connect-AzureAD -ErrorAction Stop }
 	catch {}
 
@@ -198,19 +199,22 @@ function SetTitle
 }
 
 ############################## Script start
+Add-Type -AssemblyName PresentationFramework
 $BaseDir = ( ( Get-Item $PSCommandPath ).Directory.Parent.FullName -split "\\" | Select-Object -SkipLast 1 ) -join "\"
-if ( ( [System.Globalization.CultureInfo]::GetCultures( "AllCultures" ) ).Name -contains "sv-SE" -contains $culture ) { $LocalizeCulture = $culture }
+if ( ( [System.Globalization.CultureInfo]::GetCultures( "AllCultures" ) ).Name -contains $culture ) { $LocalizeCulture = $culture }
 else
 {
 	[System.Windows.MessageBox]::Show( "Not a valid localization language. Will default to sv-SE" )
 	$LocalizeCulture = "sv-SE"
 }
-Add-Type -AssemblyName PresentationFramework
 Import-Module "$( $BaseDir )\Modules\FileOps.psm1" -Force -ArgumentList $LocalizeCulture
-Import-Module "$( $BaseDir )\Modules\GUIOps.psm1" -Force -ArgumentList $LocalizeCulture
 
 if ( ( ( Get-ADUser $env:USERNAME -Properties memberof ).memberof -match $msgTable.StrBORole ).Count -gt 0 )
 {
+	Import-Module "$( $BaseDir )\Modules\GUIOps.psm1" -Force -ArgumentList $LocalizeCulture
+
+	$sp = ShowSplash -Text $msgTable.StrStartGui -SelfAdmin
+	$sp.Show()
 	$controls = New-Object System.Collections.ArrayList
 	[void]$controls.Add( @{ CName = "btnAddAdminPermission" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnAddAdminPermission } ) } )
 	[void]$controls.Add( @{ CName = "btnO365Connect" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnO365Connect } ; @{ PropName = "IsEnabled"; PropVal = $true } ) } )
@@ -231,8 +235,11 @@ if ( ( ( Get-ADUser $env:USERNAME -Properties memberof ).memberof -match $msgTab
 	[void]$controls.Add( @{ CName = "Window" ; Props = @( @{ PropName = "Title"; PropVal = $msgTable.StrScriptSuite } ) } )
 
 	$syncHash = CreateWindowExt $controls
+	$sp.Close()
 	$syncHash.Data.msgTable = $msgTable
 
+	$sp = ShowSplash -Text $msgTable.StrStartFileEvents -SelfAdmin
+	$sp.Show()
 	$FileSystemWatcher = New-Object System.IO.FileSystemWatcher
 	$FileSystemWatcher.Path  = $env:USERPROFILE
 	$FileSystemWatcher.EnableRaisingEvents = $true
@@ -245,9 +252,12 @@ if ( ( ( Get-ADUser $env:USERNAME -Properties memberof ).memberof -match $msgTab
 	Register-ObjectEvent -InputObject $FileSystemWatcher -EventName Changed -Action $Action -SourceIdentifier MainFSChange -MessageData $syncHash | Out-Null
 	Register-ObjectEvent -InputObject $FileSystemWatcher -EventName Created -Action $Action -SourceIdentifier MainFSCreate -MessageData $syncHash | Out-Null
 	Register-ObjectEvent -InputObject $FileSystemWatcher -EventName Deleted -Action $Action -SourceIdentifier MainFSDelete -MessageData $syncHash | Out-Null
+	$sp.Close()
 
 	if ( $PSCommandPath -match "Development" ) { SetTitle -Add " - Developer edition" }
 
+	$sp = ShowSplash -Text $msgTable.StrStartGettingScripts -SelfAdmin
+	$sp.Show()
 	Push-Location ( Get-Item $PSCommandPath ).Directory.FullName
 	$syncHash.MainContent.AddChild( ( GetFolderItems "" ) )
 
@@ -260,12 +270,18 @@ if ( ( ( Get-ADUser $env:USERNAME -Properties memberof ).memberof -match $msgTab
 				Add-MailboxPermission -Identity $a.PrimarySmtpAddress -User $syncHash.azureAdAccount -AccessRights FullAccess
 				Add-Content -Value $a.PrimarySmtpAddress -Path "$( $env:USERPROFILE )\O365Admin.txt"
 			}
-			else { throw }
+			else
+			{
+				$eh = WriteErrorlogTest -LogText $error[0].Exception.Message -UserInput $syncHash.DC.tbAddAdminPermission[0] -Severity "OtherFail"
+				throw
+			}
 		}
 		catch
 		{
 			ShowMessageBox -Text $syncHash.Data.msgTable.StrNoRecipientFound
+			$eh = WriteErrorlogTest -LogText $syncHash.Data.msgTable.ErrLogNotMailbox -UserInput $syncHash.DC.tbAddAdminPermission[0] -Severity "OtherFail"
 		}
+		WriteLogTest -Text $syncHash.Data.msgTable.LogNewAdmPerm -UserInput $syncHash.DC.tbAddAdminPermission[0] -Success ( $null -eq $eh ) -ErrorLogHash $eh | Out-Null
 	} )
 	$syncHash.btnO365Connect.Add_Click( { ConnectO365 } )
 	$syncHash.Window.Add_Closed( {
@@ -277,6 +293,7 @@ if ( ( ( Get-ADUser $env:USERNAME -Properties memberof ).memberof -match $msgTab
 		Get-Job | Remove-Job -ErrorAction SilentlyContinue
 	} )
 	$syncHash.Window.Add_ContentRendered( {
+		$sp.Close()
 		$syncHash.Window.Top = 100
 		$syncHash.Window.Activate()
 		CheckConnection
@@ -288,4 +305,9 @@ if ( ( ( Get-ADUser $env:USERNAME -Properties memberof ).memberof -match $msgTab
 	Pop-Location
 	$syncHash.Window.Close()
 }
-else { [void] [System.Windows.MessageBox]::Show( $msgTable.StrNoPermission ) }
+else
+{
+	[void] [System.Windows.MessageBox]::Show( $msgTable.StrNoPermission )
+	$eh = WriteErrorlogTest -LogText $msgTable.ErrLogPerm -UserInput $env:USERNAME -Severity "PermissionFail"
+	WriteLogTest -Text $msgTable.LogStart -UserInput $env:USERNAME -Success $false -ErrorLogHash $eh | Out-Null
+}
