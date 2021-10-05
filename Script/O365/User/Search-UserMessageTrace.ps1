@@ -4,6 +4,8 @@
 .Author Smorkster (smorkster)
 #>
 
+##############################
+# Export data to an Excel-file
 function Export
 {
 	( [powershell]::Create().AddScript( { param ( $syncHash )
@@ -50,6 +52,8 @@ function Export
 	} ).AddArgument( $syncHash ) ).BeginInvoke()
 }
 
+############################################
+# Verify that valid emails have been entered
 function ValidateInput
 {
 	if ( $null -ne $syncHash.Data.SenderEmail -or $null -ne $syncHash.Data.ReceiverEmail ) { $syncHash.DC.btnSearch[1] = $true }
@@ -57,21 +61,21 @@ function ValidateInput
 }
 
 ##################### Scriptstart
-Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -Argumentlist $args[1]
-Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -Argumentlist $args[1]
-Import-Module "$( $args[0] )\Modules\ConsoleOps.psm1" -Force -Argumentlist $args[1]
+Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
+Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -ArgumentList $args[1]
+Import-Module "$( $args[0] )\Modules\ConsoleOps.psm1" -Force -ArgumentList $args[1]
 
 $controls = New-Object System.Collections.ArrayList
 [void]$controls.Add( @{ CName = "btnExport" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnExport } ; @{ PropName = "IsEnabled" ; PropVal = $false } ) } )
 [void]$controls.Add( @{ CName = "btnReset" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnReset } ) } )
 [void]$controls.Add( @{ CName = "btnSearch" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnSearch } ; @{ PropName = "IsEnabled" ; PropVal = $false } ) } )
 [void]$controls.Add( @{ CName = "dpEnd" ; Props = @( @{ PropName = "SelectedDate"; PropVal = Get-Date } ) } )
+[void]$controls.Add( @{ CName = "dgResult" ; Props = @( @{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new( ) } ) } )
 [void]$controls.Add( @{ CName = "dpStart" ; Props = @( @{ PropName = "SelectedDate"; PropVal = ( Get-Date ).AddDays( -10 ) } ) } )
 [void]$controls.Add( @{ CName = "lblEnd" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblEnd } ) } )
 [void]$controls.Add( @{ CName = "lblReceiver" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblReceiver } ) } )
 [void]$controls.Add( @{ CName = "lblSender" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblSender } ) } )
 [void]$controls.Add( @{ CName = "lblStart" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblStart } ) } )
-[void]$controls.Add( @{ CName = "lvResult" ; Props = @( @{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new( ) } ) } )
 
 $syncHash = CreateWindowExt $controls
 $syncHash.Data.msgTable = $msgTable
@@ -118,11 +122,13 @@ $syncHash.dpStart.Add_LostFocus( {
 } )
 
 $syncHash.btnExport.Add_Click( {
-	$fileDialog = [Microsoft.Win32.SaveFileDialog]@{ DefaultExt = ".xlsx"; Filter = "Excel-files | *.xlsx" ; FileName = $syncHash.Data.searchName }
+	$OFS = " "
+	$fileDialog = [Microsoft.Win32.SaveFileDialog]@{ DefaultExt = ".xlsx"; Filter = "Excel-files | *.xlsx" ; FileName = ( [string] $syncHash.Data.searchName ) }
 	if ( $fileDialog.ShowDialog() )
 	{
 		$syncHash.Data.FileToSave = $fileDialog
 		Export
+		WriteLogTest -OutputPath $syncHash.Data.FileToSave.FileName -UserInput $syncHash.Data.msgTable.LogExported -Success $true
 	}
 } )
 $syncHash.btnReset.Add_Click( {
@@ -131,39 +137,40 @@ $syncHash.btnReset.Add_Click( {
 	$syncHash.DC.dpStart[0] = $null
 	$syncHash.DC.dpEnd[0] = $null
 	$syncHash.Data.Trace.Clear()
-	$syncHash.DC.lvResult[0].Clear()
+	$syncHash.DC.dgResult[0].Clear()
 } )
 $syncHash.btnSearch.Add_Click( {
 	$syncHash.Data.Trace.Clear()
-	$syncHash.DC.lvResult[0].Clear()
+	$syncHash.DC.dgResult[0].Clear()
 	$param = @{}
-	if ( $syncHash.Data.SenderEmail -ne $null ) { $param.SenderAddress = $syncHash.Data.SenderEmail }
-	if ( $syncHash.Data.ReceiverEmail -ne $null ) { $param.RecipientAddress = $syncHash.Data.ReceiverEmail }
-	if ( $syncHash.Data.StartDate -ne $null ) { $param.StartDate = $syncHash.Data.StartDate } else { $param.StartDate = ( Get-Date ).AddDays( -10 ) }
-	if ( $syncHash.Data.EndDate -ne $null ) { $param.EndDate = $syncHash.Data.EndDate } else { $param.EndDate = ( Get-Date ) }
+	if ( $syncHash.Data.SenderEmail ) { $param.SenderAddress = $syncHash.Data.SenderEmail }
+	if ( $syncHash.Data.ReceiverEmail ) { $param.RecipientAddress = $syncHash.Data.ReceiverEmail }
+	if ( $syncHash.Data.StartDate ) { $param.StartDate = $syncHash.Data.StartDate } else { $param.StartDate = ( Get-Date ).AddDays( -10 ) }
+	if ( $syncHash.Data.EndDate ) { $param.EndDate = $syncHash.Data.EndDate } else { $param.EndDate = ( Get-Date ) }
 
 	$syncHash.Data.Trace = Get-MessageTrace @param
-	$syncHash.Data.Trace | Select-Object `
-		@{ Name = "Received" ; Expression = { "$( $syncHash.data.Trace[0].Received.ToShortDateString() ) $( $syncHash.data.Trace[0].Received.ToShortTimeString() )" } }, `
-		SenderAddress, RecipientAddress, Subject, MessageTraceId | Foreach-Object {
-		$item = [System.Windows.Controls.ListViewItem]@{ Content = $_ }
-		$item.ToolTip = "Message Trace ID: $( $_.MessageTraceID )"
-		$syncHash.DC.lvResult[0].Add( $item )
-	}
+	$syncHash.DC.dgResult[0] = $syncHash.Data.Trace | Select-Object `
+		Received, SenderAddress, RecipientAddress, Subject, @{ Name = "ToolTip"; Expression = { "Message Trace ID: $( $_.MessageTraceID )" } }
 	TextToSpeech -Text ( $syncHash.Data.msgTable.StrDone )
 
-	$syncHash.Data.searchName = $syncHash.Data.msgTable.StrExportDefaultFileName
-	if ( $syncHash.Data.SenderEmail -ne $null ) { $syncHash.Data.searchName += " $( $syncHash.Data.msgTable.StrExportFileNameFrom ) $( $syncHash.Data.SenderEmail )" }
-	if ( $syncHash.Data.ReceiverEmail -ne $null ) { $syncHash.Data.searchName += " $( $syncHash.Data.msgTable.StrExportFileNameFo ) $( $syncHash.Data.ReceiverEmail )" }
-	$syncHash.Data.searchName += " $( $syncHash.Data.msgTable.StrExportFileNameDates ) $( $syncHash.DC.dpStart[0].ToShortDateString() ) - $( $syncHash.DC.dpEnd[0].ToShortDateString() )"
+	$syncHash.Data.searchName = @( $syncHash.Data.msgTable.StrExportDefaultFileName )
+	if ( $syncHash.Data.SenderEmail ) { $syncHash.Data.searchName += "$( $syncHash.Data.msgTable.StrExportFileNameFrom ) $( $syncHash.Data.SenderEmail )" }
+	if ( $syncHash.Data.ReceiverEmail ) { $syncHash.Data.searchName += "$( $syncHash.Data.msgTable.StrExportFileNameFo ) $( $syncHash.Data.ReceiverEmail )" }
+	$syncHash.Data.searchName += "$( $syncHash.Data.msgTable.StrExportFileNameDates ) $( $syncHash.DC.dpStart[0].ToShortDateString() ) - $( $syncHash.DC.dpEnd[0].ToShortDateString() )"
 
-	$ofs = "`n"
-	$outputFile = WriteOutput -Output "$( [string]( $syncHash.Data.Trace | out-string ) )"
-	WriteLog -LogText "$( $syncHash.Data.searchName )`n`tOutput: $outputFile"
+	$OFS = "`n"
+	$outputFile = WriteOutput -Output "$( [string]( $syncHash.Data.Trace | Out-String ) )"
+	WriteLogTest -Text "$( $syncHash.Data.Trace.Count ) $( $syncHash.Data.msgTable.LogTraceCount )" -UserInput "$( $syncHash.Data.msgTable.LogSearchDates )" -Success $true -OutputPath $outputFile | Out-Null
 	$syncHash.DC.btnExport[1] = $syncHash.Data.Trace.Count -gt 0
 } )
 
-$syncHash.Window.Add_Loaded( { $syncHash.tbSender.Focus() ; $syncHash.tbReceiver.Text = "carl.franzen@sll.se" } )
+$syncHash.Window.Add_Loaded( {
+	$syncHash.tbSender.Focus()
+	$syncHash.dgResult.Columns[0].Header = $syncHash.Data.msgTable.ContentdgCol1
+	$syncHash.dgResult.Columns[1].Header = $syncHash.Data.msgTable.ContentdgCol2
+	$syncHash.dgResult.Columns[2].Header = $syncHash.Data.msgTable.ContentdgCol3
+	$syncHash.dgResult.Columns[3].Header = $syncHash.Data.msgTable.ContentdgCol4
+} )
 
 [void] $syncHash.Window.ShowDialog()
 #$global:syncHash = $syncHash
