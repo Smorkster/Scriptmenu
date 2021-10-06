@@ -4,7 +4,7 @@
 .Author Smorkster (smorkster)
 #>
 
-Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -Argumentlist $args[1]
+Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 $w = [System.Windows.Window]@{ SizeToContent = "WidthAndHeight"; WindowStartupLocation = "CenterScreen" }
 $sp = [System.Windows.Controls.StackPanel]@{ Orientation = "Vertical" }
@@ -19,6 +19,7 @@ $LogText = ""
 
 $b.Add_Click( {
 	$tbOut.Text = ""
+	$Success = $true
 	try
 	{
 		if ( $user = Get-AzureADUser -Filter "UserPrincipalName eq '$( ( Get-ADUser $tb.Text -Properties EmailAddress ).EmailAddress )'" )
@@ -45,8 +46,9 @@ $b.Add_Click( {
 	catch
 	{
 		$tbOut.Text += "$( $msgTable.StrErrGen )`n$_"
+		$Success = $false
 	}
+	WriteLogTest -Text $tbOut.Text -UserInput $tb.Text -Success $Success | Out-Null
 } )
 $w.Add_Activated( { $tb.Focus() } )
 [void] $w.ShowDialog()
-WriteLog -LogText "$( $tb.Text ) > $( $ofs = ", "; [string]( ( $tbOut.Text -split "`n" )[ 1..( ( $tbOut.Text -split "`n" ).Count - 1 ) ] ) )"
