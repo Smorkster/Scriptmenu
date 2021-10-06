@@ -5,8 +5,9 @@
 .Author Smorkster (smorkster)
 #>
 
-Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -Argumentlist $args[1]
-Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -Argumentlist $args[1]
+Add-Type -AssemblyName PresentationFramework
+Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
+Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -ArgumentList $args[1]
 
 $syncHash = [hashtable]::Synchronized( @{} )
 $syncHash.Win = [System.Windows.Window]@{ SizeToContent = "WidthAndHeight" }
@@ -32,13 +33,13 @@ $syncHash.SP = [System.Windows.Controls.StackPanel]@{}
 
 $syncHash.Win.Content = $syncHash.Grid
 
-$syncHash.DistGroups = New-Object System.Collections.ArrayList
-$syncHash.NotFound = New-Object System.Collections.ArrayList
+$syncHash.DistGroups = [System.Collections.ArrayList]::new()
+$syncHash.NotFound = [System.Collections.ArrayList]::new()
 $syncHash.msgTable = $msgTable
 $syncHash.BaseDir = $args[0]
 
 $syncHash.ExportButton.Add_Click( {
-	$excel = New-Object -ComObject excel.application 
+	$excel = New-Object -ComObject excel.application
 	$excel.visible = $false
 	$excelWorkbook = $excel.Workbooks.Add()
 
@@ -56,10 +57,9 @@ $syncHash.ExportButton.Add_Click( {
 		if ( $tempname.Length -gt 31 )
 		{
 			try { $excelTempsheet.Name = $tempname.SubString( 0, 31 ) }
-			catch { $excelTempsheet.Name = $group.Group.PrimarySMTPAddress.SubString( 0, 31 ) }
-		} else {
-			$excelTempsheet.Name = $tempname
+			catch { $excelTempsheet.Name = $group.Group.PrimarySmtpAddress.SubString( 0, 31 ) }
 		}
+		else { $excelTempsheet.Name = $tempname }
 		#endregion
 
 		#region Add Members
@@ -125,7 +125,7 @@ $syncHash.ExportButton.Add_Click( {
 		$excelTempsheet = $excelWorkbook.Worksheets.Add()
 		$excelTempsheet.Name = $syncHash.msgTable.StrSSNotFound
 		$row = 2
-		$excelTempsheet.Cells.Item( $row, 1 ) = $syncHash.msgTable.StrNotFound
+		$excelTempsheet.Cells.Item( $row, 1 ) = $syncHash.msgTable.StrSSNotFoundTitle
 		$excelTempsheet.Cells.Item( $row, 1 ).Font.Bold = $true
 		$row = $row + 1
 		foreach ( $name in $syncHash.NotFound )
@@ -139,7 +139,8 @@ $syncHash.ExportButton.Add_Click( {
 	}
 
 	$syncHash.FilePath = "$( $syncHash.BaseDir )\Output\$( $env:USERNAME )\$( $syncHash.Data.msgTable.StrFileNamePrefix ) ($( Get-Date -f "yyyy-MM-dd HH.mm.ss" )).xlsx"
-	$excelWorkbook.SaveAs( $syncHash.FilePath )
+	try { $excelWorkbook.SaveAs( $syncHash.FilePath ) }
+	catch { $eh = WriteErrorlogTest -LogText $_ -UserInput "$( $syncHash.msgTable.ErrLogExport )`n$( $syncHash.FilePath )" -Severity "OtherFail" }
 	$excelWorkbook.Close()
 	$excel.Quit()
 
@@ -150,6 +151,7 @@ $syncHash.ExportButton.Add_Click( {
 	[System.GC]::Collect()
 	[System.GC]::WaitForPendingFinalizers()
 	Remove-Variable excel
+	WriteLogTest -Text $syncHash.msgTable.LogExported -OutputPath $syncHash.FilePath -Success ( $null -eq $eh ) | Out-Null
 
 	$tb = [System.Windows.Controls.TextBlock]@{ Text = "$( $syncHash.msgTable.StrExportDone )`n$( $syncHash.FilePath )"; Foreground = "Green"; TextWrapping = "Wrap"; Margin = 5 }
 	$tb.Add_MouseLeftButtonUp( { $syncHash.FilePath | clip ; ShowSplash -Text $syncHash.msgTable.StrPathCopied } )
@@ -158,7 +160,8 @@ $syncHash.ExportButton.Add_Click( {
 
 # Verify if distributiongroup exists, if so get object and members
 $syncHash.ImportButton.Add_Click( {
-	Get-Clipboard | Where-Object { $_ } | ForEach-Object {
+	$c = Get-Clipboard
+	$c | Where-Object { $_ } | ForEach-Object {
 		$a = $_
 		try
 		{
@@ -173,8 +176,15 @@ $syncHash.ImportButton.Add_Click( {
 		}
 	}
 
-	if ( $syncHash.NotFound.Count -gt 0 ) { $syncHash.SP.AddChild( ( [System.Windows.Controls.TextBlock]@{ Text = "$( $msgTable.StrNotFound )`n$( $ofs = "`n"; [string] $syncHash.NotFound )"; Foreground = "Red"; TextWrapping = "WrapWithOverflow"; Margin = 5 } ) ) }
+	$OFS = "`n"
+	if ( $syncHash.DistGroups.Count -eq 0 ) { $syncHash.DataGrid.AddChild( [pscustomobject]@{ "Address" = $syncHash.msgTable.StrNoneFound; "MemCount" = 0 } ) }
+	if ( $syncHash.NotFound.Count -gt 0 )
+	{
+		$syncHash.SP.AddChild( ( [System.Windows.Controls.TextBlock]@{ Text = "$( $syncHash.msgTable.StrNotFound )`n$( $ofs = "`n"; [string] $syncHash.NotFound )"; Foreground = "Red"; TextWrapping = "WrapWithOverflow"; Margin = 5 } ) )
+		$eh += WriteErrorlogTest -LogText $syncHash.msgTable.ErrLogNotFound -UserInput [string]$a -Severity "UserInputFail"
+	}
+	WriteLogTest -Text $syncHash.msgTable.LogSearch -UserInput [string]$c -Success ( $null -eq $eh ) | Out-Null
 } )
 
 [void] $syncHash.Win.ShowDialog()
-$global:syncHash = $syncHash
+#$global:syncHash = $syncHash

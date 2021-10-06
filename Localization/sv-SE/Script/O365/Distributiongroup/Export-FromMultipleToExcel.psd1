@@ -1,20 +1,25 @@
 ConvertFrom-StringData @'
-ContentDgC1Header = Hittade distributionsgrupper
-ContentDgC2Header = Antal medlemmar
 ContentbtnExport = Exportera
 ContentbtnImport = Importera
 ContentbtnImportToolTip = Importera från clipboard
-StrExportDone = Export av distgrupper klar. Exporten har skrivits till: (klicka här för att kopiera)
-StrFileNamePrefix = Export Distributionsgrupper
+ContentDgC1Header = Hittade distributionslistor
+ContentDgC2Header = Antal medlemmar
+ErrLogExport = Export av data
+ErrLogNotFound = Hittade inte distributionslistor
+LogExported = Exporterade data
+LogSearch = Sökte distributionslistor
+StrExportDone = Export av distlistor klar. Exporten har skrivits till: (klicka här för att kopiera)
+StrFileNamePrefix = Export Distributionslistor
 StrNoMembers = <Inga medlemmar>
+StrNoneFound = Hittade inga distributionslistor
 StrNoOwner = <Ingen ägare angiven>
-StrNotFound = Hittar inte distributionsgrupper med följande information i Exchange:
+StrNotFound = Hittar inte någon distributionslista (namn eller mailadress) med något av följande i Exchange:
 StrPathCopied = Sökväg till exportfilen har kopierats till clipboard
 StrSSNotFound = Ej hittade
-StrSSNotFoundTitle = Dessa distributiongrupper kunde inte hittas
+StrSSNotFoundTitle = Dessa distributionslistor kunde inte hittas
 StrSSTitleAddress = Mailadress
+StrSSTitleMemAddr = Mailadress
+StrSSTitleMembers = Medlemmar
 StrSSTitleName = Namn
 StrSSTitleOwner = Ägare
-StrSSTitleMembers = Medlemmar
-StrSSTitleMemAddr = Mailadress
 '@

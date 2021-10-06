@@ -1,20 +1,25 @@
 ConvertFrom-StringData @'
-ContentDgC1Header = Found distributiongroups
-ContentDgC2Header = Member count
 ContentbtnExport = Export
 ContentbtnImport = Import
 ContentbtnImportToolTip = Import from clipboard
-StrExportDone = Export of distgroups finished. The export was written to: (click here to copy)
-StrFileNamePrefix = Export Distributiongroups
+ContentDgC1Header = Found distribution lists
+ContentDgC2Header = Number of members
+ErrLogExport = Export of data
+ErrLogNotFound = Did not find distribution lists
+LogExported = Exported data
+LogSearch = Searched for distribution lists
+StrExportDone = Export of dist lists ready. The export has been written to: (click here to copy)
+StrFileNamePrefix = Export Distribution Lists
 StrNoMembers = <No members>
+StrNoneFound = No distribution lists found
 StrNoOwner = <No owner specified>
-StrNotFound = Cannot find distribution groups with the following information in Exchange:
+StrNotFound = Can't find any distribution list (name or email address) with any of the following in Exchange:
 StrPathCopied = The path to the export file has been copied to the clipboard
 StrSSNotFound = Not found
-StrSSNotFoundTitle = These distributiongroups could not be found
+StrSSNotFoundTitle = These distribution lists could not be found
 StrSSTitleAddress = Email address
+StrSSTitleMemAddr = Email address
+StrSSTitleMembers = Members
 StrSSTitleName = Name
 StrSSTitleOwner = Owner
-StrSSTitleMembers = Members
-StrSSTitleMemAddr = Email address
 '@
