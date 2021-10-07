@@ -37,7 +37,7 @@ function GetDelegates
 {
 	$syncHash.dgDelegates.Items.Clear()
 
-	$ofs = ","
+	$OFS = ","
 	$mailDelegates = Get-MailboxFolderPermission -Identity "$( $syncHash.Data.user.EmailAddress ):\$( $syncHash.Data.msgTable.StrInbox )" -ErrorAction Stop | Where-Object { $_.User -notin "Standard","Anonymous","Default" }
 
 	try
@@ -56,77 +56,101 @@ function GetDelegates
 			{
 				if ( $_.CategoryInfo -like "*ManagementObjectNotFoundException*" )
 				{
-					$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.tbCheckMessage.Text += "`n$( $syncHash.Data.msgTable.ErrNoCalendar )" } )
+					$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.tbCheckMessage.Text += "`n$( $syncHash.Data.msgTable.ErrMsgNoCalendar )" } )
+					$eh = WriteErrorlogTest -LogText $syncHash.Data.msgTable.ErrLogNoCal -UserInput $syncHash.Data.user.EmailAddress -Severity "OtherFail"
 				}
 			}
 		}
 	}
 
-	if ( ( $mailDelegates.Count + $calendarDelegates.Count ) -gt 0 )
+	$logDelegates = ""
+	if ( @( $mailDelegates ).Count -gt 0 )
 	{
-		$syncHash.dgDelegates.Columns.Add( ( [System.Windows.Controls.DataGridTextColumn]@{ Header = $syncHash.Data.msgTable.StrDgDelegatesTitleFolder; Width = 150; Binding = [System.Windows.Data.Binding]@{ Path = "Folder" } } ) )
-		$syncHash.dgDelegates.Columns.Add( ( [System.Windows.Controls.DataGridTextColumn]@{ Header = $syncHash.Data.msgTable.StrDgDelegatesTitleUser; Width = 150; Binding = [System.Windows.Data.Binding]@{ Path = "User" } } ) )
-		$syncHash.dgDelegates.Columns.Add( ( [System.Windows.Controls.DataGridTextColumn]@{ Header = $syncHash.Data.msgTable.StrDgDelegatesTitlePerm; Binding = [System.Windows.Data.Binding]@{ Path = "Permission" } } ) )
+		$logDelegates = "$( $syncHash.Data.msgTable.LogMailDelegatesTitle ) $( @( $mailDelegates ).Count )`n"
+		$mailDelegates | ForEach-Object {
+			$syncHash.dgDelegates.AddChild( [pscustomobject]@{ "Folder" = $_.FolderName; "User" = $_.User; "Permission" = [string]$_.AccessRights } )
+			
+		}
 	}
-
-	if ( $mailDelegates.Count -gt 0 ) { $mailDelegates | ForEach-Object { $syncHash.dgDelegates.AddChild( [pscustomobject]@{ "Folder" = $_.FolderName; "User" = $_.User; "Permission" = [string]$_.AccessRights } ) } }
 	else { $syncHash.dgDelegates.AddChild( [pscustomobject]@{ "Folder" = $syncHash.Data.msgTable.StrNoMailDelegates; "User" = ""; "Permission" = "" } ) }
 
-	if ( $calendarDelegates.Count -gt 0 ) { $calendarDelegates | ForEach-Object { $syncHash.dgDelegates.AddChild( [pscustomobject]@{ "Folder" = $_.FolderName; "User" = $_.User; "Permission" = [string]$_.AccessRights } ) } }
+	if ( @( $calendarDelegates ).Count -gt 0 )
+	{
+		$logDelegates += "$( $syncHash.Data.msgTable.LogCalendarDelegatesTitle ) $( @( $calendarDelegates ).Count )"
+		$calendarDelegates | ForEach-Object { $syncHash.dgDelegates.AddChild( [pscustomobject]@{ "Folder" = $_.FolderName; "User" = $_.User; "Permission" = [string]$_.AccessRights } ) }
+	}
 	else { $syncHash.dgDelegates.AddChild( [pscustomobject]@{ "Folder" = $syncHash.Data.msgTable.StrNoMailDelegates; "User" = ""; "Permission" = "" } ) }
 
-	WriteLog -LogText "Delegates $( $syncHash.DC.tbId[0] )"
+	if ( $logDelegates -eq "" ) { $logText = $syncHash.Data.msgTable.LogNoDelegates }
+	else { $logText = $logDelegates.Trim() }
+
+	WriteLogTest -Text "$( $syncHash.Data.msgTable.LogGetDelegates )`n$logText" -UserInput $syncHash.Data.user.EmailAddress -Success ( $null -eq $eh ) | Out-Null
 }
 
 #################################
 # Get devices registered for user
 function GetDevices
 {
+	$syncHash.dgDevices.Items.Clear()
 	if ( ( $devices = Get-AzureADUserRegisteredDevice -ObjectId $syncHash.Data.userAzure.ObjectId ).Count -gt 0 )
 	{
-		$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.tbDevices.Text = "" } )
-		foreach ( $device in $devices )
-		{
-			$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.tbDevices.Text += "$( $device.DisplayName )`n" } )
-		}
+		$OFS = "`n"
+		$devices | ForEach-Object { $syncHash.dgDevices.AddChild( $_ ) }
+		$logText = [string]( $devices.DisplayName | Sort-Object )
+	}
+	else
+	{
+		$syncHash.dgDevices.AddChild( [pscustomobject]@{ DisplayName = $syncHash.Data.msgTable.StrNoDevices; ApproximateLastLogonTimeStamp = 0 } )
+		$logText = $syncHash.Data.msgTable.LogNoDevices
 	}
 
-	WriteLog -LogText "Devices $( $syncHash.DC.tbId[0] )"
+	WriteLogTest -Text "$( $syncHash.Data.msgTable.LogGetDevices )`n$logText" -UserInput $syncHash.Data.user.EmailAddress -Success $true | Out-Null
 }
 
 ##################################################
 # Get all distributiongroups the user is member of
 function GetDistsMembership
 {
-	$syncHash.dgDistsMember.Columns.Add( ( [System.Windows.Controls.DataGridTextColumn]@{ Header = $syncHash.Data.msgTable.StrDgDistsMemberTitleName; Binding = [System.Windows.Data.Binding]@{ Path = "Name" } } ) )
-	$syncHash.dgDistsMember.Columns.Add( ( [System.Windows.Controls.DataGridTextColumn]@{ Header = $syncHash.Data.msgTable.StrDgDistsMemberTitleSmtp; Binding = [System.Windows.Data.Binding]@{ Path = "SMTP" } } ) )
-
+	$syncHash.dgDistsMember.Items.Clear()
 	$dists = Get-AzureADUser -SearchString $syncHash.DC.tbId[0] | Get-AzureADUserMembership | Where-Object { $_.DisplayName -match "^DL" }
 
-	if ( @( $dists ).Count -eq 0 ) { $syncHash.dgDistsMember.AddChild( [pscustomobject]@{ Name = $syncHash.Data.msgTable.StrNoDistsMember ; SMTP = "" } ) }
+	if ( @( $dists ).Count -eq 0 )
+	{
+		$syncHash.dgDistsMember.AddChild( [pscustomobject]@{ Name = $syncHash.Data.msgTable.StrNoDistsMember ; SMTP = "" } )
+		$logText = $syncHash.Data.msgTable.LogNoDistsMember
+	}
 	else
 	{
+		$OFS = "`n"
 		$dists.DisplayName | `
-			Foreach-Object { $_ -replace "DL-" -split "-"  | Select-Object -SkipLast 1 } | `
+			ForEach-Object { $_ -replace "DL-" -split "-"  | Select-Object -SkipLast 1 } | `
 			Select-Object @{ Name = "Name"; Expression = { $_ }}, @{ Name = "SMTP"; Expression = { ( Get-DistributionGroup -Identity $_ ).PrimarySMTPAddress } } | `
 			ForEach-Object { $syncHash.dgDistsMember.AddChild( [pscustomobject]@{ Name = $_.Name; SMTP = $_.SMTP } ) }
+		$logText = [string]( $dists.DisplayName )
 	}
 
-	WriteLog -LogText "Distribution Groups Owner $( $syncHash.DC.tbId[0] )"
+	WriteLogTest -Text "$( $syncHash.Data.msgTable.LogGetDistMemberships )`n$logText"-UserInput $syncHash.Data.user.EmailAddress -Success $true | Out-Null
 }
 
-########################################################
+#########################################################
 # Get all distributiongroups the user is set as owner for
 function GetDistsOwnership
 {
-	$syncHash.dgDistsOwner.Columns.Add( ( [System.Windows.Controls.DataGridTextColumn]@{ Header = $syncHash.Data.msgTable.StrDgDistsOwnerTitleName; Binding = [System.Windows.Data.Binding]@{ Path = "Name" } } ) )
-	$syncHash.dgDistsOwner.Columns.Add( ( [System.Windows.Controls.DataGridTextColumn]@{ Header = $syncHash.Data.msgTable.StrDgDistsOwnerTitleSmtp; Binding = [System.Windows.Data.Binding]@{ Path = "SMTP" } } ) )
-
+	$syncHash.dgDistsOwner.Items.Clear()
 	$dists = Get-DistributionGroup -Filter "CustomAttribute10 -like '*$( $syncHash.Data.user.EmailAddress )*'"
-	if ( @( $dists ).Count -eq 0 ) { $syncHash.dgDistsOwner.AddChild( [pscustomobject]@{ Name = $syncHash.Data.msgTable.StrNoDistsOwner ; SMTP = "" } ) }
-	else { $dists | ForEach-Object { $syncHash.dgDistsOwner.AddChild( [pscustomobject]@{ Name = $_.Name; SMTP = $_.PrimarySmtpAddress } ) } }
+	if ( @( $dists ).Count -eq 0 )
+	{
+		$syncHash.dgDistsOwner.AddChild( [pscustomobject]@{ Name = $syncHash.Data.msgTable.StrNoDistsOwner ; SMTP = "" } )
+		$logText = $syncHash.Data.msgTable.LogNoDistsOwner
+	}
+	else
+	{
+		$OFS = "`n"
+		$dists | ForEach-Object { $syncHash.dgDistsOwner.AddChild( [pscustomobject]@{ Name = $_.Name; SMTP = $_.PrimarySmtpAddress } ) }
+		$logText = [string]( $dists.Name )
+	}
 
-	WriteLog -LogText "Distribution Groups Owner $( $syncHash.DC.tbId[0] )"
+	WriteLogTest -Text "$( $syncHash.Data.msgTable.LogGetDistOwnerships )`n$logText" -UserInput $syncHash.Data.user.EmailAddress -Success $true | Out-Null
 }
 
 ############################
@@ -158,7 +182,7 @@ function GetLogins
 		}
 
 		$syncHash.Window.Dispatcher.Invoke( [action] {
-			$syncHash.tbLastTeamsLogins.Text = $TeamsLoginText
+			$syncHash.DC.tbLastTeamsLogins[0] = $TeamsLoginText
 			$syncHash.DC.tbLastO365Login[0] = "$( $syncHash.Data.mailLogin.ToShortDateString() ) $( $syncHash.Data.mailLogin.ToLongTimeString() )"
 			$syncHash.DC.btnGetDelegates[0] = $syncHash.Data.msgTable.ContentbtnGetDelegates
 			$syncHash.DC.btnGetDistsMember[0] = $syncHash.Data.msgTable.ContentbtnGetDistsMember
@@ -171,21 +195,22 @@ function GetLogins
 			$syncHash.DC.btnGetIcon[1] = $true
 		} )
 	} ).AddArgument( $syncHash ) ).BeginInvoke()
-	WriteLog -LogText "Logins $( $syncHash.DC.tbId[0] )"
 }
 
 ################################################
 # Get all shared mailboxes the user is member of
 function GetSharedMembership
 {
-	$syncHash.dgSharedMember.Columns.Add( ( [System.Windows.Controls.DataGridTextColumn]@{ Header = $syncHash.Data.msgTable.StrDgSharedMemberTitleName; Binding = [System.Windows.Data.Binding]@{ Path = "Name" } } ) )
-	$syncHash.dgSharedMember.Columns.Add( ( [System.Windows.Controls.DataGridTextColumn]@{ Header = $syncHash.Data.msgTable.StrDgSharedMemberTitlePermission; Binding = [System.Windows.Data.Binding]@{ Path = "Permission" } } ) )
-
+	$syncHash.dgSharedMember.Items.Clear()
 	$shared = Get-AzureADUser -SearchString $syncHash.DC.tbId[0] | Get-AzureADUserMembership | Where-Object { $_.DisplayName -match "^MB" }
-	if ( @( $shared ).Count -eq 0 ) { $syncHash.dgSharedMember.AddChild( [pscustomobject]@{ Name = $syncHash.Data.msgTable.StrNoSharedMember ; Permission = "" } ) }
+	if ( @( $shared ).Count -eq 0 )
+	{
+		$syncHash.dgSharedMember.AddChild( [pscustomobject]@{ Name = $syncHash.Data.msgTable.StrNoSharedMember ; Permission = "" } )
+		$logText = $syncHash.Data.msgTable.LogNoSharedMember
+	}
 	else
 	{
-		$list = New-Object System.Collections.ArrayList
+		$list = [System.Collections.ArrayList]::new()
 		foreach ( $i in ( $shared.DisplayName | Select-Object @{ Name = "Name"; Expression = { $_ -replace "MB-" -split "-" | Select-Object -SkipLast 1 } }, @{ Name = "Permission"; Expression = { $_ -split "-" | Select-Object -Last 1 } } | Sort-Object Name ) )
 		{
 			if ( $list.Name -contains $i.Name )
@@ -198,23 +223,32 @@ function GetSharedMembership
 			}
 		}
 		$list | ForEach-Object { $syncHash.dgSharedMember.AddChild( [pscustomobject]@{ Name = $_.Name; Permission = $_.Permission } ) }
+		$OFS = "`n"
+		$logText = [string]( $shared.DisplayName | Sort-Object )
 	}
 
-	WriteLog -LogText "Shared Mailboxes Membership $( $syncHash.DC.tbId[0] )"
+	WriteLogTest -Text "$( $syncHash.Data.msgTable.LogGetSharedMemberships )`n$logText" -UserInput $syncHash.DC.tbId[0] -Success $true | Out-Null
 }
 
 #######################################################
 # Get all shared mailboxes the user is set as owner for
 function GetSharedOwnership
 {
-	$syncHash.dgSharedOwner.Columns.Add( ( [System.Windows.Controls.DataGridTextColumn]@{ Header = $syncHash.Data.msgTable.StrDgSharedOwnerTitleName; Binding = [System.Windows.Data.Binding]@{ Path = "Name" } } ) )
-	$syncHash.dgSharedOwner.Columns.Add( ( [System.Windows.Controls.DataGridTextColumn]@{ Header = $syncHash.Data.msgTable.StrDgSharedOwnerTitlePermission; Binding = [System.Windows.Data.Binding]@{ Path = "SMTP" } } ) )
-
+	$syncHash.dgSharedOwner.Items.Clear()
 	$shared = Get-EXOMailBox -Filter "CustomAttribute10 -like '*$( $syncHash.Data.user.EmailAddress )*'"
-	if ( @( $shared ).Count -eq 0 ) { $syncHash.dgSharedOwner.AddChild( [pscustomobject]@{ Name = $syncHash.Data.msgTable.StrNoSharedOwner ; SMTP = "" } ) }
-	else { $shared | ForEach-Object { $syncHash.dgSharedOwner.AddChild( [pscustomobject]@{ Name = $_.DisplayName; SMTP = $_.PrimarySmtpAddress } ) } }
+	if ( @( $shared ).Count -eq 0 )
+	{
+		$syncHash.dgSharedOwner.AddChild( [pscustomobject]@{ Name = $syncHash.Data.msgTable.StrNoSharedOwner ; SMTP = "" } )
+		$logText = $syncHash.Data.msgTable.LogNoSharedOwner
+	}
+	else
+	{
+		$OFS = "`n"
+		$shared | ForEach-Object { $syncHash.dgSharedOwner.AddChild( [pscustomobject]@{ Name = $_.DisplayName; SMTP = $_.PrimarySmtpAddress } ) }
+		$logText = [string]( $shared.DisplayName )
+	}
 
-	WriteLog -LogText "Shared Mailboxes Ownership $( $syncHash.DC.tbId[0] )"
+	WriteLogTest -Text "$( $syncHash.Data.msgTable.LogGetOwnershipShared )`n$logText"-UserInput $syncHash.Data.user.EmailAddress -Success $true | Out-Null
 }
 
 function Reset
@@ -224,8 +258,8 @@ function Reset
 	$syncHash.DC.btnGetLogins[0] = $syncHash.Data.msgTable.ContentbtnGetLogins
 	$syncHash.DC.btnGetDelegates[0] = $syncHash.Data.msgTable.ContentbtnGetDelegates
 	$syncHash.DC.btnID[1] = $false
-	$syncHash.tbLastO365Login.Text = ""
-	$syncHash.tbLastTeamsLogins.Text = ""
+	$syncHash.DC.tbLastO365Login[0] = ""
+	$syncHash.DC.tbLastTeamsLogins[0] = ""
 	$syncHash.tbDevices.Text = ""
 	$syncHash.dgDelegates.Items.Clear()
 	$syncHash.dgDistsMember.Items.Clear()
@@ -239,8 +273,8 @@ function Reset
 }
 
 ################# Script start
-Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -Argumentlist $args[1]
-Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -Argumentlist $args[1]
+Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
+Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -ArgumentList $args[1]
 Import-Module ActiveDirectory
 
 $controls = New-Object System.Collections.ArrayList
@@ -277,6 +311,7 @@ $controls = New-Object System.Collections.ArrayList
 [void]$controls.Add( @{ CName = "tbCheckMessage"; Props = @( @{ PropName = "IsReadOnly"; PropVal = $true } ) } )
 [void]$controls.Add( @{ CName = "tbId"; Props = @( @{ PropName = "Text"; PropVal = "" } ) } )
 [void]$controls.Add( @{ CName = "tbLastO365Login"; Props = @( @{ PropName = "Text"; PropVal = "" } ) } )
+[void]$controls.Add( @{ CName = "tbLastTeamsLogins"; Props = @( @{ PropName = "Text"; PropVal = "" } ) } )
 [void]$controls.Add( @{ CName = "tiDelegates"; Props = @( @{ PropName = "Header"; PropVal = $msgTable.ContenttiDelegates } ) } )
 [void]$controls.Add( @{ CName = "tiDevices"; Props = @( @{ PropName = "Header"; PropVal = $msgTable.ContenttiDevices } ) } )
 [void]$controls.Add( @{ CName = "tiDists"; Props = @( @{ PropName = "Header"; PropVal = $msgTable.ContenttiDists } ) } )
@@ -292,11 +327,15 @@ $controls = New-Object System.Collections.ArrayList
 $syncHash = CreateWindowExt $controls
 $syncHash.Data.msgTable = $msgTable
 
-$syncHash.btnActiveLogin.Add_Click( { Set-AzureADUser -ObjectId $syncHash.Data.userAzure.ObjectId -AccountEnabled $syncHash.DC.cbActiveLogin[0] } )
+$syncHash.btnActiveLogin.Add_Click( {
+	Set-AzureADUser -ObjectId $syncHash.Data.userAzure.ObjectId -AccountEnabled $syncHash.DC.cbActiveLogin[0]
+	WriteLogTest -Text $syncHash.Data.msgTable.LogSetActive -UserInput $syncHash.Data.userAzure.ObjectId -Success $true | Out-Null
+} )
 $syncHash.btnGetDelegates.Add_Click( { GetDelegates } )
 $syncHash.btnGetDevices.Add_Click( { GetDevices } )
 $syncHash.btnGetDistsMember.Add_Click( { GetDistsMembership } )
 $syncHash.btnGetDistsOwner.Add_Click( { GetDistsOwnership } )
+# Retrieve and display the users accont icon
 $syncHash.btnGetIcon.Add_Click( {
 	try
 	{
@@ -311,11 +350,14 @@ $syncHash.btnGetIcon.Add_Click( {
 		$syncHash.imgIcon.Visibility = [System.Windows.Visibility]::Collapsed
 		$syncHash.DC.btnRemoveIcon[1] = $false
 		$syncHash.btnRemoveIcon.Content = $syncHash.Data.msgTable.StrNoImage
+		$eh = WriteErrorlogTest -LogText $syncHash.Data.msgTable.ErrLogGetPhoto -UserInput $syncHash.Data.user.EmailAddress -Severity "OtherFail" | Out-Null
 	}
+	WriteLogTest -Text $syncHash.Data.msgTable.LogGetUserPhoto -UserInput $syncHash.Data.user.EmailAddress -Success ( $null -eq $eh ) -ErrorLogHash $eh | Out-Null
 } )
 $syncHash.btnGetLogins.Add_Click( { GetLogins } )
 $syncHash.btnGetSharedMember.Add_Click( { GetSharedMembership } )
 $syncHash.btnGetSharedOwner.Add_Click( { GetSharedOwnership } )
+# Check status for the users AzureAD-account
 $syncHash.btnID.Add_Click( {
 	try
 	{
@@ -377,12 +419,17 @@ $syncHash.btnID.Add_Click( {
 		{
 			ErrorMessage $syncHash.Data.msgTable.StrO365NotFoundExchange
 			FillEllipse "elOExchCheck" "LightCoral"
+			$eh += WriteErrorlogTest -LogText $syncHash.Data.msgTable.ErrLogNotInExc -UserInput $syncHash.Data.user.EmailAddress -Severity "OtherFail"
 		}
 	}
 	# No open connection to Azure-online services
 	catch [Microsoft.Open.Azure.AD.CommonLibrary.AadNeedAuthenticationException]
 	{
-		if ( $_.Exception -match "Connect-AzureAD" ) { ErrorMessage $syncHash.Data.msgTable.StrO365NoAzAdConnection }
+		if ( $_.Exception -match "Connect-AzureAD" )
+		{
+			ErrorMessage $syncHash.Data.msgTable.ErrMsgO365NoAzAdConnection
+			$eh += WriteErrorlogTest -LogText $syncHash.Data.msgTable.ErrLogNotConn -UserInput $syncHash.Data.msgTable.StrErrGetUsr -Severity "OtherFail"
+		}
 	}
 	# User was not found
 	catch
@@ -391,14 +438,29 @@ $syncHash.btnID.Add_Click( {
 		{
 			ErrorMessage $syncHash.Data.msgTable.StrO365NotFound
 			FillEllipse "elOAccountCheck" "LightCoral"
+			$eh += WriteErrorlogTest -LogText $syncHash.Data.msgTable.ErrLogNotFoundAzAd -UserInput $syncHash.Data.user.EmailAddress -Severity "OtherFail"
 		}
-		else { ErrorMessage $_ }
+		else
+		{
+			ErrorMessage $_
+			$eh += WriteErrorlogTest -LogText $_ -UserInput "$( $syncHash.Data.msgTable.ErrLogSomeError )`n$( $syncHash.Data.user.EmailAddress )" -Severity "OtherFail"
+		}
 	}
-	WriteLog -LogText $syncHash.DC.tbId[0]
+	WriteLogTest -Text "$( $syncHash.Data.msgTable.LogGetUserAzAd )" -UserInput $syncHash.DC.tbId[0] -Success ( $null -eq $eh ) -ErrorLogHash $eh | Out-Null
 } )
-$syncHash.btnRemoveIcon.Add_Click( { Remove-UserPhoto -Identity $syncHash.Data.user.EmailAddress } )
+# Remove the user ikon
+$syncHash.btnRemoveIcon.Add_Click( {
+	Remove-UserPhoto -Identity $syncHash.Data.user.EmailAddress
+	WriteLogTest -Text $syncHash.Data.msgTable.LogRemovePhoto -UserInput $syncHash.Data.user.EmailAddress -Success $true | Out-Null
+} )
+# Change checked depending on the status of enabled for account
 $syncHash.cbActiveLogin.Add_Checked( { $syncHash.DC.btnActiveLogin[1] = $this.IsChecked -ne $syncHash.Data.userAzure.AccountEnabled } )
 $syncHash.cbActiveLogin.Add_Unchecked( { $syncHash.DC.btnActiveLogin[1] = $this.IsChecked -ne $syncHash.Data.userAzure.AccountEnabled } )
+# If Stackpanel get enabled, info for last login is retrieved
+$syncHash.spLogins.Add_IsEnabledChanged( {
+	if ( $this.IsEnabled )
+	{ WriteLogTest -Text "$( $syncHash.Data.msgTable.LogGetLastLogin )`n$( $syncHash.Data.msgTable.LogLastLoginO365 ) $( $syncHash.DC.tbLastO365Login[0] )`n$( $syncHash.Data.msgTable.LogLastLoginTeams ) $( $syncHash.DC.tbLastTeamsLogins[0] )" -UserInput $syncHash.Data.user.EmailAddress -Success $true | Out-Null }
+} )
 $syncHash.tbId.Add_TextChanged( {
 	Reset
 
@@ -460,17 +522,37 @@ $syncHash.tbId.Add_TextChanged( {
 		{
 			ErrorMessage -Text $syncHash.Data.msgTable.StrErrADNF -ClearText
 			FillEllipse "elADCheck" "LightCoral"
+			$eh += WriteErrorlogTest -LogText $syncHash.Data.msgTable.ErrLogNotFoundAd -UserInput $this.Text -Severity "UserInputFail"
 		}
 		# Couldn't connect to AD
 		catch [Microsoft.ActiveDirectory.Management.ADServerDownException]
 		{
 			ErrorMessage $syncHash.Data.msgTable.StrErrAD
 			FillEllipse "elADCheck" "LightGray"
+			$eh += WriteErrorlogTest -LogText $syncHash.Data.msgTable.ErrLogConnFailAd -UserInput $this.Text -Severity "ConnectionFail"
 		}
+		WriteLogTest -Text $syncHash.Data.msgTable.LogGetUserAd -UserInput $this.Text -Success ( $null -eq $eh ) -ErrorLogHash $eh | Out-Null
 	}
 } )
 $syncHash.tiLogins.Add_GotFocus( { $this.Background = $null } )
-$syncHash.Window.Add_ContentRendered( { $syncHash.tbId.Focus() } )
+$syncHash.Window.Add_ContentRendered( {
+	$syncHash.dgDelegates.Columns[0].Header = $syncHash.Data.msgTable.ContentdgDelegatesColFolder
+	$syncHash.dgDelegates.Columns[1].Header = $syncHash.Data.msgTable.ContentdgDelegatesColUser
+	$syncHash.dgDelegates.Columns[2].Header = $syncHash.Data.msgTable.ContentdgDelegatesColPerm
+	$syncHash.dgSharedMember.Columns[0].Header = $syncHash.Data.msgTable.ContentdgSharedMemberColName
+	$syncHash.dgSharedMember.Columns[1].Header = $syncHash.Data.msgTable.ContentdgSharedMemberColPermission
+	$syncHash.dgSharedOwner.Columns[0].Header = $syncHash.Data.msgTable.ContentdgSharedOwnerColName
+	$syncHash.dgSharedOwner.Columns[1].Header = $syncHash.Data.msgTable.ContentdgSharedOwnerColSmtp
+	$syncHash.dgDistsMember.Columns[0].Header = $syncHash.Data.msgTable.ContentdgDistsMemberColName
+	$syncHash.dgDistsMember.Columns[1].Header = $syncHash.Data.msgTable.ContentdgDistsMemberColSmtp
+	$syncHash.dgDistsOwner.Columns[0].Header = $syncHash.Data.msgTable.ContentdgDistsOwnerColName
+	$syncHash.dgDistsOwner.Columns[1].Header = $syncHash.Data.msgTable.ContentdgDistsOwnerColSmtp
+	$syncHash.dgDevices.Columns[0].Header = $syncHash.Data.msgTable.ContentdgDevicesColDisplayName
+	$syncHash.dgDevices.Columns[1].Header = $syncHash.Data.msgTable.ContentdgDevicesColLastLogin
+
+	$this.Top = 20
+	$syncHash.tbId.Focus()
+} )
 
 [void] $syncHash.Window.ShowDialog()
 #$global:syncHash = $syncHash
