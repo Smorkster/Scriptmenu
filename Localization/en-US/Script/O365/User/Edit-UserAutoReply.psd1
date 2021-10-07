@@ -1,22 +1,23 @@
 ConvertFrom-StringData @'
-ContentlblId = Enter ID
-ContentlblNoUser = No user found with given ID
 ContentbtnId = Get user
-ContentlblAutoReply = Autoreply-message
 ContentbtnSet = Save autoreply
-ContentcbActivate = Activate autoreply
-ContentlblStart = Startdate for autoreply
-ContentlblEnd = Enddate for autoreply
-ContentcbScheduled = Send autoreply only within a given period
-ContentrbEndManually = User must inactivate manually
-ContentrbEndTime = Enter enddate for autoreply
-StrSetAutoReplyStart = Sets autoreply to be sent
-StrDisableAutoReply = Inactivating autoreply
+ContentcbActivate = Enable autoreply
+ContentcbScheduled = Send answers only during a certain period
+ContentlblAutoReply = Autoreply message
+ContentlblEnd = End date for autoreply
+ContentlblId = Enter id
+ContentlblNoUser = No user was found with the specified id
+ContentlblStart = Start date for autoreply
+ContentrbEndManually = The user will have to diable manually
+ContentrbEndTime = Enter autoreply end date
+LogSummary = Set the following settings for autoreply
+StrDisableAutoReply = Disables autoreply
+StrSetAutoReplyNotScheduled = until it is manually disabled
 StrSetAutoReplyScheduled = from
-StrSetAutoReplyNotScheduled = until it is manually inactivated
-StrSetAutoReplyScheduledManEnd = until it is manually inactivated (enddate is set 5 years into the future)
+StrSetAutoReplyScheduledManEnd = ntil it is manually deactivated (end date set to 5 years ahead)
 StrSetAutoReplyScheduleEnd = until
+StrSetAutoReplyStart = Puts autoreply to be sent
 StrSetting = Working
 StrSettingDone = Autoreply set
-StrSettingInactiveDone = Autoreply inactivated
+StrSettingInactiveDone = Autoreply disabled
 '@

@@ -1,9 +1,11 @@
 <Window
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        SizeToContent="Height"
-        ResizeMode="NoResize"
-        Width="520" MaxWidth="520">
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    ResizeMode="NoResize"
+    SizeToContent="WidthAndHeight"
+    Width="520" MinWidth="520"
+    WindowStartupLocation="CenterScreen"
+    x:Name="Window">
     <Window.Resources>
         <Style TargetType="{x:Type ComboBox}">
             <Setter Property="Margin" Value="10,0,0,0"/>
@@ -23,12 +25,12 @@
         <StackPanel x:Name="spUser" Margin="5">
             <StackPanel>
                 <Button x:Name="btnSet"/>
-                <TextBlock x:Name="tbSummary" TextWrapping="Wrap" Margin="5"/>
+                <TextBlock x:Name="tbSummary" MaxWidth="500" TextWrapping="Wrap"/>
                 <CheckBox x:Name="cbActivate" Margin="5"/>
             </StackPanel>
             <StackPanel x:Name="spAutoReply">
                 <Label x:Name="lblAutoReply"/>
-                <TextBox x:Name="tbAutoReply" Height="100" Width="500"/>
+                <TextBox x:Name="tbAutoReply" Height="100" Width="500" AcceptsReturn="True" AcceptsTab="True"/>
                 <CheckBox x:Name="cbScheduled"/>
                 <StackPanel x:Name="spScheduled">
                     <Label x:Name="lblStart"/>
