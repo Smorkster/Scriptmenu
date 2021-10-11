@@ -4,215 +4,94 @@
 .Author Smorkster (smorkster)
 #>
 
-################################################
-# Add controls to send report or suggestion mail
-function AddReportTool
+class ComputerObject
 {
-	$ti = [System.Windows.Controls.TabItem]@{ Header = "$( $msgTable.ContentFeedbackHeader )"; Background = "#FFFF9C9C" }
-	$sp = [System.Windows.Controls.StackPanel]@{}
-	$spScript = [System.Windows.Controls.StackPanel]@{ Orientation = "Horizontal" }
-	$spSubject = [System.Windows.Controls.StackPanel]@{ Orientation = "Horizontal" }
-	$cb = [System.Windows.Controls.ComboBox]@{ Height = "25"; Width = "300" }
-	$tbText = [System.Windows.Controls.TextBox]@{ AcceptsReturn = $true; AcceptsTab = $true; TextWrapping = "WrapWithOverflow"; VerticalScrollBarVisibility = "Auto"; Height = "300" }
-	$btnAdd = [System.Windows.Controls.Button]@{ Content = $msgTable.ContentBtnAddScript; IsEnabled = $false; Margin = "0,5,10,5" }
-	$btnSend = [System.Windows.Controls.Button]@{ Content = $msgTable.ContentBtnSend; Tag = @{ 
-		From = ( ( Get-ADUser ( Get-ADUser $env:USERNAME ).SamAccountName.Replace( $msgTable.StrAdmPrefix, "" ) -Properties EmailAddress ).EmailAddress )
-		To = $msgTable.StrMailAddress
-		SMTP = $msgTable.StrSMTP
-		Body = "`n`n$( $msgTable.StrMailSender ):`n$( ( Get-ADUser $env:USERNAME ).Name )`n$( Get-Date -f "yyyy-MM-dd HH:mm:ss" )"
-		Subject = $msgTable.StrScriptSuite } }
-	$lblSubject = [System.Windows.Controls.Label]@{ Content = "$( $msgTable.ContentLblMessageType ): " }
-	$rbR = [System.Windows.Controls.RadioButton]@{ Content = $msgTable.ContentRBtnErrorReport; GroupName = "Subject"; IsChecked = $true }
-	$rbS = [System.Windows.Controls.RadioButton]@{ Content = $msgTable.ContentRBtnSuggestion; GroupName = "Subject" }
+	$ComputerName = @{ Name = ""; Value = "" }
+	$ReinstallAllowed = @{ Name = ""; Value = "" }
+	$FreeSpace = @{ Name = ""; Value = "" }
+	$IEVersion = @{ Name = ""; Value = "" }
+	$Model = @{ Name = ""; Value = "" }
+	$NetAdapters = @{ Name = ""; Value = @() }
+	$Operatingsystem = @{ Name = ""; Value = "" }
+	$Role = @{ Name = ""; Value = "" }
+	$Serialnumber = @{ Name = ""; Value = "" }
+	$TimeOfInstallation = @{ Name = ""; Value = "" }
+	$TimeOfLastBoot = @{ Name = ""; Value = "" }
+	$TimeSinceLastBoot = @{ Name = ""; Value = "" }
+	hidden $msgTable = $null
 
-	Get-ChildItem $PSCommandPath.Directory -Filter "*ps1" -File -Recurse | Select-Object Name, @{ Name = "Synopsis"; Expression = { ( Select-String -InputObject $_ -Pattern "^.Synopsis" -Encoding Default ).Line.Replace( ".Synopsis ", "" ) } } | Sort-Object Synopsis | ForEach-Object { [void] $cb.Items.Add( "$( $_.Synopsis )`n`t$( $_.Name )" ) }
+	ComputerObject ( $msgTable )
+	{
+		$this.ComputerName.Name = $msgTable.CompObjTitleCompName
+		$this.ReinstallAllowed.Name = $msgTable.CompObjTitleReinstAllowed
+		$this.FreeSpace.Name = $msgTable.CompObjTitleFreeSpace
+		$this.IEVersion.Name = $msgTable.CompObjTitleIEVer
+		$this.Model.Name = $msgTable.CompObjTitleModel
+		$this.NetAdapters.Name = $msgTable.CompObjTitleNetAd
+		$this.OperatingSystem.Name = $msgTable.CompObjTitleOS
+		$this.Role.Name = $msgTable.CompObjTitleRole
+		$this.Serialnumber.Name = $msgTable.CompObjTitleSN
+		$this.TimeOfInstallation.Name = $msgTable.CompObjTitleInst
+		$this.TimeOfLastBoot.Name = $msgTable.CompObjTitleBoot
+		$this.TimeSinceLastBoot.Name = $msgTable.CompObjTitleSinceBoot
+		$this.msgTable = $msgTable
+	}
 
-	$btnAdd.Add_Click( {
-		$this.Parent.Parent.Children[2].Text = $this.Parent.Children[1].SelectedItem + "`n" + $this.Parent.Parent.Children[2].Text
-		$this.Parent.Children[1].SelectedIndex = -1
-		$this.IsEnabled = $false
-	} )
-	$btnSend.Add_Click( {
-		$ofs = "`r`n"
-		Send-MailMessage -From $this.Tag.From `
-			-To $this.Tag.To `
-			-Body "$( $this.Parent.Children[2].Text )$( $this.Tag.Body )" `
-			-Encoding UTF8 `
-			-SmtpServer $this.Tag.SMTP `
-			-Subject $this.Tag.Subject
-		$this.Parent.Children[2].Text = ""
-	} )
-	$cb.Add_DropDownClosed( { if ( $this.Text -eq [string]::Empty ) { $this.Parent.Children[0].IsEnabled = $false } else { $this.Parent.Children[0].IsEnabled = $true } } )
+	[void] AddDiskInfo ( $Info )
+	{
+		if ( $Info.FreeSpace -gt 20GB ) { $this.FreeSpace.Name = $this.msgTable.CompObjTitleFreeSpace }
+		else { $this.FreeSpace.Name = $this.msgTable.CompObjTitleFreeSpaceLow }
 
-	[void] $spSubject.AddChild( $lblSubject )
-	[void] $spSubject.AddChild( $rbR )
-	[void] $spSubject.AddChild( $rbS )
-	[void] $spScript.AddChild( $btnAdd )
-	[void] $spScript.AddChild( $cb )
-	[void] $sp.AddChild( $spSubject )
-	[void] $sp.AddChild( $spScript )
-	[void] $sp.AddChild( $tbText )
-	[void] $sp.AddChild( $btnSend )
-	[void] $ti.AddChild( $sp )
-	[void] $tc.AddChild( $ti )
-}
+		if ( $Info.FreeSpace -gt 1GB ) { $size = "GB" }
+		else { $size = "MB" }
+		$this.FreeSpace.Value = "$( [math]::Round( $Info.FreeSpace / "1$( $size )" , 2 ) ) $size"
+	}
 
-function AddOutputTool
-{
-	$ti = [System.Windows.Controls.TabItem]@{ Header = "$( $msgTable.ContentOutputToolHeader )"; Background = "LightGreen" }
-	$g = [System.Windows.Controls.Grid]@{}
-	$g.RowDefinitions.Add( ( [System.Windows.Controls.RowDefinition]@{ Height = "Auto" } ) )
-	$g.RowDefinitions.Add( ( [System.Windows.Controls.RowDefinition]@{ Height = "Auto" } ) )
-	$padding = [System.Windows.Thickness]::new( 5 )
-	$margin = 5
-	$spB = [System.Windows.Controls.StackPanel]@{ Orientation = "Horizontal" }
-	$b = [System.Windows.Controls.Button]@{ Content = $msgTable.ContentBtnOutputList; Padding = $padding; Margin = $margin }
-	$script:bF = [System.Windows.Controls.Button]@{ Content = $msgTable.ContentBtnOutputOpenFile; Padding = $padding; Margin = $margin; IsEnabled = $false }
-	$script:dg = [System.Windows.Controls.DataGrid]@{ SelectionMode = "Single"; AutoGenerateColumns = $false }
-	$dgC = [System.Windows.Controls.DataGridTextColumn]@{ Header = $msgTable.ContentBtnOutputListColumn; Binding = ( [System.Windows.Data.Binding]@{ Path = "FileName" } ) }
-	$dg.Columns.Add( $dgC )
-	$spB.AddChild( $b )
-	$spB.AddChild( $bf )
-	$g.AddChild( $spB )
-	$g.AddChild( $dg )
+	[void] AddTimeInfo ( $Info )
+	{
+		$this.TimeSinceLastBoot.Value = "{0:dd} $( $this.msgTable.StrBaseInfoDays ), {0:hh} $( $this.msgTable.StrBaseInfoHours ), {0:mm} $( $this.msgTable.StrBaseInfoMinutes )" -f ( ( Get-Date ) - $Info.LastBootUpTime )
+		$this.TimeOfLastBoot.Value = $Info.LastBootUpTime.GetDateTimeFormats()[22]
+		$this.TimeOfInstallation.Value = $Info.InstallDate.GetDateTimeFormats()[22]
+	}
 
-	[System.Windows.Controls.Grid]::SetRow( $spB, 0 )
-	[System.Windows.Controls.Grid]::SetRow( $dg, 1 )
-
-	$dg.Add_SelectionChanged( { $bF.IsEnabled = $this.SelectedItems.Count -gt 0 } )
-	$b.Add_Click( {
-		$files = Get-ChildItem "$BaseDir\Output\$( $env:USERNAME )" | Sort-Object -Property LastWriteTime -Descending
-		if ( $files.Count -gt 0 ) { $dg.ItemsSource = $files | ForEach-Object { [psobject]@{ "FileName" = $_.Name; "Tag" = $_.FullName } } }
-		else { $dg.ItemsSource = [pscustomobject]@{ "FileName" = $msgTable.StrNoOutputfiles } }
-		WriteLogTest -Text $msgTable.StrOFListing -UserInput $msgTable.StrOFListing -Success $true
-	} )
-	$bf.Add_Click( {
-		Start-Process -FilePath $Editor -ArgumentList """$( $dg.SelectedItem.Tag )"""
-		WriteLogTest -Text $msgTable.StrOFOpenFile -UserInput $dg.SelectedItem.Tag -Success $true
-	} )
-
-	$ti.AddChild( $g )
-	$tc.AddChild( $ti )
+	[void] Clear ()
+	{
+		$this.ComputerName.Value = ""
+		$this.ReinstallAllowed.Value = ""
+		$this.FreeSpace.Value = ""
+		$this.IEVersion.Value = ""
+		$this.Model.Value = ""
+		$this.NetAdapters.Value.Clear()
+		$this.Operatingsystem.Value = ""
+		$this.Role.Value = ""
+		$this.Serialnumber.Value = ""
+		$this.TimeOfInstallation.Value = ""
+		$this.TimeOfLastBoot.Value = ""
+		$this.TimeSinceLastBoot.Value = ""
+	}
 }
 
 #######################################################################
 # Create controls to hold computerinfo and buttons for computer-scripts
 function CreateComputerInfo
 {
-	$tI = [System.Windows.Controls.TabItem]@{ Name = "$( $msgTable.ComputerBaseInfo )"; Header = "$( $msgTable.ComputerBaseInfo )" }
-	$datagrid = [System.Windows.Controls.DataGrid]@{ AutoGenerateColumns = $true ; IsReadOnly = $true }
-	$datagrid.Add_MouseDoubleClick( {
-		"$( $this.CurrentCell.Item."$( $this.CurrentCell.Column.Header )" )" | clip
-		$splash = [System.Windows.Window]@{ WindowStartupLocation = "CenterScreen" ; WindowStyle = "None"; ResizeMode = "NoResize"; SizeToContent = "WidthAndHeight" }
-		$splash.AddChild( [System.Windows.Controls.Label]@{ Content = "'$( $this.CurrentCell.Column.Header )' $( $msgTable.StrInfoCopied )"; BorderBrush = "Green"; BorderThickness = 5 } )
-		$splash.Show()
-		Start-Sleep -Seconds 1.5
-		$splash.Close()
-	} )
-
-	$datagrid.Columns.Add( ( [System.Windows.Controls.DataGridTextColumn]@{ Header = "Name"; Width = "SizeToCells"; Binding = [System.Windows.Data.Binding]@{ Path = "Name" } } ) )
-	$datagrid.Columns.Add( ( [System.Windows.Controls.DataGridTextColumn]@{ Header = "Info"; Binding = [System.Windows.Data.Binding]@{ Path = "Info" } } ) )
-
-	if ( $Window.Resources["WinRM"] ) { GetPCInfo }
+	if ( $syncHash.Window.Resources["WinRM"] ) { GetPCInfo }
 	GetPCRole
 
-	$ComputerObj.Keys | Sort-Object | ForEach-Object {
-		$name = $_ -csplit '(?=[A-Z])' -ne '' -join ' '
-		$info = $ComputerObj.$( $_ )
-		if ( $_ -eq "NetAdapters" )
+	$syncHash.ComputerObj.psobject.Properties.Where( { $_.MemberType -eq "Property" } ) | ForEach-Object {
+		$Name = $_.Value.Name
+		$Info = $_.Value.Value
+		if ( $_.Name -eq "NetAdapters" )
 		{
-			for ( $i = 0; $i -lt $ComputerObj.NetAdapters.Count; $i++ )
-			{
-				$name = "$( $ComputerObj.NetAdapters[$i-1].NetDesc )"
-				$info = "$( $ComputerObj.NetAdapters[$i-1].IP )`n$( $ComputerObj.NetAdapters[$i-1].MAC )"
+			$_.Value.Value | ForEach-Object { $syncHash.DC.dgBaseInfo[0].Add( [pscustomobject]@{ "Name" = "$( $msgTable.StrBaseInfoNetAd )`n$( $_.NetDesc )"; "Info" = "IP: $( $_.IP )`nMAC: $( $_.MAC )" } )
 			}
 		}
-		elseif ( $_ -eq "FreeSpace" )
+		else
 		{
-			if ( [double]( ( $ComputerObj.$( $_ ) -split " " )[0] ) -lt 20 )
-			{
-				$name += " (Low)"
-			}
+			$syncHash.DC.dgBaseInfo[0].Add( [pscustomobject]@{ "Name" = $Name; "Info" = $Info } )
 		}
-
-		$datagrid.AddChild( [pscustomobject]@{ "Name" = $name; "Info" = $info } )
 	}
-
-	$tI.AddChild( $datagrid )
-	$tcComputer_Default.Items.Insert( 0, $tI )
-	$tcComputer_Default.SelectedIndex = 0
-}
-
-#########################################################
-# Create controls for computername and buttons to connect
-function CreateComputerInput
-{
-	$sp = [System.Windows.Controls.StackPanel]@{
-		Margin = "0,15,0,10"
-		Orientation = "Horizontal"
-	}
-	$l = [System.Windows.Controls.Label]@{ Content = $msgTable.InputComputerName }
-	$tb = [System.Windows.Controls.TextBox]@{
-		Name = "tbComputerName"
-		VerticalContentAlignment = "Center"
-		Width = 200
-	}
-	$tb.Add_TextChanged( { if ( $this.Text.Length -gt 5 ) { $btnConnect.IsEnabled = $true } else { $btnConnect.IsEnabled = $false } } )
-	$tb.Add_KeyDown( { if ( $args[1].Key -eq "Return" ) { StartWinRMOnRemoteComputer } } )
-	Set-Variable -Name "tbComputerName" -Value $tb -Scope script
-
-	$b = [System.Windows.Controls.Button]@{
-		Content = $msgTable.ContentBtnGetComputerInfo
-		IsEnabled = $false
-		Margin = "5,0,0,0"
-		Name = "btnConnect"
-		Width = 75
-	}
-	$b.Add_Click( { StartWinRMOnRemoteComputer } )
-	Set-Variable -Name "btnConnect" -Value $b -Scope script
-
-	$b2 = [System.Windows.Controls.Button]@{
-		Content = $msgTable.ContentBtnDisconnectComputer
-		Margin = "5,0,0,0"
-		Name = "btnDisconnect"
-		Visibility = [System.Windows.Visibility]::Collapsed
-		Width = 65
-	}
-	$b2.Add_Click( { DisconnectComputer } )
-	Set-Variable -Name "btnDisconnect" -Value $b2 -Scope script
-
-	$sp.AddChild( $l )
-	$sp.AddChild( $tb )
-	$sp.AddChild( $b )
-	$sp.AddChild( $b2 )
-	return $sp
-}
-
-####################################################
-# Create controls to connect to O365-online services
-function CreateO365Input
-{
-	$mainSP = [System.Windows.Controls.StackPanel]@{ Orientation = "Horizontal" }
-	$l = [System.Windows.Controls.Label]@{ Content = $msgTable.ContentO365Start }
-	$b = [System.Windows.Controls.Button]@{
-		Content = $msgTable.ContentBtnO365Connect
-		Margin = "5,0,0,0"
-		Name = "btnO365Connect"
-	}
-	#$b.Add_Click( { Invoke-Expression "$( ( Get-ChildItem $PSCommandPath ).Directory.FullName )\O365\O365GUI.ps1 '$LocalizeCulture'" } )
-	$b.Add_Click( {
-		$p = [powershell]::Create().AddScript( {
-			param ( $p )
-			Start-Process powershell -ArgumentList $p -WindowStyle Hidden
-		} )
-		$p.AddArgument( @( "$( ( Get-ChildItem $PSCommandPath ).Directory.FullName )\O365\O365GUI.ps1", $LocalizeCulture ) )
-		$h = $p.begininvoke()
-	} )
-	Set-Variable -Name "btnO365Connect" -Value $b -Scope script
-
-	$mainSP.AddChild( $l )
-	$mainSP.AddChild( $b )
-	return $mainSP
+	$syncHash.tcComputer_Default.SelectedIndex = 0
 }
 
 ####################################################################
@@ -238,14 +117,15 @@ function CreateScriptGroup
 				if ( ( ( $null -eq $file.Requires ) -or ( $file.Requires | ForEach-Object { if ( $_ -in $userGroups ) { $true } } ) ) -and `
 					( ( $null -eq $file.AllowedUsers ) -or ( $env:USERNAME -in $file.AllowedUsers ) ) )
 				{
-					$wpScriptControls = New-Object System.Windows.Controls.WrapPanel
-					$wpScriptControls.Name = "wp$( $file.Name -replace "\W" )"
-					$button = [System.Windows.Controls.Button]@{ Content = "$( $msgTable.ContentBtnRun ) >"; ToolTip = $file.Path }
-					$button.Name = "btn$( $file.Name -replace "\W" )"
+					$wpScriptControls = [System.Windows.Controls.WrapPanel]@{}
+					$wpScriptControls.Name = "wp$( $file.ScriptName -replace "\W" )"
+					$button = [System.Windows.Controls.Button]@{ Content = "$( $msgTable.ContentBtnRun ) >"; ToolTip = $file.Path; Tag = $file }
+					$name = "btn$( $file.Name -replace "\W" )"
+					$button.Name = $name
 					$label = [System.Windows.Controls.Label]@{ Content = $file.Synopsis; ToolTip = [string]$file.Description.Replace( ". ", ".`n" ) }
-					$label.Name = "lbl$( $file.Name -replace "\W" )"
+					$label.Name = "lbl$( $file.ScriptName -replace "\W" )"
 
-					if ( $file.Depends -in ( $Window.Resources.Keys | Where-Object { $null -eq $_.IsPublic } ) )
+					if ( $file.Depends -in ( $syncHash.Window.Resources.Keys | Where-Object { $null -eq $_.IsPublic } ) )
 					{ $wpScriptControls.SetResourceReference( [System.Windows.Controls.WrapPanel]::IsEnabledProperty, $file.Depends ) }
 
 					if ( $file.State -match "$( $msgTable.ScriptContentInDev )" )
@@ -268,30 +148,36 @@ function CreateScriptGroup
 						}
 						else
 						{
-							$ProgramRunspace = [System.Management.Automation.PowerShell]::Create() # Create new runspace for the script to run in
-
 							# If script is in the computer-folder, add computername to runspace argumentlist
 							if ( $this.ToolTip -match "$( $msgTable.ComputerFolder )\\" -and $tbComputerName.Text.Length -gt 0 )
 							{ $scriptArguments += $tbComputerName.Text }
 
 							# Checks if there exists a XAML-file for GUI for the script
-							if ( Get-ChildItem "$( ( Get-Item $PSCommandPath ).Directory.Parent.FullName )\Gui" | Where-Object { $_.Name -match ( ( Get-Item $this.ToolTip ).Name -split "\." )[0] } ) { $hidden = $true }
-							else { $hidden = $false }
+							if ( Get-ChildItem "$( ( Get-Item $PSCommandPath ).Directory.Parent.FullName )\Gui" | Where-Object { $_.Name -match ( ( Get-Item $this.ToolTip ).Name -split "\." )[0] } )
+							# XAML-file exists, PowerShell-window will be hidden
+							{ $hidden = "Hidden" }
+							# No XAML-file, PowerShell-window will be shown, to handle script input/output
+							else { $hidden = "Normal" }
 
-							[void]$ProgramRunspace.AddScript( {
-								param( $arg, $hidden )
-								if ( $hidden )
-								{ Start-Process powershell -WindowStyle Hidden -ArgumentList $arg } # Run script with GUI, without a PowerShell-window
-								else
-								{ Start-Process powershell -ArgumentList $arg } # Run script without GUI, with a PowerShell-window
+							# Create new runspace for the script to run in
+							$ProgramRunspace = [powershell]::Create().AddScript( {
+								param( $scriptArguments, $hidden )
+								Start-Process powershell -WindowStyle $hidden -ArgumentList $scriptArguments
 							} ).AddArgument( $scriptArguments ).AddArgument( $hidden )
 
 							$run = $ProgramRunspace.BeginInvoke() # Run runspace
-							do { Start-Sleep -Milliseconds 50 } until ( $run.IsCompleted )
-							$ProgramRunspace.Dispose()
+							if ( $this.Tag.State -eq $msgTable.ScriptContentInTest )
+							{
+								$syncHash.DC.lblRateTitle[0] = "$( $msgTable.ContentlblRateTitle ):"
+								$syncHash.DC.lblRateScript[0] = $this.Tag.Name
+								$syncHash.DC.WindowSurvey[1] = [System.Windows.Visibility]::Visible
+								$syncHash.DC.WindowSurvey[2].ScriptName = $this.Tag.Name
+								$syncHash.DC.WindowSurvey[2].Survey.ScriptVersion = Get-Date ( Get-Item $this.Tag.Path ).LastWriteTime -f "yyyy-MM-dd hh:mm:ss"
+							}
 						}
 					} )
 
+					$syncHash.$name = $button
 					[void] $wpScriptControls.AddChild( $button )
 					[void] $wpScriptControls.AddChild( $label )
 					[void] $sp.AddChild( $wpScriptControls )
@@ -322,8 +208,8 @@ function CreateTabItem
 	$tabitem = [System.Windows.Controls.TabItem]@{ Header = $tT.Trim(); Name = "ti" + $( $dirPath.Name ) }
 	Set-Variable -Name ( "ti" + $( $dirPath.Name ) ) -Value $tabitem -Scope Script
 
-	$g = New-Object System.Windows.Controls.Grid
-	$scroller = New-Object System.Windows.Controls.ScrollViewer
+	$g = [System.Windows.Controls.Grid]@{}
+	$scroller = [System.Windows.Controls.ScrollViewer]@{}
 	$sp = GetFolderItems $dirPath
 	$scroller.AddChild( $sp )
 	$g.AddChild( $scroller )
@@ -335,13 +221,13 @@ function CreateTabItem
 # Clears content for 'connected' computer
 function DisconnectComputer
 {
-	$Script:ComputerObj.Clear()
-	if ( $tcComputer_Default.Items[ 0 ].Header -eq $msgTable.ComputerBaseInfo ) { $tcComputer_Default.Items.RemoveAt( 0 ) }
-	$btnConnect.IsEnabled = $true
-	$tbComputerName.IsReadOnly = $false
-	$tbComputerName.Text = ""
-	$tcComputer_Default.Visibility = [System.Windows.Visibility]::Collapsed
-	$btnDisconnect.Visibility = [System.Windows.Visibility]::Collapsed
+	$syncHash.ComputerObj.Clear()
+	$syncHash.DC.dgBaseInfo[0].Clear()
+	$syncHash.tcComputer_Default.Visibility = [System.Windows.Visibility]::Collapsed
+	$syncHash.DC.btnComputerConnect[1] = $true
+	$syncHash.DC.tbComputerName[0] = $false
+	$syncHash.tbComputerName.Text = ""
+	$syncHash.DC.btnComputerDisconnect[2] = [System.Windows.Visibility]::Collapsed
 }
 
 #####################################
@@ -349,23 +235,31 @@ function DisconnectComputer
 function FetchPCInfo
 {
 	param ( $Class, $Filter = $null )
-	return Get-CimInstance -ComputerName $ComputerObj.Computername -ClassName $Class -Filter $Filter
+	return Get-CimInstance -ComputerName $syncHash.ComputerObj.ComputerName.Value -ClassName $Class -Filter $Filter
 }
 
 #####################################
 # Small tweaks before window launches
 function FulHack
 {
-	$tItem = $tiScoreboard
-	$tItem.Background = "Gold"
-	$tc.Items.RemoveAt( $tc.Items.IndexOf( $tiScoreboard ) )
-	$tc.Items.Insert( ( $tc.Items.Count ), $tItem )
+	# Sort the tabitems that are not generated from folders
+	$tiScoreboard.Background = "Gold"
+	$temp = $tiScoreboard
+	$syncHash.tc.Items.RemoveAt( $syncHash.tc.Items.IndexOf( $tiScoreboard ) )
+	$syncHash.tc.Items.Insert( ( $syncHash.tc.Items.Count ), $temp )
+	$syncHash.tc.Items.Insert( $syncHash.tc.Items.Count, $syncHash.tiOutputTool )
+	$syncHash.tc.Items.Insert( $syncHash.tc.Items.Count, $syncHash.tiReportTool )
 
-	$Window.Add_ContentRendered( { $Window.Top = 50; $Window.Activate() } )
+	$syncHash.DC.cbScriptList[0] = $syncHash.DC.cbScriptList[0] | Sort-Object CBName
+	# Define the nametrigger for computerinfo-datagrid
+	$syncHash.Window.Resources[[System.Windows.Controls.DatagridRow]].Triggers[0].Value = $msgTable.CompObjTitleReinstNotAllowed
+	$syncHash.Window.Resources[[System.Windows.Controls.DatagridRow]].Triggers[1].Value = $msgTable.CompObjTitleReinstAllowed
 
-	$Window.Resources[[System.Windows.Controls.DatagridRow]].Triggers[0].Value = $msgTable.StrDGRTriggerName
+	$syncHash.tcComputer_Default = $syncHash."tc$( $msgTable.ComputerFolder )"
+	$syncHash.tcComputer_Default.Items.Insert( 0, $syncHash.Window.Resources['tiBaseInfo'] )
 
-	Set-Variable -Name tcComputer_Default -Value ( Get-Variable "tc$( $msgTable.ComputerFolder )" ).Value -Scope script
+	# Set mainwindow Y-position and activate it
+	$syncHash.Window.Add_ContentRendered( { $syncHash.Window.Top = 50; $syncHash.Window.Activate() } )
 }
 
 #########################################
@@ -374,18 +268,21 @@ function GetFiles
 {
 	param ( $dirPath )
 	$Get = { ( Select-String -InputObject $_ -Pattern "^\.$( $args[0] )" -Encoding UTF8 ).Line.Replace( ".$( $args[0] ) ", "" ) }
-	Get-ChildItem -File -Filter "*ps1" -Path $dirPath.FullName | Where-Object { $_.Name -ne ( Get-Item $PSCommandPath ).Name } | `
-		Select-Object -Property @{ Name = "Name"; Expression = { $_.Name } }, `
+	$files = Get-ChildItem -File -Filter "*ps1" -Path $dirPath.FullName | Where-Object { $_.Name -ne ( Get-Item $PSCommandPath ).Name } | `
+		Select-Object -Property @{ Name = "Name" ; Expression = { $_.Name } }, `
 			@{ Name = "Path"; Expression = { $_.FullName } }, `
 			@{ Name = "Group"; Expression = { ( $_.BaseName -split "-" )[0] } }, `
 			@{ Name = "Synopsis"; Expression = { & $Get "Synopsis" } }, `
 			@{ Name = "Description"; Expression = { & $Get "Description" } }, `
 			@{ Name = "Requires"; Expression = { ( & $Get "Requires" ) -split "\W" | Where-Object { $_ } } }, `
-			@{ Name = "AllowedUsers"; Expression = { ( & $Get "AllowedUsers") -split "\W" | Where-Object { $_ } } }, `
-			@{ Name = "State"; Expression = { ( & $Get "State") -split "\W" | Where-Object { $_ } } }, `
+			@{ Name = "AllowedUsers"; Expression = { ( & $Get "AllowedUsers" ) -split "\W" | Where-Object { $_ } } }, `
+			@{ Name = "State"; Expression = { ( & $Get "State" ) -split "\W" | Where-Object { $_ } } }, `
 			@{ Name = "Author"; Expression = { ( ( Select-String $_ -Pattern "^.Author" ).Line -split "\(" )[1].TrimEnd( ")" ) } }, `
-			@{ Name = "Depends"; Expression = { ( ( & $Get "Depends" ) ) -split "\W" | Where-Object { $_ } } } | `
+			@{ Name = "Depends"; Expression = { ( ( & $Get "Depends" ) ) -split "\W" | Where-Object { $_ } } }, `
+			@{ Name = "CBName"; Expression = { "$( & $Get "Synopsis" ) ($( $_.Name ))" } } | `
 			Sort-Object Synopsis
+	$files | ForEach-Object { $syncHash.DC.cbScriptList[0].Add( $_ ) }
+	return $files
 }
 
 ####################################################
@@ -397,24 +294,24 @@ function GetFolderItems
 	)
 
 	$spFolder = [System.Windows.Controls.WrapPanel]@{ Orientation = "Vertical"; Name = "wp$( $dirPath.Name -replace " " )" }
-	Set-Variable -Name  "wp$( $dirPath.Name )" -Value $spFolder -Scope script
 	if ( $dirPath -match $msgTable.O365Folder )
 	{
-		$spFolder.AddChild( ( CreateO365Input ) )
+		$spFolder.AddChild( ( $syncHash.Window.Resources['spO365'] ) )
+		$syncHash.spO365 = $syncHash.Window.Resources['spO365']
 	}
 	else
 	{
 		if ( $wpScriptGroup = CreateScriptGroup $dirPath ) { $spFolder.AddChild( $wpScriptGroup ) }
-		if ( $dirPath.Name -eq $msgTable.ComputerFolder ) { $spFolder.AddChild( ( CreateComputerInput ) ) }
+		if ( $dirPath.Name -eq $msgTable.ComputerFolder ) { $spFolder.AddChild( ( $syncHash.Window.Resources['ComputerSP'] ) ) }
 		if ( $dirs = Get-ChildItem -Directory -Path $dirPath.FullName )
 		{
-			$tabControl = [System.Windows.Controls.TabControl]@{ Name = "tc$( $dirPath.Name -replace " " )" }
+			$name = "tc$( $dirPath.Name -replace " " )"
+			$syncHash.$name = [System.Windows.Controls.TabControl]@{ Name = $name }
 
-			if ( $dirPath.Name -eq $msgTable.ComputerFolder ) { $tabControl.Visibility = [System.Windows.Visibility]::Collapsed }
-			elseif ( $dirPath.Name -eq $msgTable.O365Folder ) { $tabControl.Visibility = [System.Windows.Visibility]::Collapsed }
+			if ( $dirPath.Name -eq $msgTable.ComputerFolder ) { $syncHash.$name.Visibility = [System.Windows.Visibility]::Collapsed }
+			elseif ( $dirPath.Name -eq $msgTable.O365Folder ) { $syncHash.$name.Visibility = [System.Windows.Visibility]::Collapsed }
 
-			if ( $dirPath -eq "" ) { $tabControl.MaxHeight = 700 }
-			Set-Variable -Name ( "tc" + $( $dirPath.Name ) ) -Value $tabControl -Scope script
+			if ( $dirPath -eq "" ) { $syncHash.$name.MaxHeight = 700 }
 
 			$tiList = @()
 			foreach ( $dir in $dirs )
@@ -427,9 +324,9 @@ function GetFolderItems
 				{
 					$_.Visibility = [System.Windows.Visibility]::Collapsed
 				}
-				$tabControl.AddChild( $_ )
+				$syncHash.$name.AddChild( $_ )
 			}
-			$spFolder.AddChild( $tabControl )
+			$spFolder.AddChild( $syncHash.$name )
 		}
 	}
 
@@ -440,34 +337,25 @@ function GetFolderItems
 # Get information from remote computer
 function GetPCInfo
 {
-	$ComputerObj.NetAdapters = @()
-	$c = FetchPCInfo -Class Win32_NetworkAdapterConfiguration -Filter "IPEnabled='True'"
-	$c | ForEach-Object { $ComputerObj.NetAdapters += [pscustomobject]@{ MAC = $_.MACAddress; NetDesc = $_.Description; IP = $_.IPAddress[0] } }
+	FetchPCInfo -Class Win32_NetworkAdapterConfiguration -Filter "IPEnabled='True'" | Where-Object { $_ } | ForEach-Object { $syncHash.ComputerObj.NetAdapters.Value += [pscustomobject]@{ MAC = $_.MACAddress; NetDesc = $_.Description; IP = $_.IPAddress[0] } }
 
-	$ComputerObj.Model = ( FetchPCInfo -Class win32_computersystem ).Model
-	$ComputerObj.Serienummer = ( FetchPCInfo -Class win32_bios ).SerialNumber
+	$syncHash.ComputerObj.Model.Value = ( FetchPCInfo -Class win32_computersystem ).Model
+	$syncHash.ComputerObj.Serialnumber.Value = ( FetchPCInfo -Class win32_bios ).SerialNumber
 
-	$c = FetchPCInfo -Class win32_operatingsystem
-	$ComputerObj.TimeOfLastBoot = $c.LastBootUpTime.GetDateTimeFormats()[22]
-	$ComputerObj.TimeOfInstallation = $c.InstallDate.GetDateTimeFormats()[22]
-	$duration = ( Get-Date ) - $c.LastBootUpTime
-	$ComputerObj.TimeSinceLastBoot = "$( $duration.Days ) dagar $( $duration.Hours ) timmar $( $duration.Minutes ) minuter"
+	$syncHash.ComputerObj.AddTimeInfo( ( FetchPCInfo -Class win32_operatingsystem ) )
 
-	$ComputerObj.IEVersion = ( ( [Microsoft.Win32.RegistryKey]::OpenRemoteBaseKey( 'LocalMachine', $ComputerObj.Computername ) ).OpenSubKey( "SOFTWARE\\Microsoft\\Internet Explorer" ) ).GetValue( 'svcVersion' )
+	$syncHash.ComputerObj.IEVersion.Value = ( ( [Microsoft.Win32.RegistryKey]::OpenRemoteBaseKey( 'LocalMachine', $syncHash.ComputerObj.ComputerName.Value ) ).OpenSubKey( "SOFTWARE\\Microsoft\\Internet Explorer" ) ).GetValue( 'svcVersion' )
 
-	$c = FetchPCInfo -Class CIM_LogicalDisk -Filter "DeviceID like 'C:'"
-	if ( $c.FreeSpace -gt 1GB ) { $free = "$( [math]::Round( $c.FreeSpace / 1GB , 2 ) ) GB" }
-	else { $free = "$( [math]::Round( $c.FreeSpace / 1MB , 2 ) ) MB" }
-	$ComputerObj.FreeSpace = "$free / $( [math]::Round( $c.Size / 1GB , 2) ) GB"
+	$syncHash.ComputerObj.AddDiskInfo( ( FetchPCInfo -Class CIM_LogicalDisk -Filter "DeviceID like 'C:'" ) )
 }
 
 ###############################
 # Get PCRole of remote computer
 function GetPCRole
 {
-	$ADPC = Get-ADComputer $ComputerObj.Computername -Properties Memberof, OperatingSystem
-	$ComputerObj.Roll = $null
-	$ComputerObj.( $msgTable.StrOSParam ) = $ADPC.OperatingSystem
+	$ADPC = Get-ADComputer $syncHash.ComputerObj.ComputerName.Value -Properties Memberof, OperatingSystem
+	$syncHash.ComputerObj.Role.Value = $null
+	$syncHash.ComputerObj.OperatingSystem.Value = $ADPC.OperatingSystem
 
 	switch -Regex ( $ADPC.MemberOf | Where-Object { $_ -match "_Wrk_" } )
 	{
@@ -475,24 +363,27 @@ function GetPCRole
 		"Role2" { $r = "PCRole 2" }
 	}
 	if ( $null -eq $r ) { $r = $msgTable.ComputerUnknownRole }
-	$ComputerObj.Roll = $r
+	$syncHash.ComputerObj.Role.Value = $r
 
-	if ( $ComputerObj.Computername -notmatch "^($( $msgTable.OrgList ))" )
+	if ( $syncHash.ComputerObj.ComputerName.Value -notmatch "^($( $msgTable.OrgList ))" )
 	{
-		$ComputerObj.DontInstall = "$( $msgTable.ComputerNoReInstall ): $( $msgTable.StrOtherOrg )"
+		$syncHash.ComputerObj.ReinstallAllowed.Name = $msgTable.CompObjTitleReinstNotAllowed
+		$syncHash.ComputerObj.ReinstallAllowed.Value = "$( $msgTable.ComputerNoReInstall ):`n$( $msgTable.StrOtherOrg )"
 	}
-	elseif ( $msgTable.CompList -match $ComputerObj.Computername )
+	elseif ( $msgTable.CompList -match $syncHash.ComputerObj.ComputerName.Value )
 	{
-		$ComputerObj.DontInstall = "$( $msgTable.ComputerNoReInstall ): $( $msgTable.StrSpecComp )"
+		$syncHash.ComputerObj.ReinstallAllowed.Name = $msgTable.CompObjTitleReinstNotAllowed
+		$syncHash.ComputerObj.ReinstallAllowed.Value = "$( $msgTable.ComputerNoReInstall ):`n$( $msgTable.StrSpecComp )"
+	}
+	elseif ( $msgTable.RoleList -notmatch $syncHash.ComputerObj.Role.Value )
+	{
+		$syncHash.ComputerObj.ReinstallAllowed.Name = $msgTable.CompObjTitleReinstNotAllowed
+		$syncHash.ComputerObj.ReinstallAllowed.Value = "$( $msgTable.ComputerNoReInstall ):`n$( [string]( $PCRoll | Where-Object { $_ -notmatch "($( $msgTable.RoleList ))" } | ForEach-Object { ( ( $_ -split "=" )[1] -split "," )[0] } ) )"
 	}
 	else
 	{
-		$c1 = $true
-		$ComputerObj.Roll | ForEach-Object { if ( $_ -notmatch "($( $msgTable.RoleList ))" ) { $c1 = $false } }
-		if ( -not $c1 )
-		{
-			$ComputerObj.DontInstall = "$( $msgTable.ComputerNoReInstall ): `n$( [string]( $PCRoll | Where-Object { $_ -notmatch "($( $msgTable.RoleList ))" } | ForEach-Object { ( ( $_ -split "=" )[1] -split "," )[0] } ) )"
-		}
+		$syncHash.ComputerObj.ReinstallAllowed.Name = $msgTable.CompObjTitleReinstAllowed
+		$syncHash.ComputerObj.ReinstallAllowed.Value = ""
 	}
 }
 
@@ -507,18 +398,9 @@ function SetTitle
 		[string] $Text
 	)
 
-	if ( $Add )
-	{
-		$Window.Title += $Text
-	}
-	elseif ( $Remove )
-	{
-		$Window.Title = $msgTable.StrScriptSuite
-	}
-	elseif ( $Replace )
-	{
-		$Window.Title = $Text
-	}
+	if ( $Add ) { $syncHash.DC.Window[0] += $Text }
+	elseif ( $Remove ) { $syncHash.DC.Window[0] = $msgTable.ContentWindow }
+	elseif ( $Replace ) { $syncHash.DC.Window[0] = $Text }
 }
 
 ################################
@@ -526,26 +408,27 @@ function SetTitle
 function StartWinRMOnRemoteComputer
 {
 	SetTitle -Replace -Text $msgTable.ComputerOnline
-	$tcComputer_Default.Visibility = [System.Windows.Visibility]::Visible
-	$btnDisconnect.Visibility = [System.Windows.Visibility]::Visible
-	$ComputerObj.Computername = $tbComputerName.Text.Trim()
+	$syncHash.tcComputer_Default.Visibility = [System.Windows.Visibility]::Visible
+	$syncHash.DC.btnComputerDisconnect[2] = [System.Windows.Visibility]::Visible
+	$syncHash.ComputerObj.ComputerName.Value = $syncHash.tbComputerName.Text.Trim()
 
 	try
 	{
-		Get-CimInstance -ComputerName $tbComputerName.Text.Trim() -ClassName win32_operatingsystem -ErrorAction Stop
-
-		$Window.Resources["WinRM"] = $true
+		Get-CimInstance -ComputerName $syncHash.ComputerObj.ComputerName.Value -ClassName win32_operatingsystem -ErrorAction Stop
+		$syncHash.Window.Resources["WinRM"] = $true
 	}
 	catch
 	{
-		$Window.Resources["WinRM"] = $false
-		WriteErrorLog -LogText $_
+		$syncHash.Window.Resources["WinRM"] = $false
+		$eh = WriteErrorlogTest -LogText $_ -UserInput $msgTable.LogConnectingToComp -ComputerName $syncHash.ComputerObj.ComputerName.Value -Severity "OtherFail"
 		SetTitle -Add -Text $msgTable.ComputerOffline
 		ShowMessageBox -Text $msgTable.ComputerOfflineMessage -Title $tbComputerName.Text | Out-Null
 	}
+	WriteLogTest -UserInput $msgTable.LogConnectingToComp -ComputerName $syncHash.ComputerObj.ComputerName.Value -Success ( $null -eq $eh ) -ErrorLogHash $eh
 	CreateComputerInfo
-	$btnConnect.IsEnabled = $false
-	$tbComputerName.IsReadOnly = $true
+	$syncHash.DC.btnComputerConnect[1] = $false
+	$syncHash.DC.btnComputerDisconnect[1] = $true
+	$syncHash.DC.tbComputerName[0] = $true
 }
 
 ############################## Script start
@@ -564,22 +447,183 @@ Import-Module "$BaseDir\Modules\GUIOps.psm1" -Force -ArgumentList $LocalizeCultu
 $splash = ShowSplash -Text $msgTable.StrSplash -SelfAdmin
 $splash.Show()
 $userGroups = ( Get-ADUser $env:USERNAME -Properties memberof ).memberof | ForEach-Object { ( ( $_ -split "=" )[1] -split "," )[0] }
-if ( Test-Path "C:\Program Files (x86)\Notepad++\notepad++.exe" ) { $Editor = "C:\Program Files (x86)\Notepad++\notepad++.exe" }
-else { $Editor = "notepad" }
-$Script:ComputerObj = @{}
-$Window, $vars = CreateWindow
 
-SetTitle -Add -Text $( $msgTable.StrScriptSuite )
+$controls = [System.Collections.ArrayList]::new()
+[void] $controls.Add( @{ CName = "btnO365Connect" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnO365Connect } ) } )
+[void] $controls.Add( @{ CName = "btnAddScript" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnAddScript } ; @{ PropName = "IsEnabled" ; PropVal = $false } ) } )
+[void] $controls.Add( @{ CName = "btnComputerConnect" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnComputerConnect } ; @{ PropName = "IsEnabled" ; PropVal = $false } ) } )
+[void] $controls.Add( @{ CName = "btnComputerDisconnect" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnComputerDisconnect } ; @{ PropName = "IsEnabled" ; PropVal = $false } ; @{ PropName = "Visibility" ; PropVal = [System.Windows.Visibility]::Collapsed } ) } )
+[void] $controls.Add( @{ CName = "btnFeedbackSend" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnFeedbackSend } ; @{ PropName = "Tag" ; PropVal = @{ 
+		From = ( ( Get-ADUser ( Get-ADUser $env:USERNAME ).SamAccountName.Replace( $msgTable.StrAdmPrefix, "" ) -Properties EmailAddress ).EmailAddress )
+		To = $msgTable.StrMailAddress
+		SMTP = $msgTable.StrSMTP
+		Body = "`n`n$( $msgTable.StrMailSender ):`n$( ( Get-ADUser $env:USERNAME ).Name )`n$( Get-Date -f "yyyy-MM-dd HH:mm:ss" )"
+		Subject = $msgTable.ContentWindow } } ; @{ PropName = "IsEnabled" ; PropVal = $false } ) } )
+[void] $controls.Add( @{ CName = "btnListOutputFiles" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnListOutputFiles } ) } )
+[void] $controls.Add( @{ CName = "btnOpenOutputFile" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnOpenOutputFile } ; @{ PropName = "IsEnabled" ; PropVal = $false } ) } )
+[void] $controls.Add( @{ CName = "btnSurveyCancel" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnSurveyCancel } ) } )
+[void] $controls.Add( @{ CName = "btnSurveySave" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnSurveySave } ) } )
+[void] $controls.Add( @{ CName = "cbScriptList" ; Props = @( @{ PropName = "ItemsSource"; PropVal = ( New-Object System.Collections.ObjectModel.ObservableCollection[object] ) } ) } )
+[void] $controls.Add( @{ CName = "dgBaseInfo" ; Props = @( @{ PropName = "ItemsSource"; PropVal = ( New-Object System.Collections.ObjectModel.ObservableCollection[object] ) } ) } )
+[void] $controls.Add( @{ CName = "dgOutputFiles" ; Props = @( @{ PropName = "ItemsSource"; PropVal = ( New-Object System.Collections.ObjectModel.ObservableCollection[object] ) } ; @{ PropName = "SelectedItem" ; PropVal = $null } ; @{ PropName = "SelectedIndex" ; PropVal = -1 } ) } )
+[void] $controls.Add( @{ CName = "lblComputerNameTitle" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblComputerNameTitle } ) } )
+[void] $controls.Add( @{ CName = "lblFeedbackType" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblFeedbackType } ) } )
+[void] $controls.Add( @{ CName = "lblO65" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblO65 } ) } )
+[void] $controls.Add( @{ CName = "lblRateScript" ; Props = @( @{ PropName = "Content"; PropVal = "" } ) } )
+[void] $controls.Add( @{ CName = "lblRateTitle" ; Props = @( @{ PropName = "Content"; PropVal = "" } ) } )
+[void] $controls.Add( @{ CName = "lblSurvey" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblSurvey } ) } )
+[void] $controls.Add( @{ CName = "rbReport" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentrbReport } ; @{ PropName = "IsChecked" ; PropVal = $true } ) } )
+[void] $controls.Add( @{ CName = "rbSuggestion" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentrbSuggestion } ) } )
+[void] $controls.Add( @{ CName = "rbSurveyRate1" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentrbSurveyRate1 } ) } )
+[void] $controls.Add( @{ CName = "rbSurveyRate2" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentrbSurveyRate2 } ) } )
+[void] $controls.Add( @{ CName = "rbSurveyRate3" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentrbSurveyRate3 } ) } )
+[void] $controls.Add( @{ CName = "rbSurveyRate4" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentrbSurveyRate4 } ) } )
+[void] $controls.Add( @{ CName = "rbSurveyRate5" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentrbSurveyRate5 } ) } )
+[void] $controls.Add( @{ CName = "tbComputerName" ; Props = @( @{ PropName = "IsReadOnly"; PropVal = $false } ) } )
+[void] $controls.Add( @{ CName = "tbFeedback" ; Props = @( @{ PropName = "Text"; PropVal = "" } ) } )
+[void] $controls.Add( @{ CName = "tiBaseInfo" ; Props = @( @{ PropName = "Header"; PropVal = $msgTable.ContenttiBaseInfo } ) } )
+[void] $controls.Add( @{ CName = "tiOutputTool" ; Props = @( @{ PropName = "Header"; PropVal = $msgTable.ContenttiOutputTool } ) } )
+[void] $controls.Add( @{ CName = "tiReportTool" ; Props = @( @{ PropName = "Header"; PropVal = $msgTable.ContenttiReportTool } ) } )
+[void] $controls.Add( @{ CName = "Window" ; Props = @( @{ PropName = "Title"; PropVal = $msgTable.ContentWindow } ) } )
+[void] $controls.Add( @{ CName = "WindowSurvey" ; Props = @( @{ PropName = "Title"; PropVal = $msgTable.ContentWindowSurvey } ; @{ PropName = "Visibility" ; PropVal = [System.Windows.Visibility]::Hidden } ; @{ PropName = "Tag" ; PropVal = [pscustomobject]@{ Survey = ( NewSurvey ) ; ScriptName = "" } } ) } )
+
+$syncHash = CreateWindowExt $controls
+if ( Test-Path "C:\Program Files (x86)\Notepad++\notepad++.exe" ) { $syncHash.Editor = "C:\Program Files (x86)\Notepad++\notepad++.exe" }
+else { $syncHash.Editor = "notepad" }
+$syncHash.ComputerObj = [ComputerObject]::new( $msgTable )
+$syncHash.LocalizeCulture = $LocalizeCulture
+$syncHash.Error = @()
+
 if ( $PSCommandPath -match "Development" ) { SetTitle -Add " - Developer edition" }
-$vars | ForEach-Object { Set-Variable -Name $_ -Value $Window.FindName( $_ ) }
 
 Push-Location ( Get-Item $PSCommandPath ).Directory.FullName
-$MainContent.AddChild( ( GetFolderItems "" ) )
+$syncHash.MainContent.AddChild( ( GetFolderItems "" ) )
 FulHack
-AddOutputTool
-AddReportTool
-$Window.Add_Loaded( { $Window.Activate(); $splash.Close() } )
 
-[void] $Window.ShowDialog()
+# Open GUI for Office365-script
+$syncHash.btnO365Connect.Add_Click( {
+	$p = [powershell]::Create().AddScript( {
+		param ( $p )
+		Start-Process powershell -ArgumentList $p -WindowStyle Hidden
+	} )
+	$p.AddArgument( @( "$( ( Get-ChildItem $PSCommandPath ).Directory.FullName )\O365\O365GUI.ps1", $LocalizeCulture ) )
+	$h = $p.BeginInvoke()
+	WriteLogTest -Text $msgTable.LogOpenO365 -Success $true
+} )
+
+# Add a script name and its synopsis to the text box
+$syncHash.btnAddScript.Add_Click( { $syncHash.DC.tbFeedback[0] += "`n$( $syncHash.cbScriptList.SelectedItem.CBName )`n" } )
+
+# Check if computer is online
+$syncHash.btnComputerConnect.Add_Click( { StartWinRMOnRemoteComputer } )
+
+# Clear computer info and reset GUI
+$syncHash.btnComputerDisconnect.Add_Click( { DisconnectComputer } )
+
+# Send feedback
+$syncHash.btnFeedbackSend.Add_Click( {
+	Send-MailMessage -From $this.Tag.From `
+		-To $this.Tag.To `
+		-Body "$( $syncHash.DC.tbFeedback[0] )$( $this.Tag.Body )" `
+		-Encoding bigendianunicode `
+		-SmtpServer $this.Tag.SMTP `
+		-Subject $this.Tag.Subject
+	$syncHash.DC.tbFeedback[0] = ""
+	$syncHash.cbScriptList.SelectedIndex = -1
+	$syncHash.rbReport.IsChecked = $true
+} )
+
+# List output files and sort descending by creation date
+$syncHash.btnListOutputFiles.Add_Click( {
+	$syncHash.DC.dgOutputFiles[0].Clear()
+	Remove-Variable eh -ErrorAction SilentlyContinue
+	try
+	{
+		Get-ChildItem "$BaseDir\Output\$( $env:USERNAME )" -ErrorAction Stop | Select-Object Name, @{ Name = "LastWriteTime"; Expression = { $_.LastWriteTime.GetDateTimeFormats()[22] } } | Sort-Object LastWriteTime -Descending | ForEach-Object { $syncHash.DC.dgOutputFiles[0].Add( $_ ) }
+	}
+	catch
+	{
+		$eh = WriteErrorlogTest -LogText $_ -UserInput $msgTable.StrOFListing -Severity "OtherFail"
+		$syncHash.DC.dgOutputFiles[0].Add( ( [pscustomobject]@{ "Name" = $msgTable.StrNoOutputfiles ; "LastWriteTime" = ( Get-Date -Format "yyyy-MM-dd hh:mm:ss" ) } ) )
+	}
+
+	WriteLogTest -Text $msgTable.StrOFListing -Success ( $null -eq $true ) -ErrorLogHash $eh
+} )
+
+# Open the selected file
+$syncHash.btnOpenOutputFile.Add_Click( {
+	Start-Process -FilePath $syncHash.Editor -ArgumentList """$( $syncHash.DC.dgOutputFiles[1].FullName )"""
+	WriteLogTest -Text $msgTable.StrOFOpenFile -UserInput $syncHash.DC.dgOutputFiles[1].FullName -Success $true
+} )
+
+# Cancel survey and hide the window
+$syncHash.btnSurveyCancel.Add_Click( { $syncHash.DC.WindowSurvey[1] = [System.Windows.Visibility]::Hidden } )
+
+# Save the survey and hide the window
+$syncHash.btnSurveySave.Add_Click( {
+	WriteSurvey -Survey $syncHash.DC.WindowSurvey[2].Survey -ScriptName $syncHash.DC.WindowSurvey[2].ScriptName
+	$syncHash.DC.WindowSurvey[1] = [System.Windows.Visibility]::Hidden
+} )
+
+# Selected item changed, enable / disable button for adding script
+$syncHash.cbScriptList.Add_SelectionChanged( { $syncHash.DC.btnAddScript[1] = $this.SelectedIndex -ne -1 } )
+
+# Double-click in datagrid, copy value in cell
+$syncHash.dgBaseInfo.Add_MouseDoubleClick( {
+	"$( $this.CurrentCell.Item."$( $this.CurrentCell.Column.Header )" )" | clip
+	ShowSplash -Text "'$( $this.CurrentCell.Column.Header )' $( $msgTable.StrInfoCopied )"
+} )
+
+# Selected item changed, enable / disable button to open file
+$syncHash.dgOutputFiles.Add_SelectionChanged( { $syncHash.DC.btnOpenOutputFile[1] = $this.SelectedIndex -ne -1 } )
+
+# Radiobutton is checked, set mail subject
+$syncHash.rbReport.Add_Checked( { $syncHash.DC.btnFeedbackSend[1].Subject = "$( $msgTable.ContentWindow ) $( $this.Content )" } )
+
+# Radiobutton is checked, set mail subject
+$syncHash.rbSuggestion.Add_Checked( { $syncHash.DC.btnFeedbackSend[1].Subject = "$( $msgTable.ContentWindow ) $( $this.Content )" } )
+
+# Radiobutton is checked, set survey rating
+$syncHash.rbSurveyRate1.Add_Checked( { $syncHash.DC.WindowSurvey[2].Survey.Rating = 1 } )
+$syncHash.rbSurveyRate2.Add_Checked( { $syncHash.DC.WindowSurvey[2].Survey.Rating = 2 } )
+$syncHash.rbSurveyRate3.Add_Checked( { $syncHash.DC.WindowSurvey[2].Survey.Rating = 3 } )
+$syncHash.rbSurveyRate4.Add_Checked( { $syncHash.DC.WindowSurvey[2].Survey.Rating = 4 } )
+$syncHash.rbSurveyRate5.Add_Checked( { $syncHash.DC.WindowSurvey[2].Survey.Rating = 5 } )
+
+# Check if Enter was pressed
+$syncHash.tbComputerName.Add_KeyDown( { if ( $args[1].Key -eq "Return" ) { StartWinRMOnRemoteComputer } } )
+
+# Text changed, enable button to connect if computer exists and is enabled in AD
+$syncHash.tbComputerName.Add_TextChanged( { $syncHash.DC.btnComputerConnect[1] = try { ( Get-ADComputer $this.Text -ErrorAction Stop ).Enabled } catch { $false } } )
+
+# Text has changed, enable send-button if text exists
+$syncHash.tbFeedback.Add_TextChanged( { $syncHash.DC.btnFeedbackSend[2] = ( $syncHash.tbFeedback.Text.Length -gt 0 ) } )
+
+# Survey-comment has changed, update object
+$syncHash.tbSurveyComment.Add_TextChanged( { $syncHash.DC.WindowSurvey[2].Survey.Comment = $this.Text } )
+
+# Mainwindow has finished loading, do some finetuning
+$syncHash.Window.Add_Loaded( {
+	$this.Activate()
+	$splash.Close()
+	$syncHash.WindowSurvey.Owner = $this
+	$syncHash.dgOutputFiles.Columns[0].Header = $msgTable.ContentdgOutputFilesColNames
+	$syncHash.dgOutputFiles.Columns[1].Header = $msgTable.ContentdgOutputFilesColDates
+} )
+
+# Escape was pressed, hide window
+$syncHash.WindowSurvey.Add_KeyDown( {
+	if ( $args[1].Key -eq "Escape" )
+	{
+		$syncHash.tbSurveyComment.Text = ""
+		$this.Visibility = [System.Windows.Visibility]::Hidden
+	}
+} )
+
+# If the survey window isn't visible, active mainwindow
+$syncHash.WindowSurvey.Add_IsVisibleChanged( { if ( -not $this.Visible ) { $syncHash.Window.Activate() } } )
+
+[void] $syncHash.Window.ShowDialog()
 Pop-Location
-$Window.Close()
+$syncHash.Window.Close()
+$global:syncHash = $syncHash
