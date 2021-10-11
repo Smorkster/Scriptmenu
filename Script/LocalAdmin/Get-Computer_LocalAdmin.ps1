@@ -29,6 +29,7 @@ try
 			catch { $list += "$( $msgTable.StrOutUser ): $data`n`n" }
 		}
 		$logText = "$( $Computer.adminDescription)`n`n$list"
+		"`n$list" | Out-Host
 	}
 }
 catch
