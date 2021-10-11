@@ -1,12 +1,13 @@
 <Window
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:sys="clr-namespace:System;assembly=mscorlib"
-        MinWidth="550"
-        SizeToContent="WidthAndHeight"
-        Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
-        WindowStartupLocation="CenterScreen"
-        ResizeMode="CanMinimize">
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:sys="clr-namespace:System;assembly=mscorlib"
+    MinWidth="550"
+    SizeToContent="WidthAndHeight"
+    Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+    WindowStartupLocation="CenterScreen"
+    ResizeMode="CanMinimize"
+    x:Name="Window">
     <Window.Resources>
         <sys:Boolean x:Key="WinRM"></sys:Boolean>
         <Style TargetType="Button">
@@ -18,6 +19,9 @@
                 <DataTrigger Binding="{Binding Name}">
                     <Setter Property="Background" Value="Red"/>
                 </DataTrigger>
+                <DataTrigger Binding="{Binding Name}">
+                    <Setter Property="Background" Value="LawnGreen"/>
+                </DataTrigger>
             </Style.Triggers>
         </Style>
         <Style TargetType="GroupBox">
@@ -26,16 +30,16 @@
                     <ControlTemplate TargetType="GroupBox">
                         <Grid Margin="5">
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
                             <Border Grid.Row="0" BorderThickness="1,1,0,0" CornerRadius="0">
                                 <Border.BorderBrush>
                                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                                         <LinearGradientBrush.GradientStops>
                                             <GradientStopCollection>
-                                                <GradientStop Color="#FF000000" Offset="0.0"/>
-                                                <GradientStop Color="#00F0F0F0" Offset="1.1"/>
+                                                <GradientStop Color="#FF000000" Offset="0.0" />
+                                                <GradientStop Color="#00F0F0F0" Offset="1.1" />
                                             </GradientStopCollection>
                                         </LinearGradientBrush.GradientStops>
                                     </LinearGradientBrush>
@@ -65,7 +69,115 @@
             <Setter Property="Margin" Value="5"/>
             <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"/>
         </Style>
-        <TabControl Name="tbComputer" x:Key="tbComputer"/>
+        <Window
+            xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+            SizeToContent="WidthAndHeight"
+            ShowInTaskbar="False"
+            WindowStyle="ToolWindow" WindowStartupLocation="CenterScreen"
+            x:Name="WindowSurvey" x:Key="WindowSurvey">
+            <Grid>
+                <Grid.Resources>
+                    <GridLength x:Key="cw">80</GridLength>
+                    <Style TargetType="{x:Type Button}">
+                        <Setter Property="Margin" Value="5"/>
+                        <Setter Property="Padding" Value="5"/>
+                    </Style>
+                    <Style TargetType="{x:Type Label}">
+                        <Setter Property="Grid.ColumnSpan" Value="5"/>
+                    </Style>
+                    <Style TargetType="{x:Type RadioButton}">
+                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                        <Setter Property="Margin" Value="5"/>
+                    </Style>
+                </Grid.Resources>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="{StaticResource ResourceKey=cw}"/>
+                    <ColumnDefinition Width="{StaticResource ResourceKey=cw}"/>
+                    <ColumnDefinition Width="{StaticResource ResourceKey=cw}"/>
+                    <ColumnDefinition Width="{StaticResource ResourceKey=cw}"/>
+                    <ColumnDefinition Width="{StaticResource ResourceKey=cw}"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="80"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.ColumnSpan="5">
+                    <Label x:Name="lblRateTitle"/>
+                    <Label x:Name="lblRateScript" FontWeight="Bold"/>
+                </StackPanel>
+                <RadioButton x:Name="rbSurveyRate1" Grid.Row="1" GroupName="SurveyRating"/>
+                <RadioButton x:Name="rbSurveyRate2" Grid.Column="1" Grid.Row="1" GroupName="SurveyRating"/>
+                <RadioButton x:Name="rbSurveyRate3" Grid.Column="2" Grid.Row="1" GroupName="SurveyRating"/>
+                <RadioButton x:Name="rbSurveyRate4" Grid.Column="3" Grid.Row="1" GroupName="SurveyRating"/>
+                <RadioButton x:Name="rbSurveyRate5" Grid.Column="4" Grid.Row="1" GroupName="SurveyRating"/>
+                <Label x:Name="lblSurvey" Grid.Row="2" Margin="5"/>
+                <TextBox x:Name="tbSurveyComment" Grid.ColumnSpan="5" Grid.Row="3" Margin="5"/>
+                <Button x:Name="btnSurveySave" Grid.Column="3" Grid.Row="4"/>
+                <Button x:Name="btnSurveyCancel" Grid.Column="4" Grid.Row="4"/>
+            </Grid>
+        </Window>
+        <TabItem x:Key="tiReportTool" x:Name="tiReportTool" Background="#FFFF9C9C">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal">
+                    <Label x:Name="lblFeedbackType"/>
+                    <RadioButton x:Name="rbReport" GroupName="Subject"/>
+                    <RadioButton x:Name="rbSuggestion" GroupName="Subject"/>
+                </StackPanel>
+                <StackPanel Grid.Row="1" Orientation="Horizontal">
+                    <Button x:Name="btnAddScript"/>
+                    <ComboBox x:Name="cbScriptList" DisplayMemberPath="CBName" Width="300"/>
+                </StackPanel>
+                <TextBox x:Name="tbFeedback" Grid.Row="2" AcceptsReturn="True" AcceptsTab="True" TextWrapping="WrapWithOverflow" VerticalScrollBarVisibility="Auto" Height="300"/>
+                <Button x:Name="btnFeedbackSend" Grid.Row="3"/>
+            </Grid>
+        </TabItem>
+        <TabItem x:Key="tiOutputTool" x:Name="tiOutputTool" Background="LightGreen">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal">
+                    <Button x:Name="btnListOutputFiles"/>
+                    <Button x:Name="btnOpenOutputFile"/>
+                </StackPanel>
+                <DataGrid x:Name="dgOutputFiles" Grid.Row="1" AutoGenerateColumns="False" SelectionMode="Single" MinHeight="300">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Binding="{Binding Name}"/>
+                        <DataGridTextColumn Binding="{Binding LastWriteTime}"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </TabItem>
+        <StackPanel x:Key="ComputerSP" Orientation="Horizontal" Margin="0,15,0,10">
+            <Label x:Name="lblComputerNameTitle"/>
+            <TextBox x:Name="tbComputerName" VerticalContentAlignment="Center" Width="200"/>
+            <Button x:Name="btnComputerConnect" IsEnabled="False" Margin="5,0,0,0" Width="75"/>
+            <Button x:Name="btnComputerDisconnect" IsEnabled="False" Margin="5,0,0,0" Width="75"/>
+        </StackPanel>
+        <StackPanel x:Key="spO365" x:Name="spO365" Orientation="Horizontal">
+            <Label x:Name="lblO65"/>
+            <Button x:Name="btnO365Connect"/>
+        </StackPanel>
+        <TabItem x:Key="tiBaseInfo" x:Name="tiBaseInfo">
+            <DataGrid x:Name="dgBaseInfo" AutoGenerateColumns="False" IsReadOnly="True">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Binding="{Binding Name}"/>
+                    <DataGridTextColumn Binding="{Binding Info}"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </TabItem>
     </Window.Resources>
     <StackPanel>
         <ScrollViewer Name="MainContent"/>

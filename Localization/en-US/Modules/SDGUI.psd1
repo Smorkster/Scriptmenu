@@ -28,7 +28,11 @@ ContentbtnFeedbackSend = Send message
 ContentbtnListOutputFiles = List output files
 ContentbtnO365Connect = Start
 ContentbtnOpenOutputFile = Open file
+<<<<<<< HEAD
 ContentbtnRun = Run
+=======
+ContentBtnRun = Run
+>>>>>>> 228e0a0178dafabbca38ab840f419ccfe11e432a
 ContentbtnSurveyCancel = Cancel
 ContentbtnSurveySave = Save
 ContentdgOutputFilesColDates = Last updated

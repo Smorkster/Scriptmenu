@@ -626,4 +626,8 @@ $syncHash.WindowSurvey.Add_IsVisibleChanged( { if ( -not $this.Visible ) { $sync
 [void] $syncHash.Window.ShowDialog()
 Pop-Location
 $syncHash.Window.Close()
+<<<<<<< HEAD
 #$global:syncHash = $syncHash
+=======
+$global:syncHash = $syncHash
+>>>>>>> 228e0a0178dafabbca38ab840f419ccfe11e432a
