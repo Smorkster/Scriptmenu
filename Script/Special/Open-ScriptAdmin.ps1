@@ -16,8 +16,8 @@ function CheckForUpdates
 						"Logs",
 						"Output",
 						"UpdateRollback" )
-						$syncHash.Data.fileExclusion = @( ( Get-Item $PSCommandPath ).Name )
-						$syncHash.DC.dgUpdates[0].Clear()
+	$syncHash.Data.fileExclusion = @( ( Get-Item $PSCommandPath ).Name )
+	$syncHash.DC.dgUpdates[0].Clear()
 	$syncHash.DC.dgUpdatedInProd[0].Clear()
 
 	$syncHash.Data.devFiles = Get-ChildItem $syncHash.Data.devRoot -Directory -Exclude $syncHash.Data.dirExclusion | Get-ChildItem -File -Recurse -Exclude $syncHash.Data.fileExclusion
@@ -148,8 +148,7 @@ function UnselectDatagrid
 {
 	param ( $Click, $Datagrid )
 
-	if ( $Click.Name -ne "" ) { $Datagrid.SelectedIndex = -1 }
-
+	if ( $Click.Name -ne "" ) { if ( $Datagrid.SelectedItems.Count -lt 1 ) { $Datagrid.SelectedIndex = -1 } }
 }
 
 ############################################
@@ -201,6 +200,7 @@ $controls = [System.Collections.ArrayList]::new()
 [void] $controls.Add( @{ CName = "btnCheckForUpdates" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnCheckForUpdates } ) } )
 [void] $controls.Add( @{ CName = "btnDoRollback" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnDoRollback } ; @{ PropName = "IsEnabled" ; PropVal = $false } ) } )
 [void] $controls.Add( @{ CName = "btnListRollbacks" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnListRollbacks } ; @{ PropName = "IsEnabled" ; PropVal = $true } ) } )
+[void] $controls.Add( @{ CName = "btnListSurveys" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnListSurveys } ; @{ PropName = "IsEnabled" ; PropVal = $true } ) } )
 [void] $controls.Add( @{ CName = "btnOpenErrorLog" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnOpenErrorLog } ) } )
 [void] $controls.Add( @{ CName = "btnOpenOutputFile" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnOpenOutputFile } ) } )
 [void] $controls.Add( @{ CName = "btnOpenRollbackFile" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnOpenRollbackFile } ; @{ PropName = "IsEnabled" ; PropVal = $false } ) } )
@@ -210,23 +210,29 @@ $controls = [System.Collections.ArrayList]::new()
 [void] $controls.Add( @{ CName = "cbErrorLogsScriptNames" ; Props = @( @{ PropName = "ItemsSource"; PropVal = ( New-Object System.Collections.ObjectModel.ObservableCollection[Object] ) } ) } )
 [void] $controls.Add( @{ CName = "cbLogsScriptNames" ; Props = @( @{ PropName = "ItemsSource"; PropVal = ( New-Object System.Collections.ObjectModel.ObservableCollection[Object] ) } ) } )
 [void] $controls.Add( @{ CName = "cbRollbackScriptNames" ; Props = @( @{ PropName = "ItemsSource"; PropVal = ( New-Object System.Collections.ObjectModel.ObservableCollection[Object] ) } ) } )
+[void] $controls.Add( @{ CName = "dgSurveyScripts" ; Props = @( @{ PropName = "ItemsSource"; PropVal = ( New-Object System.Collections.ObjectModel.ObservableCollection[Object] ) } ) } )
 [void] $controls.Add( @{ CName = "dgUpdatedInProd" ; Props = @( @{ PropName = "ItemsSource"; PropVal = ( New-Object System.Collections.ObjectModel.ObservableCollection[Object] ) } ) } )
 [void] $controls.Add( @{ CName = "dgUpdates" ; Props = @( @{ PropName = "ItemsSource"; PropVal = ( New-Object System.Collections.ObjectModel.ObservableCollection[Object] ) } ) } )
 [void] $controls.Add( @{ CName = "gbErrorInfo" ; Props = @( @{ PropName = "Header"; PropVal = $msgTable.ContentgbErrorInfo } ) } )
-[void] $controls.Add( @{ CName = "lblErrorMessage" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblErrorMessage } ) } )
+[void] $controls.Add( @{ CName = "lblErrLogErrorMessage" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblErrorMessage } ) } )
+[void] $controls.Add( @{ CName = "lblLogComputerNameTitle" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblLogComputerNameTitle } ) } )
 [void] $controls.Add( @{ CName = "lblLogErrorLogTitle" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblLogErrorLogTitle } ) } )
 [void] $controls.Add( @{ CName = "lblLogOutputFileTitle" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblLogOutputFileTitle } ) } )
 [void] $controls.Add( @{ CName = "lblLogTextTitle" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblLogTextTitle } ) } )
 [void] $controls.Add( @{ CName = "lblLogUserInputTitle" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblLogUserInputTitle } ) } )
-[void] $controls.Add( @{ CName = "lblOperator" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblOperator } ) } )
-[void] $controls.Add( @{ CName = "lblSeverity" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblSeverity } ) } )
-[void] $controls.Add( @{ CName = "lblUserInput" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblUserInput } ) } )
+[void] $controls.Add( @{ CName = "lblErrLogComputerName" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblErrLogComputerName } ) } )
+[void] $controls.Add( @{ CName = "lblErrLogOperator" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblOperator } ) } )
+[void] $controls.Add( @{ CName = "lblErrLogSeverity" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblSeverity } ) } )
+[void] $controls.Add( @{ CName = "lblErrLogUserInput" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblUserInput } ) } )
+[void] $controls.Add( @{ CName = "lblSurveyScriptVersionTitle" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblSurveyScriptVersionTitle } ) } )
+[void] $controls.Add( @{ CName = "lblSurveyTotSumTitle" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblSurveyTotSumTitle } ) } )
 [void] $controls.Add( @{ CName = "tblInfo" ; Props = @( @{ PropName = "Text"; PropVal = $msgTable.ContenttblInfo } ; @{ PropName = "Visibility" ; PropVal = [System.Windows.Visibility]::Collapsed } ) } )
 [void] $controls.Add( @{ CName = "tblUpdatedInProd" ; Props = @( @{ PropName = "Text"; PropVal = $msgTable.ContenttblUpdatedInProd } ) } )
 [void] $controls.Add( @{ CName = "tblUpdateInfo" ; Props = @( @{ PropName = "Text"; PropVal = "" } ) } )
 [void] $controls.Add( @{ CName = "tiErrorLogs" ; Props = @( @{ PropName = "Header"; PropVal = $msgTable.ContenttiErrorLogs } ) } )
 [void] $controls.Add( @{ CName = "tiLogs" ; Props = @( @{ PropName = "Header"; PropVal = $msgTable.ContenttiLogs } ) } )
 [void] $controls.Add( @{ CName = "tiRollback" ; Props = @( @{ PropName = "Header"; PropVal = $msgTable.ContenttiRollback } ) } )
+[void] $controls.Add( @{ CName = "tiSurveys" ; Props = @( @{ PropName = "Header"; PropVal = $msgTable.ContenttiSurveys } ) } )
 [void] $controls.Add( @{ CName = "tiUpdated" ; Props = @( @{ PropName = "Header"; PropVal = $msgTable.ContenttiUpdated } ) } )
 [void] $controls.Add( @{ CName = "tiUpdatedInProd" ; Props = @( @{ PropName = "Header"; PropVal = $msgTable.ContenttiUpdatedInProd } ; @{ PropName = "Visibility" ; PropVal = [System.Windows.Visibility]::Visible } ; @{ PropName = "Background" ; PropVal = "#FFEBEBEB" } ) } )
 [void] $controls.Add( @{ CName = "tiUpdates" ; Props = @( @{ PropName = "Header"; PropVal = $msgTable.ContenttiUpdates } ) } )
@@ -285,6 +291,27 @@ $syncHash.btnListRollbacks.Add_Click( {
 	}
 	$splash.Close()
 } )
+$syncHash.btnListSurveys.Add_Click( {
+	$splash = ShowSplash -Text $syncHash.Data.msgTable.StrSplListSurveys -SelfAdmin
+	$syncHash.DC.dgSurveyScripts[0].Clear()
+	Get-ChildItem "$BaseDir\Logs" -Recurse -File -Filter "*survey.json" | ForEach-Object {
+		$n = $_.BaseName -replace " - Survey"
+		if ( $syncHash.DC.dgSurveyScripts.ScriptName -notcontains $n )
+		{ $syncHash.DC.dgSurveyScripts[0].Add( [pscustomobject]@{ ScriptName = $n ; SurveyCount = 0 ; Surveys = @{} } ) }
+		Get-Content $_.FullName | ForEach-Object {
+			$s = $_ | ConvertFrom-Json
+
+			if ( ( $syncHash.DC.dgSurveyScripts[0].Where( { $_.ScriptName -eq $n } ) )[0].Surveys.Keys -notcontains $s.ScriptVersion )
+			{
+				( $syncHash.DC.dgSurveyScripts[0].Where( { $_.ScriptName -eq $n } ) )[0].Surveys.Add( $s.ScriptVersion, [System.Collections.ArrayList]::new() )
+				( $syncHash.DC.dgSurveyScripts[0] | Where-Object { $_.ScriptName -eq "Compare-ADusermemberships.ps1" } ).SurveyCount += 1
+			}
+
+			( $syncHash.DC.dgSurveyScripts[0].Where( { $_.ScriptName -eq $n } ) )[0].Surveys.Item( $s.ScriptVersion ).Add( $s )
+		}
+	}
+	$splash.Close()
+} )
 $syncHash.btnOpenErrorLog.Add_Click( {
 	if ( $syncHash.cbErrorLogsScriptNames.HasItems )
 	{
@@ -299,31 +326,39 @@ $syncHash.btnOpenOutputFile.Add_Click( { Start-Process -FilePath $syncHash.data.
 $syncHash.btnReadErrorLogs.Add_Click( {
 	$splash = ShowSplash -Text $syncHash.Data.msgTable.StrSplReadErrorLogs -SelfAdmin
 	$syncHash.DC.cbErrorLogsScriptNames[0].Clear()
-	Get-ChildItem "$BaseDir\ErrorLogs" -Recurse -File -Filter "*.json" | ForEach-Object {
+	Get-ChildItem "$BaseDir\ErrorLogs" -Recurse -File -Filter "*.json" | Sort-Object Name | ForEach-Object {
 		$n = $_.BaseName -replace " - ErrorLog"
 		if ( $syncHash.DC.cbErrorLogsScriptNames.ScriptName -notcontains $n )
 		{ $syncHash.DC.cbErrorLogsScriptNames[0].Add( [pscustomobject]@{ ScriptName = $n ; ScriptErrorLogs = [System.Collections.ArrayList]::new() } ) }
-		Get-Content $_.FullName | ForEach-Object { ( $syncHash.DC.cbErrorLogsScriptNames[0].Where( { $_.ScriptName -eq $n } ) )[0].ScriptErrorLogs.Add( [pscustomobject]( $_ | ConvertFrom-Json ) ) }
+		Get-Content $_.FullName | ForEach-Object { ( $syncHash.DC.cbErrorLogsScriptNames[0].Where( { $_.ScriptName -eq $n } ) )[0].ScriptErrorLogs.Add( ( $_ | ConvertFrom-Json ) ) }
 	}
+	$syncHash.DC.cbErrorLogsScriptNames[0] | ForEach-Object { $_.ScriptErrorLogs = $_.ScriptErrorLogs | Sort-Object LogDate -Descending }
 	$splash.Close()
 } )
 $syncHash.btnReadLogs.Add_Click( {
 	$splash = ShowSplash -Text $syncHash.Data.msgTable.StrSplReadLogs -SelfAdmin
 	$syncHash.DC.cbLogsScriptNames[0].Clear()
-	Get-ChildItem "$BaseDir\Logs" -Recurse -File -Filter "*.json" | ForEach-Object {
+	Get-ChildItem "$BaseDir\Logs" -Recurse -File -Filter "*log.json" | Sort-Object Name | ForEach-Object {
 		$n = $_.BaseName -replace " - Log"
 		if ( $syncHash.DC.cbLogsScriptNames.ScriptName -notcontains $n )
 		{ $syncHash.DC.cbLogsScriptNames[0].Add( [pscustomobject]@{ ScriptName = $n ; ScriptLogs = [System.Collections.ArrayList]::new() } ) }
-		Get-Content $_.FullName | ForEach-Object { ( $syncHash.DC.cbLogsScriptNames[0].Where( { $_.ScriptName -eq $n } ) )[0].ScriptLogs.Add( [pscustomobject]( $_ | ConvertFrom-Json ) ) }
+		Get-Content $_.FullName | ForEach-Object { ( $syncHash.DC.cbLogsScriptNames[0].Where( { $_.ScriptName -eq $n } ) )[0].ScriptLogs.Add( ( $_ | ConvertFrom-Json ) ) }
 	}
+	$syncHash.DC.cbLogsScriptNames[0] | ForEach-Object { $_.ScriptLogs = $_.ScriptLogs | Sort-Object LogDate -Descending }
 	$splash.Close()
 } )
 $syncHash.btnOpenRollbackFile.Add_Click( { Start-Process $syncHash.Data.Editor """$( $syncHash.dgRollbacks.SelectedItem.FullName )""" } )
 $syncHash.btnUpdateScripts.Add_Click( { UpdateScripts } )
+$syncHash.dgSurveyScripts.Add_SelectionChanged( { $syncHash.cbSurveyScriptVersion.Items.Refresh() } )
 $syncHash.dgErrorLogs.Add_MouseLeftButtonUp( { UnselectDatagrid $args[1].OriginalSource $this } )
 $syncHash.dgLogs.Add_MouseLeftButtonUp( { UnselectDatagrid $args[1].OriginalSource $this } )
 $syncHash.dgRollbacks.Add_MouseLeftButtonUp( { UnselectDatagrid $args[1].OriginalSource $this } )
-$syncHash.dgUpdates.Add_MouseLeftButtonUp( { UnselectDatagrid $args[1].OriginalSource $this } )
+#todo remove
+$syncHash.data.test = @()
+$syncHash.dgUpdates.Add_MouseLeftButtonUp( {
+	$syncHash.data.test += $args[1] 
+	UnselectDatagrid $args[1].OriginalSource $this
+} )
 $syncHash.dgUpdatedInProd.Add_MouseLeftButtonUp( { UnselectDatagrid $args[1].OriginalSource $this } )
 $syncHash.dgRollbacks.Add_SelectionChanged( { $syncHash.DC.btnOpenRollbackFile[1] = $syncHash.DC.btnDoRollback[1] = $this.SelectedItem -ne $null } )
 $syncHash.dgUpdates.Add_MouseRightButtonUp( {
@@ -364,6 +399,16 @@ $syncHash.Window.Add_ContentRendered( {
 
 	$syncHash.dgErrorLogs.Columns[0].Header = $syncHash.Data.msgTable.ContentdgErrorLogsColLogDate
 	$syncHash.dgErrorLogs.Items.SortDescriptions.Add( ( [System.ComponentModel.SortDescription]::new( "LogDate", [System.ComponentModel.ListSortDirection]::Descending ) ) )
+
+	$syncHash.dgSurveyScripts.Columns[0].Header = $syncHash.Data.msgTable.ContentdgSurveyScriptsColScriptName
+	$syncHash.dgSurveyScripts.Columns[1].Header = $syncHash.Data.msgTable.ContentdgSurveyScriptsColSurveyCount
+	$syncHash.dgSurveyScripts.Items.SortDescriptions.Add( ( [System.ComponentModel.SortDescription]::new( "ScriptName", [System.ComponentModel.ListSortDirection]::Ascending ) ) )
+
+	$syncHash.dgSurveyAnswers.Columns[0].Header = $syncHash.Data.msgTable.ContentdgSurveyAnswersColComment
+	$syncHash.dgSurveyAnswers.Columns[1].Header = $syncHash.Data.msgTable.ContentdgSurveyAnswersColRating
+	$syncHash.dgSurveyAnswers.Columns[2].Header = $syncHash.Data.msgTable.ContentdgSurveyAnswersColOperator
+
+	$syncHash.dgSurveyAnswers.Columns[0].CellTemplate.Triggers.Setters[1].Value = $syncHash.Data.msgTable.ContentdgSurveyNoComment
 } )
 
 [void] $syncHash.Window.ShowDialog()
