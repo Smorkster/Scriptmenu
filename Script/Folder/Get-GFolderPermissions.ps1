@@ -20,7 +20,7 @@ $Folders = @()
 
 foreach ( $Folder in $FoldersIn )
 {
-	if ( -not ( $Folder.StartsWith( "G:\$Customer\" ) ) ) { $Folder = "G:\$Customer\$Folder" }
+	if ( -not ( $Folder -match "^G\:\\$Customer\\" ) ) { $Folder = "G:\$Customer\$Folder" }
 
 	if ( Test-Path $Folder )
 	{
