@@ -75,7 +75,7 @@ class ComputerObject
 # Create controls to hold computerinfo and buttons for computer-scripts
 function CreateComputerInfo
 {
-	if ( $syncHash.Window.Resources["WinRM"] ) { GetPCInfo }
+	if ( $syncHash.Window.Resources["WinRM"] -eq "Visible" ) { GetPCInfo }
 	GetPCRole
 
 	$syncHash.ComputerObj.psobject.Properties.Where( { $_.MemberType -eq "Property" } ) | ForEach-Object {
@@ -104,12 +104,12 @@ function CreateScriptGroup
 
 	if ( $FilesInFolder = GetFiles $dirPath )
 	{
-		$wpScriptGroup = [System.Windows.Controls.WrapPanel]@{ Orientation = "Vertical" }
+		$wpScriptGroup = [System.Windows.Controls.WrapPanel]@{ Orientation = "Vertical"; Name = "SG$( $dirPath )" }
 
 		foreach ( $group in ( $FilesInFolder | Group-Object { $_.Group } | Sort-Object Name ) )
 		{
 			$gb = [System.Windows.Controls.GroupBox]@{ Header = $group.Name }
-			$sp = [System.Windows.Controls.WrapPanel]@{ Orientation = "Vertical" }
+			$wp = [System.Windows.Controls.WrapPanel]@{ Orientation = "Vertical" }
 			foreach ( $file in $group.Group )
 			{
 				# Check if user is member of a group required to allow running this script
@@ -118,10 +118,11 @@ function CreateScriptGroup
 					( ( $null -eq $file.AllowedUsers ) -or ( $env:USERNAME -in $file.AllowedUsers ) ) )
 				{
 					$wpScriptControls = [System.Windows.Controls.WrapPanel]@{}
+					$btnName = "btn$( $file.Name -replace "\W" )"
+					$wpName = "wp$( $file.Name -replace "\W" )"
 					$wpScriptControls.Name = "wp$( $file.ScriptName -replace "\W" )"
 					$button = [System.Windows.Controls.Button]@{ Content = "$( $msgTable.ContentBtnRun ) >"; ToolTip = $file.Path; Tag = $file }
-					$name = "btn$( $file.Name -replace "\W" )"
-					$button.Name = $name
+					$button.Name = $btnName
 					$label = [System.Windows.Controls.Label]@{ Content = $file.Synopsis; ToolTip = [string]$file.Description.Replace( ". ", ".`n" ) }
 					$label.Name = "lbl$( $file.ScriptName -replace "\W" )"
 
@@ -177,17 +178,18 @@ function CreateScriptGroup
 						}
 					} )
 
-					$syncHash.$name = $button
+					$syncHash.$btnName = $button
+					$syncHash.$wpName = $wpScriptControls
 					[void] $wpScriptControls.AddChild( $button )
 					[void] $wpScriptControls.AddChild( $label )
-					[void] $sp.AddChild( $wpScriptControls )
+					[void] $wp.AddChild( $wpScriptControls )
 				}
 			}
 
 			# If there are scripts for this group, add groupbox
-			if ( $sp.Children.Count -gt 0 )
+			if ( $wp.Children.Count -gt 0 )
 			{
-				$gb.Content = $sp
+				$gb.Content = $wp
 				$wpScriptGroup.AddChild( $gb )
 			}
 		}
@@ -359,8 +361,17 @@ function GetPCRole
 
 	switch -Regex ( $ADPC.MemberOf | Where-Object { $_ -match "_Wrk_" } )
 	{
-		"Role1" { $r = "PCRole 1" }
-		"Role2" { $r = "PCRole 2" }
+		"Patient" { $r = "Patient-PC" }
+		"Vard" { $r = "Vård-PC" }
+		"Administrativ" { $r = "Administrativ-PC" }
+		"Flodes" { $r = "Flödes-PC" }
+		"MTWM" { $r = "MT WM-PC" }
+		"MTM" { $r = "MT M-PC" }
+		"Sakerhets" { $r = "Säkerhets-PC" }
+		"Undantag" { $r = "Undantags-PC" }
+		"Tekniker" { $r = "Tekniker-PC" }
+		"Kiosk" { $r = "Kiosk-PC" }
+		"Lakemedelsvagn" { $r = "Lakemedelsvagn-PC" }
 	}
 	if ( $null -eq $r ) { $r = $msgTable.ComputerUnknownRole }
 	$syncHash.ComputerObj.Role.Value = $r
@@ -626,8 +637,4 @@ $syncHash.WindowSurvey.Add_IsVisibleChanged( { if ( -not $this.Visible ) { $sync
 [void] $syncHash.Window.ShowDialog()
 Pop-Location
 $syncHash.Window.Close()
-<<<<<<< HEAD
 #$global:syncHash = $syncHash
-=======
-$global:syncHash = $syncHash
->>>>>>> 228e0a0178dafabbca38ab840f419ccfe11e432a
