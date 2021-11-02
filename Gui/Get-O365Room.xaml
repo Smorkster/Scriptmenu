@@ -2,9 +2,8 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:sys="clr-namespace:System;assembly=mscorlib"
-    Height="800" MinHeight="800" MaxHeight="850"
+    Height="800" MinHeight="800"
     Width="1100" MinWidth="1100"
-    SizeToContent="WidthAndHeight"
     WindowStartupLocation="CenterScreen"
     Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
     x:Name="Window">
@@ -15,6 +14,22 @@
             <Setter Property="Margin" Value="5"/>
             <Setter Property="MaxHeight" Value="30"/>
             <Setter Property="Padding" Value="5"/>
+        </Style>
+        <Style x:Key="BtnDepend" TargetType="{x:Type Button}">
+            <Setter Property="IsEnabled" Value="False"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="Padding" Value="5"/>
+            <Style.Triggers>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding ElementName=tiCopyOtherRoom, Path=IsSelected}" Value="True"/>
+                        <Condition Binding="{Binding ElementName=dgMembersOtherRoom, Path=HasItems}" Value="True"/>
+                    </MultiDataTrigger.Conditions>
+                    <MultiDataTrigger.Setters>
+                        <Setter Property="IsEnabled" Value="True"/>
+                    </MultiDataTrigger.Setters>
+                </MultiDataTrigger>
+            </Style.Triggers>
         </Style>
         <Style TargetType="{x:Type ComboBox}">
             <Setter Property="Height" Value="28"/>
@@ -45,7 +60,7 @@
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Margin" Value="10"/>
             <Setter Property="TextAlignment" Value="Left"/>
-            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="TextWrapping" Value="WrapWithOverflow"/>
         </Style>
         <Style TargetType="{x:Type TextBox}">
             <Setter Property="Height" Value="28"/>
@@ -59,7 +74,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="300*"/>
         </Grid.RowDefinitions>
-        <Grid Grid.Row="0">
+        <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition/>
                 <ColumnDefinition Width="180"/>
@@ -67,11 +82,30 @@
             <Grid.RowDefinitions>
                 <RowDefinition/>
                 <RowDefinition/>
+                <RowDefinition/>
             </Grid.RowDefinitions>
-            <Label Grid.Column="0" Grid.Row="0" x:Name="lblCheckRoomTitle" Margin="5"/>
-            <Button Grid.Column="1" Grid.Row="0" x:Name="btnReset"/>
-            <TextBox x:Name="tbCheckRoom" Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="1"/>
-            <Button Grid.Column="1" Grid.Row="1" x:Name="btnCheck"/>
+            <Label x:Name="lblCheckRoomTitle" Margin="5"/>
+            <Button x:Name="btnReset" Grid.Column="1"/>
+            <TextBox x:Name="tbCheckRoom" Grid.ColumnSpan="1" Grid.Row="1"/>
+            <Button x:Name="btnCheck" Grid.Column="1" Grid.Row="1"/>
+            <StackPanel Grid.ColumnSpan="2" Grid.Row="2">
+                <StackPanel.Resources>
+                    <Style TargetType="{x:Type StackPanel}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Items.Count, ElementName=dgSuggestions}" Value="0">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Resources>
+                <Label x:Name="lblSuggestionsTitle"/>
+                <DataGrid x:Name="dgSuggestions" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" MaxHeight="200">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Binding="{Binding DisplayName}"/>
+                        <DataGridTextColumn Binding="{Binding PrimarySmtpAddress}"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </StackPanel>
         </Grid>
         <TabControl x:Name="tabOps" Grid.Row="2">
             <TabItem x:Name="tiInfo">
@@ -79,7 +113,7 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="150"/>
                         <ColumnDefinition/>
-                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -92,45 +126,58 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="1*"/>
                     </Grid.RowDefinitions>
-                    <Label x:Name="lblRoomName" Grid.Column="0" Grid.Row="0"/>
-                    <TextBox x:Name="tbRoomName" Grid.Column="1" Grid.Row="0"/>
-                    <Button x:Name="btnRoomName" Grid.Column="2" Grid.Row="0"/>
-                    <Label x:Name="lblRoomAddress" Grid.Column="0" Grid.Row="1"/>
+                    <Label x:Name="lblRoomName"/>
+                    <TextBox x:Name="tbRoomName" Grid.Column="1"/>
+                    <Button x:Name="btnRoomName" Grid.Column="2"/>
+                    <Label x:Name="lblRoomAddress" Grid.Row="1"/>
                     <TextBox x:Name="tbRoomAddress" Grid.Column="1" Grid.Row="1"/>
-                    <Button x:Name="btnRoomAddress" Grid.Column="2" Grid.Row="1"/>
-                    <Label x:Name="lblRoomOwner" Grid.Column="0" Grid.Row="2" VerticalContentAlignment="Top"/>
-                    <Grid Grid.Column="1" Grid.Row="2">
+                    <Label x:Name="lblRoomOwner" Grid.Row="2" VerticalContentAlignment="Top"/>
+                    <Grid Grid.Column="1" Grid.Row="2" Margin="0">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="0.5*"/>
+                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition MinWidth="50" Width="Auto"/>
-                            <ColumnDefinition/>
+                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="2*"/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition/>
+                            <RowDefinition/>
                         </Grid.RowDefinitions>
-                        <Label x:Name="lblRoomOwnerID" Grid.Column="0" Grid.Row="0"/>
-                        <TextBox x:Name="tbRoomOwnerID" Grid.Column="1" Grid.Row="0" HorizontalContentAlignment="Center" MaxLength="4" CharacterCasing="Upper"/>
-                        <Label x:Name="lblRoomOwnerAddr" Grid.Column="2" Grid.Row="0"/>
-                        <TextBox x:Name="tbRoomOwnerAddr" Grid.Column="3" Grid.Row="0" Margin="0" IsReadOnly="True"/>
+                        <Label x:Name="lblRoomOwnerID"/>
+                        <TextBox x:Name="tbRoomOwnerID" Grid.Column="1" HorizontalContentAlignment="Center" MaxLength="4" CharacterCasing="Upper"/>
+                        <Label x:Name="lblRoomOwnerAddr" Grid.Column="2"/>
+                        <TextBox x:Name="tbRoomOwnerAddr" Grid.Column="3" IsReadOnly="True"/>
+                        <TextBlock x:Name="tblOwnerInfo" Grid.ColumnSpan="4" Grid.Row="1" Margin="5">
+                            <TextBlock.Style>
+                                <Style TargetType="{x:Type TextBlock}">
+                                    <Setter Property="Foreground" Value="Red"/>
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="Text" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                     </Grid>
                     <Button x:Name="btnRoomOwner" Grid.Column="2" Grid.Row="2" VerticalAlignment="Top"/>
-                    <Label x:Name="lblLocation" Grid.Column="0" Grid.Row="3"/>
+                    <Label x:Name="lblLocation" Grid.Row="3"/>
                     <TextBox x:Name="tbLocation" Grid.Column="1" Grid.Row="3"/>
                     <Button x:Name="btnLocation" Grid.Column="2" Grid.Row="3"/>
-                    <Label x:Name="lblSyncToExchange" Grid.Column="0" Grid.Row="4" Grid.ColumnSpan="2"/>
+                    <Label x:Name="lblSyncToExchange" Grid.Row="4" Grid.ColumnSpan="2"/>
                     <Button x:Name="btnSyncToExchange" Grid.Column="2" Grid.Row="4"/>
-                    <TextBlock x:Name="tblBookingInfo" Grid.Column="0" Grid.Row="5"/>
+                    <TextBlock x:Name="tblBookingInfo" Grid.Row="5"/>
                     <StackPanel Orientation="Horizontal" Grid.Column="1" Grid.Row="5">
                         <RadioButton x:Name="rbBookingInfoPublic" GroupName="BookingInfo"/>
                         <RadioButton x:Name="rbBookingInfoNotPublic" GroupName="BookingInfo"/>
                     </StackPanel>
                     <Button x:Name="btnBookingInfo" Grid.Column="2" Grid.Row="5"/>
-                    <Label x:Name="lblCopyAll" Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="6"/>
+                    <Label x:Name="lblCopyAll" Grid.ColumnSpan="2" Grid.Row="6"/>
                     <Button x:Name="btnCopyAll" Grid.Column="2" Grid.Row="6"/>
-                    <Label x:Name="lblExport" Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="7"/>
+                    <Label x:Name="lblExport" Grid.ColumnSpan="2" Grid.Row="7"/>
                     <Button x:Name="btnExport" Grid.Column="2" Grid.Row="7" ToolTip="{DynamicResource ttAddNewMembers}" ToolTipService.IsEnabled="False"/>
-                    <Label x:Name="lblLogTitle" Grid.Column="0" Grid.Row="8" VerticalAlignment="Top" VerticalContentAlignment="Center"/>
+                    <Label x:Name="lblLogTitle" Grid.Row="8" VerticalAlignment="Top" VerticalContentAlignment="Center"/>
                     <ScrollViewer Grid.Column="1" Grid.Row="8" VerticalAlignment="Top" VerticalScrollBarVisibility="Auto">
                         <StackPanel x:Name="spOpLog"/>
                     </ScrollViewer>
@@ -139,38 +186,39 @@
             <TabItem x:Name="tiMembers">
                 <Grid x:Name="gMembers" IsEnabled="{DynamicResource Exists}">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
-                        <ColumnDefinition/>
+                        <ColumnDefinition Width="0.5*"/>
+                        <ColumnDefinition Width="0.5*"/>
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
-                    <Button x:Name="btnFetchMembers" Grid.Row="0"/>
-                    <Button x:Name="btnCopyMembers" Grid.Column="1" Grid.Row="0"/>
-                    <Grid Grid.Row="1">
-                        <GroupBox x:Name="gAddMembers">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition/>
-                                    <RowDefinition Height="40"/>
-                                    <RowDefinition/>
-                                </Grid.RowDefinitions>
-                                <Label x:Name="lblAddMember" Grid.Row="0"/>
-                                <TextBox x:Name="tbAddMember" Grid.Row="1"/>
-                                <Button x:Name="btnAddMember" Grid.Row="2"/>
-                            </Grid>
-                        </GroupBox>
-                    </Grid>
-                    <Label x:Name="lblMemberInfo" Grid.Column="1" Grid.Row="1"/>
-                    <GroupBox x:Name="gMembersAzure" Grid.Row="2" Grid.Column="0">
+                    <Expander x:Name="expAddMember" Grid.ColumnSpan="2">
+                        <Grid>
+                            <GroupBox x:Name="gAddMember">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition/>
+                                        <RowDefinition Height="40"/>
+                                        <RowDefinition/>
+                                    </Grid.RowDefinitions>
+                                    <Label x:Name="lblAddMember"/>
+                                    <TextBox x:Name="tbAddMember" Grid.Row="1"/>
+                                    <Button x:Name="btnAddMember" Grid.Row="2"/>
+                                </Grid>
+                            </GroupBox>
+                        </Grid>
+                    </Expander>
+                    <Button x:Name="btnFetchMembers" Grid.Row="1"/>
+                        <Button x:Name="btnCopyMembers" Grid.Column="1" Grid.Row="1"/>
+                    <GroupBox x:Name="gMembersAzure" Grid.Row="2">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="40"/>
                                 <RowDefinition/>
                             </Grid.RowDefinitions>
-                            <Button x:Name="btnRemoveMembersAzure" Grid.Row="0"/>
+                            <Button x:Name="btnRemoveMembersAzure"/>
                             <DataGrid x:Name="dgMembersAzure" Grid.Row="1" IsReadOnly="True" AutoGenerateColumns="False">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Binding="{Binding DisplayName}"/>
@@ -183,11 +231,13 @@
                     <GroupBox x:Name="gMembersExchange" Grid.Row="2" Grid.Column="1">
                         <Grid>
                             <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="40"/>
                                 <RowDefinition/>
                             </Grid.RowDefinitions>
-                            <Button x:Name="btnRemoveMembersExchange" Grid.Row="0"/>
-                            <DataGrid x:Name="dgMembersExchange" Grid.Row="1">
+                            <TextBlock x:Name="tbMemberInfo" Width="Auto"/>
+                            <Button x:Name="btnRemoveMembersExchange" Grid.Row="1"/>
+                            <DataGrid x:Name="dgMembersExchange" Grid.Row="2">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Binding="{Binding Name}"/>
                                     <DataGridTextColumn Binding="{Binding PrimarySmtpAddress}"/>
@@ -209,22 +259,30 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
-                    <Button x:Name="btnFetchAdmins" Grid.Row="0"/>
-                    <Button x:Name="btnCopyAdmins" Grid.Column="1" Grid.Row="0"/>
-                    <GroupBox Grid.Column="0" Grid.Row="1" x:Name="gAddAdmin">
-                            <StackPanel VerticalAlignment="Top">
-                                <Label x:Name="lblAddAdmin" Width="200"/>
-                                <TextBox x:Name="tbAddAdmin"/>
-                                <Button x:Name="btnAddAdmin"/>
-                            </StackPanel>
-                        </GroupBox>
-                        <GroupBox Grid.Column="1" Grid.Row="1" x:Name="gRemoveSelectedAdmins">
-                            <StackPanel VerticalAlignment="Top">
-                                <Label x:Name="lblRemoveSelectedAdmins" Width="200"/>
-                                <Button x:Name="btnRemoveSelectedAdmins"/>
-                            </StackPanel>
-                        </GroupBox>
-                    <DataGrid x:Name="dgAdmins" Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="2">
+                    <Expander x:Name="expAddRemAdm">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <GroupBox x:Name="gAddAdmin">
+                                <StackPanel VerticalAlignment="Top">
+                                    <Label x:Name="lblAddAdmin" Width="200"/>
+                                    <TextBox x:Name="tbAddAdmin"/>
+                                    <Button x:Name="btnAddAdmin"/>
+                                </StackPanel>
+                            </GroupBox>
+                            <GroupBox x:Name="gRemoveSelectedAdmins" Grid.Column="1">
+                                <StackPanel VerticalAlignment="Top">
+                                    <Label x:Name="lblRemoveSelectedAdmins" Width="200"/>
+                                    <Button x:Name="btnRemoveSelectedAdmins"/>
+                                </StackPanel>
+                            </GroupBox>
+                        </Grid>
+                    </Expander>
+                    <Button x:Name="btnFetchAdmins" Grid.Row="1"/>
+                    <Button x:Name="btnCopyAdmins" Grid.Column="1" Grid.Row="1"/>
+                    <DataGrid x:Name="dgAdmins" Grid.ColumnSpan="2" Grid.Row="2">
                         <DataGrid.Columns>
                             <DataGridTextColumn Binding="{Binding DisplayName}"/>
                             <DataGridTextColumn Binding="{Binding UserPrincipalName}"/>
@@ -243,11 +301,19 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
-                    <Button x:Name="btnFetchRLMembership" Grid.Column="0" Grid.Row="0"/>
-                    <Button x:Name="btnRemoveRoomlist" Grid.Column="0" Grid.Row="1"/>
-                    <ListBox x:Name="lbListMembership" Grid.Column="0" Grid.Row="2" DisplayMemberPath="DisplayName" SelectionMode="Single"/>
+                    <Button x:Name="btnFetchRLMembership"/>
+                    <Button x:Name="btnRemoveRoomlist" Grid.Row="1"/>
+                    <DataGrid x:Name="dgListMembership" Grid.Row="2" SelectionMode="Single" AutoGenerateColumns="False">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Binding="{Binding DisplayName}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
                     <Button x:Name="btnAddRoomlist" Grid.Column="1" Grid.Row="1"/>
-                    <ListBox x:Name="lbRoomlists" Grid.Column="1" Grid.Row="2" DisplayMemberPath="DisplayName" SelectionMode="Single"/>
+                    <DataGrid x:Name="dgRoomlists" Grid.Column="1" Grid.Row="2"  SelectionMode="Single" AutoGenerateColumns="False">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Binding="{Binding DisplayName}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
                 </Grid>
             </TabItem>
             <TabItem x:Name="tiConfirmMessage">
@@ -260,8 +326,8 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
-                    <Button x:Name="btnConfirmMessage" Grid.Row="0"/>
-                    <Button x:Name="btnConfirmMessageReset" Grid.Column="1" Grid.Row="0"/>
+                    <Button x:Name="btnConfirmMessage"/>
+                    <Button x:Name="btnConfirmMessageReset" Grid.Column="1"/>
                     <TextBox x:Name="tbConfirmMessage" Grid.ColumnSpan="2" Height="Auto" Grid.Row="1" AcceptsReturn="True" AcceptsTab="True" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"/>
                 </Grid>
             </TabItem>
@@ -277,12 +343,17 @@
                         <RowDefinition Height="40"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
-                    <Label x:Name="lblRoomSearchTitle" Grid.Column="0" Grid.Row="0"/>
-                    <TextBox x:Name="tbRoomSearch" Grid.Column="1" Grid.Row="0"/>
-                    <Button x:Name="btnRoomSearch" Grid.Column="2" Grid.Row="0"/>
-                    <Button x:Name="btnCopyOtherRoom" Grid.Column="0" Grid.Row="1"/>
-                    <Button x:Name="btnSelectAll" Grid.Column="1" Grid.Row="1"/>
-                    <ListBox x:Name="lbMembersOtherRoom" Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="2" DisplayMemberPath="Name"/>
+                    <Label x:Name="lblRoomSearchTitle"/>
+                    <TextBox x:Name="tbRoomSearch" Grid.Column="1"/>
+                    <Button x:Name="btnRoomSearch" Grid.Column="2"/>
+                    <Button x:Name="btnCopyOtherRoom" Grid.Row="1"/>
+                    <Button x:Name="btnSelectAll" Grid.Column="1" Grid.Row="1" Style="{StaticResource BtnDepend}"/>
+                    <DataGrid x:Name="dgMembersOtherRoom" Grid.ColumnSpan="2" Grid.Row="2">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Binding="{Binding DisplayName}"/>
+                            <DataGridTextColumn Binding="{Binding PrimarySmtpAddress}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
                     <Label x:Name="lblCopyOp" Grid.Column="2" Grid.Row="2" VerticalContentAlignment="Top"/>
                 </Grid>
             </TabItem>
