@@ -44,5 +44,5 @@ catch
 	$eh += WriteErrorlogTest -LogText $_ -UserInput "$ComputerName`n$( $msgTable.LogErrMsg )" -Severity "OtherFail"
 }
 
-WriteLog -Text $ret -UserInput $ComputerName -Success ( $null -eq $eh ) -ErrorLogHash $eh | Out-Null
+WriteLogTest -Text $ret -UserInput $ComputerName -Success ( $null -eq $eh ) -ErrorLogHash $eh | Out-Null
 EndScript
