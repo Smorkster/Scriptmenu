@@ -154,7 +154,7 @@ function BtnStart_Click
 			$syncHash.DC.UserView[0].Add( [pscustomobject]@{ User = $_.User; Installations = $_.Installations } )
 		}
 		$syncHash.Window.Dispatcher.Invoke( [action] {
-			WriteLog -LogText "$( $syncHash.DatePickerStart.SelectedDate.ToShortDateString() ) - $( $syncHash.DatePickerEnd.SelectedDate.ToShortDateString() ) = $( $logs.Count ) $( $syncHash.msgTable.StrLogEnding )" | Out-Null
+			WriteLogTest -Text "$( $syncHash.msgTable.LogInstallations ) $( $logs.Count )" -UserInput "$( $syncHash.msgTable.LogSearchStart ) $( $syncHash.DatePickerStart.SelectedDate.ToShortDateString() ) - $( $syncHash.DatePickerEnd.SelectedDate.ToShortDateString() )" -Success $true | Out-Null
 			$syncHash.UserView.Items.Refresh()
 			$syncHash.btnStartDate.IsEnabled = $syncHash.btnEndDate.IsEnabled = $true
 			$syncHash.DC.Progress[0] = 0.0
