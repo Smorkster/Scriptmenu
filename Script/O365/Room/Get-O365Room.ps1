@@ -39,7 +39,7 @@ function Export
 	$row += 1
 	$excelWorksheet.Cells.Item( $row, 1 ) = $syncHash.Data.msgTable.ExcelRoomConfirmMess
 	if ( $null -eq $syncHash.Data.RoomCalendarProcessing.AdditionalResponse ) { $excelWorksheet.Cells.Item( $row, 2 ) = $syncHash.Data.msgTable.ExcelNoConfirmMess }
-	else { $excelWorksheet.Cells.Item( $row, 2 ) = $syncHash.Data.Room.$syncHash.Data.RoomCalendarProcessing.AdditionalResponse }
+	else { $excelWorksheet.Cells.Item( $row, 2 ) = $syncHash.Data.RoomCalendarProcessing.AdditionalResponse }
 	$row += 1
 	if ( $syncHash.btnFetchRLMembership.Tag )
 	{
@@ -158,7 +158,7 @@ function RoomSelected
 	else
 	{
 		$syncHash.DC.tbRoomSearch[0] = $syncHash.Data.SourceRoom.DisplayName
-		( $syncHash.Data.SourceRoom | Get-CalendarProcessing ).BookInPolicy | ForEach-Object { Get-Mailbox -Identity $_ -ErrorAction SilentlyContinue } | Sort-Object Name | ForEach-Object { $syncHash.DC.dgMembersOtherRoom[0].Add( $_ ) }
+		( $syncHash.Data.SourceRoom | Get-CalendarProcessing ).BookInPolicy | ForEach-Object { Get-EXOMailbox -Identity $_ -ErrorAction SilentlyContinue } | Sort-Object Name | ForEach-Object { $syncHash.DC.dgMembersOtherRoom[0].Add( $_ ) }
 	}
 	$syncHash.DC.dgSuggestions[0].Clear()
 }
@@ -172,8 +172,10 @@ function SearchRoom
 	if ( $SearchWord -match "^\S{1,}@\S{2,}\.\S{2,}$" ) { $t = "PrimarySmtpAddress" }
 	else { $t = "DisplayName" }
 
-	if ( $Exclude ) { return ( Get-Mailbox -RecipientTypeDetails "RoomMailbox" -Filter "$t -like '*$SearchWord*'" -ErrorAction Stop | Where-Object { $_.PrimarySmtpAddress -ne $syncHash.Data.Room.PrimarySmtpAddress } ) }
-	else { return Get-Mailbox -RecipientTypeDetails "RoomMailbox" -Filter "$t -like '*$SearchWord*'" -ErrorAction Stop }
+	$return = Get-EXOMailbox -RecipientTypeDetails "RoomMailbox" -Filter "$t -like '*$SearchWord*'" -Properties CustomAttribute10, Office, WindowsEmailAddress -ErrorAction Stop
+	if ( $Exclude ) { $return = $return | Where-Object { $_.PrimarySmtpAddress -ne $syncHash.Data.Room.PrimarySmtpAddress } }
+
+	return $return
 }
 
 ######################################
@@ -183,8 +185,7 @@ function UpdateDgMembers
 	$syncHash.DC.dgMembersAzure[0].Clear()
 	$syncHash.DC.dgMembersExchange[0].Clear()
 	$syncHash.Data.UsersAzure = Get-AzureADGroupMember -ObjectId $syncHash.Data.RoomAzGroupBook.ObjectId -All $true -ErrorAction Stop
-	$syncHash.Data.RoomCalendarProcessing = Get-CalendarProcessing -Identity $syncHash.Data.Room.DisplayName
-	$syncHash.Data.UsersExchange = $syncHash.Data.RoomCalendarProcessing.BookInPolicy | ForEach-Object { Get-Mailbox -Identity $_ -ErrorAction SilentlyContinue }
+	$syncHash.Data.UsersExchange = $syncHash.Data.RoomCalendarProcessing.BookInPolicy | ForEach-Object { Get-EXOMailbox -Identity $_ -ErrorAction SilentlyContinue }
 
 	if ( $syncHash.Data.UsersAzure.Count -gt 0 )
 	{
@@ -252,7 +253,7 @@ function UpdateNameAddress
 
 			$OFS = "`n"
 			WriteLogTest -Text $syncHash.Data.msgTable.StrLogNewNameAddr -UserInput "$( $syncHash.Data.Room.DisplayName ) > $( $syncHash.DC.tbRoomName[0] )`n$( $syncHash.Data.Room.PrimarySmtpAddress ) > $( $syncHash.DC.tbRoomAddress[0] )`n$( [string]( Get-AzureADGroup -SearchString "$( $syncHash.Data.msgTable.StrAzureADGrpNamePrefix )$( $syncHash.Data.Room.DisplayName )" ).DisplayName )" -Success ( $null -eq $eh ) -ErrorLogHash $eh | Out-Null
-			$syncHash.Data.Room = Get-Mailbox -Identity $syncHash.DC.tbRoomName[0].Trim()
+			$syncHash.Data.Room = Get-EXOMailbox -Identity $syncHash.DC.tbRoomName[0].Trim() -Properties CustomAttribute10, Office, WindowsEmailAddress
 			$syncHash.btnRoomName.IsEnabled = $syncHash.btnRoomAddress.IsEnabled = $false
 			WriteOpLog $syncHash.Data.msgTable.StrOpNameAddrChangeDone
 		}
@@ -394,7 +395,7 @@ $syncHash.btnAddMember.Add_Click( {
 	}
 	else
 	{
-		$roomPolicy = $syncHash.Data.RoomCalendarProcessing.BookInPolicy + ( Get-Mailbox -Identity $newMember.UserPrincipalName ).LegacyExchangeDN | Select-Object -Unique
+		$roomPolicy = $syncHash.Data.RoomCalendarProcessing.BookInPolicy + ( Get-EXOMailbox -Identity $newMember.UserPrincipalName ).LegacyExchangeDN | Select-Object -Unique
 		try { Set-CalendarProcessing -Identity $syncHash.Data.Room.DisplayName -AllBookInPolicy:$false -BookInPolicy $roomPolicy -ErrorAction Stop }
 		catch { $eh += WriteErrorlogTest -LogText $syncHash.Data.msgTable.ErrLogAddMemCalProc -UserInput $newMember.UserPrincipalName -Severity "OtherFail" }
 
@@ -572,7 +573,7 @@ $syncHash.btnLocation.Add_Click( {
 	try { Set-Mailbox -Identity $syncHash.Data.Room.PrimarySmtpAddress -Office $syncHash.DC.tbLocation[0] -ErrorAction Stop }
 	catch { $eh = WriteErrorlogTest -LogText "$( $syncHash.Data.msgTable.ErrLogNewLoc )`n$_" -UserInput "$( $syncHash.Data.msgTable.LogNewLocUIRoom ) $( $syncHash.Data.Room.PrimarySmtpAddress )`n$( $syncHash.Data.msgTable.LogNewLocUILoc ) $( $syncHash.DC.tbLocation[0] )" -Severity "OtherFail" }
 
-	$syncHash.Data.Room = Get-Mailbox -Identity $syncHash.Data.Room.PrimarySmtpAddress
+	$syncHash.Data.Room = Get-EXOMailbox -Identity $syncHash.Data.Room.PrimarySmtpAddress -Properties CustomAttribute10, Office, WindowsEmailAddress
 	WriteLogTest -Text $syncHash.Data.msgTable.LogNewLoc -UserInput "$( $syncHash.Data.msgTable.LogNewLocUIRoom ) $( $syncHash.Data.Room.PrimarySmtpAddress )`n$( $syncHash.Data.msgTable.LogNewLocUILoc ) $( $syncHash.DC.tbLocation[0] )" -Success ( $null -eq $eh ) -ErrorLogHash $eh | Out-Null
 } )
 
@@ -669,10 +670,10 @@ $syncHash.btnRoomOwner.Add_Click( {
 		{
 			Set-Mailbox -Identity $syncHash.Data.Room.PrimarySmtpAddress -CustomAttribute10 "$( $syncHash.Data.msgTable.StrOwnerAttrPrefix ) $( $syncHash.TempOwner.EmailAddress )" -ErrorAction Stop
 
-			$syncHash.Data.Room = Get-Mailbox -Identity $syncHash.Data.Room.PrimarySmtpAddress -ErrorAction Stop
+			$syncHash.Data.Room = Get-EXOMailbox -Identity $syncHash.Data.Room.PrimarySmtpAddress -Properties CustomAttribute10, Office, WindowsEmailAddress -ErrorAction Stop
 
 			$syncHash.Data.RoomOwner = $syncHash.TempOwner
-			$syncHash.DC.tbRoomOwnerID[0] = $syncHash.Data.RoomOwner.SamAccountName
+			$syncHash.DC.tbRoomOwnerID[0] = $syncHash.Data.RoomOwner.Alias
 			$syncHash.DC.tbRoomOwnerAddr[0] = $syncHash.Data.RoomOwner.EmailAddress
 			WriteOpLog -Text $syncHash.Data.msgTable.StrOpNewOwnerDone -Color "Green"
 		}
@@ -720,7 +721,7 @@ $syncHash.btnSyncToExchange.Add_Click( {
 
 	foreach ( $user in $usersAzure )
 	{
-		$roomPolicy += ( Get-Mailbox -Identity $user.UserPrincipalName ).LegacyExchangeDN
+		$roomPolicy += ( Get-EXOMailbox -Identity $user.UserPrincipalName ).LegacyExchangeDN
 		try
 		{
 			Add-MailboxFolderPermission -Identity $syncHash.Data.ExchangeCalendar -AccessRights LimitedDetails -Confirm:$false -User $user.UserPrincipalName -ErrorAction Stop
@@ -772,13 +773,13 @@ $syncHash.gAdmins.Add_IsEnabledChanged( {
 	{
 		$syncHash.DC.tbAddAdmin[0] = ""
 		$syncHash.DC.dgAdmins[0].Clear()
-		$syncHash.Data.AdminsAzure.Clear()
+		try { $syncHash.Data.AdminsAzure.Clear() } catch {}
 	}
 } )
 
 # Grid is enabled/disabled
 $syncHash.gConfirmMessage.Add_IsEnabledChanged( {
-	if ( $this.IsEnabled ) {}
+	if ( $this.IsEnabled ) { $syncHash.DC.tbConfirmMessage[0] = $syncHash.Data.RoomCalendarProcessing.AdditionalResponse }
 	else
 	{
 		$syncHash.DC.tbConfirmMessage[0] = ""
@@ -804,15 +805,17 @@ $syncHash.gInfo.Add_IsEnabledChanged( {
 		# Get Address
 		$syncHash.DC.tbRoomAddress[0] = $syncHash.Data.Room.PrimarySmtpAddress
 		# Get Owner
-		if ( ( $addr = ( $syncHash.Data.Room.CustomAttribute10 -replace $syncHash.Data.msgTable.StrOwnerAttrPrefix ).Trim() ) -eq "" )
+		if ( ( $addr = ( $syncHash.Data.Room.CustomAttribute10 -replace "$( $syncHash.Data.msgTable.StrOwnerAttrPrefix )" ).Trim() -replace "^\W\s" -replace "^\s" -replace "^\W" ) -eq "" )
 		{
 			WriteOpLog -Text $syncHash.Data.msgTable.StrNoOwner
 		}
 		else
 		{
-			$syncHash.DC.tbRoomOwnerAddr[0] = $addr.Trim()
+			$syncHash.DC.tbRoomOwnerAddr[0] = $addr
 			try
-			{ Get-EXOMailbox -Identity $addr -ErrorAction Stop }
+			{
+				$syncHash.Data.RoomOwner = Get-EXOMailbox -Identity $addr -ErrorAction Stop
+			}
 			catch [Microsoft.Exchange.Management.RestApiClient.RestClientException]
 			{ WriteOpLog -Text $syncHash.Data.msgTable.ErrMsgNoMailAccountOwner }
 			catch
@@ -820,10 +823,10 @@ $syncHash.gInfo.Add_IsEnabledChanged( {
 
 			try
 			{
-				if ( $null -eq ( $syncHash.Data.RoomOwner = Get-ADUser -LDAPFilter "(proxyaddresses=*smtp:$addr*)" -ErrorAction Stop ) )
-				{ WriteOpLog -Text $syncHash.Data.msgTable.ErrMsgNoAdAccountOwner }
+				if ( -not ( Get-ADUser -Identity $syncHash.Data.RoomOwner.Alias -ErrorAction Stop ).Enabled )
+				{ WriteOpLog -Text $syncHash.Data.msgTable.ErrMsgNewOwnerNotActive }
 				else
-				{ $syncHash.DC.tbRoomOwnerID[0] = $syncHash.Data.RoomOwner.SamAccountName.ToUpper() }
+				{ $syncHash.DC.tbRoomOwnerID[0] = $syncHash.Data.RoomOwner.Alias.ToUpper() }
 			}
 			catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException]
 			{ WriteOpLog -Text $syncHash.Data.msgTable.ErrMsgNoAdAccountOwner }
@@ -834,6 +837,7 @@ $syncHash.gInfo.Add_IsEnabledChanged( {
 		$syncHash.Data.FolderStatistics = Get-MailboxFolderStatistics -Identity $syncHash.Data.Room.PrimarySmtpAddress
 		$syncHash.Data.ExchangeCalendar = $syncHash.Data.FolderStatistics.Where( { $_.FolderType -eq "Calendar" } ).Identity -replace "\\", ":\"
 		$syncHash.Data.FolderPermission = Get-MailboxFolderPermission -Identity $syncHash.Data.ExchangeCalendar
+		$syncHash.Data.RoomCalendarProcessing = Get-CalendarProcessing -Identity $syncHash.Data.Room.DisplayName
 
 		# Get location
 		$syncHash.DC.tbLocation[0] = $syncHash.Data.Room.Office
@@ -911,16 +915,18 @@ $syncHash.tbRoomOwnerID.Add_TextChanged( {
 		try
 		{
 			$tempOwner = Get-ADUser $this.Text -Properties EmailAddress -ErrorAction Stop
-			if ( $tempOwner.EmailAddress -eq $null ) { $syncHash.DC.tblOwnerInfo[0] = $syncHash.Data.msgTable.ErrMsgNewOwnerNotAddr ; throw }
-			elseif ( -not $tempOwner.Enabled ) { $syncHash.DC.tblOwnerInfo[0] = $syncHash.Data.msgTable.ErrMsgNewOwnerNotActive ; throw }
-			elseif ( $this.Text -ne $syncHash.Data.RoomOwner.SamAccountName )
+			if ( $tempOwner.EmailAddress -eq $null ) { throw $syncHash.Data.msgTable.ErrMsgNewOwnerNotAddr }
+			elseif ( -not $tempOwner.Enabled ) { throw $syncHash.Data.msgTable.ErrMsgNewOwnerNotActive }
+			elseif ( $this.Text -ne $syncHash.Data.RoomOwner.Alias )
 			{
 				$syncHash.DC.btnRoomOwner[1] = $true
-				$syncHash.TempOwner = $tempOwner
+				$syncHash.TempOwner = Get-EXOMailbox $tempOwner.SamAccountName
 			}
 		}
 		catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException]
 		{ $syncHash.DC.tblOwnerInfo[0] = $syncHash.Data.msgTable.ErrMsgNewOwnerNotInAd }
+		catch
+		{ $syncHash.DC.tblOwnerInfo[0] = $_ }
 	}
 } )
 
