@@ -54,7 +54,6 @@ foreach ( $Group in $Groups )
 		{
 			Remove-ADPrincipalGroupMembership -MemberOf $Group -Identity $User -Confirm:$false
 			Write-Host "`t$( $User.Name )"
-			$Removed += $User
 			$output += "$( $User.Name )"
 			$NumRem += 1
 		}
