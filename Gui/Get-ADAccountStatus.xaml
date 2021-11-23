@@ -13,7 +13,7 @@
             <Setter Property="Margin" Value="5"/>
         </Style>
         <Style TargetType="Label">
-            <Setter Property="Margin" Value="5,0,5,0"/>
+            <Setter Property="Margin" Value="5,0"/>
         </Style>
     </Window.Resources>
     <Grid>
@@ -22,16 +22,20 @@
             <RowDefinition Height="100*"/>
             <RowDefinition Height="60"/>
         </Grid.RowDefinitions>
-        <StackPanel Orientation="Horizontal" Grid.Row="0">
-            <Label x:Name="lblId" VerticalAlignment="Center"/>
-            <TextBox x:Name="tbID" Height="{Binding ElementName=btnCancel, Path=ActualHeight}" Width="100" VerticalAlignment="Center" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
-            <Button x:Name="btnCancel"/>
-        </StackPanel>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Label x:Name="lblId" Margin="5" HorizontalContentAlignment="Center"/>
+            <TextBox x:Name="tbID" Grid.Column="1" Height="{Binding ElementName=btnCancel, Path=ActualHeight}" Margin="5" VerticalAlignment="Center" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+            <Button x:Name="btnCancel" Grid.Column="2"/>
+        </Grid>
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel x:Name="spOutput" Orientation="Vertical"/>
         </ScrollViewer>
         <StackPanel Orientation="Horizontal" Grid.Row="2" HorizontalAlignment="Center">
-            <Button x:Name="btnExtend"/>
             <Button x:Name="btnUnlock"/>
             <Button x:Name="btnActivate"/>
         </StackPanel>

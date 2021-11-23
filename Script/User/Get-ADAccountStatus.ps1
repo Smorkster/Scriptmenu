@@ -9,7 +9,6 @@
 function LookUpUser
 {
 	$syncHash.btnActivate.IsEnabled = $false
-	$syncHash.btnExtend.IsEnabled = $false
 	$syncHash.btnUnlock.IsEnabled = $false
 	$syncHash.LookedUpUser = $null
 
@@ -52,26 +51,6 @@ function LookUpUser
 				Print -Text $syncHash.msgTable.StrPasswordChange -Color "Red"
 				$status = $syncHash.msgTable.LogPasswordChange
 			}
-			elseif ( $null -ne $syncHash.LookedUpUser.ExpiryDate )
-			{
-				if ( $syncHash.LookedUpUser.ExpiryDate -lt ( Get-Date ) )
-				{
-					Print -Text "$( $syncHash.msgTable.StrExpiredPassword ) $( ( $syncHash.LookedUpUser.ExpiryDate ).ToString( "yyyy-MM-dd" ) )"  -Color "Red"
-					$status = $syncHash.msgTable.LogExpiredPassword
-					$syncHash.btnExtend.IsEnabled = $true
-				}
-				else
-				{
-					Print -Text "$( $syncHash.msgTable.StrFutureExpiry ) $( ( $syncHash.LookedUpUser.ExpiryDate ).ToString( "yyyy-MM-dd" ) )."
-					$syncHash.btnExtend.IsEnabled = $true
-					$status = $syncHash.msgTable.LogFutureExpiry
-				}
-			}
-			else
-			{
-				Print -Text $syncHash.msgTable.StrNeverEndingPassword
-				$status = $syncHash.msgTable.LogNeverEndingPassword
-			}
 
 			if ( -not ( ( $syncHash.LookedUpUser.accountExpires -eq 0 ) -or ( $syncHash.LookedUpUser.accountExpires -eq 9223372036854775807 ) ) )
 			{
@@ -98,34 +77,6 @@ function LookUpUser
 	{
 		WriteErrorlogTest -LogText $_.Exception.Message -UserInput $syncHash.tbID.Text -Severity "OtherFail"
 	}
-}
-
-################################
-# Extends password validity date
-function Extend
-{
-	try
-	{
-		Set-ADUser -Identity $syncHash.tbID.Text -Replace @{ pwdLastSet = 0 }
-		Set-ADUser -Identity $syncHash.tbID.Text -Replace @{ pwdLastSet = -1 }
-		WriteLogTest -Text $syncHash.msgTable.LogPasswordExtended -UserInput $syncHash.tbID.Text -Success $true | Out-Null
-		Print -Text $syncHash.msgTable.StrPasswordExtended
-	}
-	catch
-	{
-		if ( $_.Exception.Message -eq "Insufficient access rights to perform the operation" ) { $severity = "PermissionFail" }
-		else { $severity = "OtherFail" }
-
-		$errorlog = WriteErrorLogTest -LogText "$( $syncHash.msgTable.ErrLogExtendPassword )`n`n$_" -UserInput $syncHash.tbID.Text -Severity $severity
-		WriteLogTest -Text $syncHash.msgTable.LogErrExtendPassword -UserInput $syncHash.tbID.Text -Success $false -ErrorLogPath $errorlog | Out-Null
-		Print -Text "$( $syncHash.msgTable.ErrMsgExtendPassword )`n`n$( $_.Exception.Message )`n`n" -Color "Red"
-		if ( $syncHash.LookedUpUser.DistinguishedName -match $syncHash.msgTable.CodeOuSpecDep )
-		{ ShowMessageBox -Text $syncHash.msgTable.ErrMsgExtendPasswordPermissionSpecDep -Title "Error!" -Button "OK" -Icon "Error" }
-		else
-		{ ShowMessageBox -Text $syncHash.msgTable.ErrMsgExtendPasswordPermission -Title "Error!" -Button "OK" -Icon "Error" }
-	}
-
-	LookUpUser
 }
 
 ###########################
@@ -200,7 +151,6 @@ Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -ArgumentList $args[1]
 $controls = New-Object System.Collections.ArrayList
 [void]$controls.Add( @{ CName = "btnActivate" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnActivate } ) } )
 [void]$controls.Add( @{ CName = "btnCancel" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnCancel } ) } )
-[void]$controls.Add( @{ CName = "btnExtend" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnExtend } ) } )
 [void]$controls.Add( @{ CName = "btnUnlock" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnUnlock } ) } )
 [void]$controls.Add( @{ CName = "lblID" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblID } ) } )
 [void]$controls.Add( @{ CName = "Window" ; Props = @( @{ PropName = "Title"; PropVal = $msgTable.ContentWindow } ) } )
@@ -212,11 +162,10 @@ $syncHash.tbID.Add_TextChanged( {
 	if ( ( ( $syncHash.tbID.Text.Length -eq 4 ) -or ( $syncHash.tbID.Text -match "^gai(kat|sys)\w{4}" ) ) -and ( $syncHash.tbID.Text -ne $syncHash.msgTable.CodeIdMatch ) ) { LookUpUser }
 	else { $syncHash.spOutput.Children.Clear() }
 } )
-$syncHash.btnExtend.Add_Click( { Extend } )
 $syncHash.btnUnlock.Add_Click( { Unlock } )
 $syncHash.btnActivate.Add_Click( { Enable } )
 $syncHash.btnCancel.Add_Click( { $syncHash.spOutput.Children.Clear() ; $syncHash.tbID.Text = "" } )
-$syncHash.Window.Add_ContentRendered( { $syncHash.Window.Top = 80; $syncHash.Window.Activate() ; $syncHash.tbID.Focus() } )
+$syncHash.Window.Add_ContentRendered( { $syncHash.Window.Top = 20; $syncHash.Window.Activate() ; $syncHash.tbID.Focus() } )
 
 [void] $syncHash.Window.ShowDialog()
 $syncHash.Window.Close()
