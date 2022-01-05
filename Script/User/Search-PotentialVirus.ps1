@@ -3,7 +3,6 @@
 .Requires Role_Servicedesk_Backoffice
 .Description Lists all files in folders a given user have accespermission to.
 .Author Smorkster (smorkster)
-
 #>
 
 ###################################################################
@@ -12,7 +11,7 @@ function CheckReady
 {
 	$message = ""
 
-	if ( -not ( ( $syncHash.DC.tbCaseNr[0] -match "RITM\d{7}" ) -or ( $syncHash.DC.tbCaseNr[0] -match "INC\d{7}" ) ) )
+	if ( -not ( ( $syncHash.DC.tbCaseNr[0] -match "^RITM\d{7}" ) -or ( $syncHash.DC.tbCaseNr[0] -match "^INC\d{7}" ) ) )
 	{
 		$message += $syncHash.Data.msgTable.ErrInvalidCaseNr
 	}
@@ -36,9 +35,9 @@ function CheckReady
 	$syncHash.logText = "$( $syncHash.DC.tbCaseNr[0] ) - $( $syncHash.DC.tbID[0] )"
 	if ( $message -eq "" )
 	{
-		if ( $syncHash.DC.rbLatest[1] ) { $syncHash.DC.lblFiles[0] = $syncHash.Data.msgTable.ContentLblFiles2W }
+		if ( $syncHash.rbLatest.IsChecked ) { $syncHash.DC.lblFiles[0] = $syncHash.Data.msgTable.ContentLblFiles2W }
 		else { $syncHash.DC.lblFiles[0] = $syncHash.Data.msgTable.ContentLblFiles }
-		$syncHash.DC.spInput[0] = $false
+		$syncHash.DC.gridInput[0] = $false
 		$syncHash.DC.lblUser[0] = $syncHash.User.Name
 		$syncHash.gbInfo.Visibility = [System.Windows.Visibility]::Visible
 		return $true
@@ -46,8 +45,6 @@ function CheckReady
 	else
 	{
 		ShowMessageBox -Text $message.Trim() -Icon "Stop" | Out-Null
-		if ( $message -match $syncHash.Data.msgTable.ErrInvalidID ) { $syncHash.tbID.Focus() }
-		else { $syncHash.tbCaseNr.Focus() }
 		$syncHash.logText += $message
 		return $false
 	}
@@ -62,7 +59,7 @@ $( $syncHash.Data.msgTable.StrLogMsgSearchTime ): $( $syncHash.Start.ToString( "
 $( $a = $syncHash.End - $syncHash.Start
 "{0} h, {1} m, {2} s" -f $a.hours, $a.minutes, $a.seconds )
 
-$( if ( $syncHash.DC.rbLatest[1] ) { "$( $syncHash.Data.msgTable.StrOutputTimeline1 ) $( $syncHash.DC.DatePickerStart[1].ToShortDateString() ) -> $( ( Get-Date ).ToShortDateString() )"}
+$( if ( $syncHash.rbLatest.IsChecked ) { "$( $syncHash.Data.msgTable.StrOutputTimeline1 ) $( $syncHash.DC.DatePickerStart[1].ToShortDateString() ) -> $( ( Get-Date ).ToShortDateString() )"}
 elseif ( $syncHash.DC.rbPrevDate[0] ) { "$( $syncHash.Data.msgTable.StrOutputTimeline2 ) $( $syncHash.DC.DatePickerStart[1].ToShortDateString() ) -> $( ( Get-Date ).ToShortDateString() )" }
 else { $syncHash.Data.msgTable.StrOutputTimeline3 } )
 
@@ -79,12 +76,12 @@ $( $syncHash.Data.msgTable.StrLogMsgFilsWithDoubleExtG ) $( $syncHash.DC.lvMulti
 function GenerateOutput
 {
 	$ofs = "`n"
-	$output = @"
+	$syncHash.OutputContent.Item( 0 ) = @"
 $( $syncHash.Data.msgTable.StrOutput1 )
 
 $( $syncHash.Data.msgTable.StrOutput2 ): $( $syncHash.User.Name )
 $( $syncHash.Data.msgTable.StrOutput3 ): $( $syncHash.DC.tbCaseNr[0] )
-$( if ( $syncHash.DC.rbLatest[1] ) { "$( $syncHash.Data.msgTable.StrOutputTimeline1 ) $( $syncHash.DC.DatePickerStart[1].ToShortDateString() ) -> $( ( Get-Date ).ToShortDateString() )"}
+$( if ( $syncHash.rbLatest.IsChecked ) { "$( $syncHash.Data.msgTable.StrOutputTimeline1 ) $( $syncHash.DC.DatePickerStart[1].ToShortDateString() ) -> $( ( Get-Date ).ToShortDateString() )"}
 elseif ( $syncHash.DC.rbPrevDate[0] ) { "$( $syncHash.Data.msgTable.StrOutputTimeline2 ) $( $syncHash.DC.DatePickerStart[1].ToShortDateString() ) -> $( ( Get-Date ).ToShortDateString() )" }
 else { $syncHash.Data.msgTable.StrOutputTimeline3 } )
 
@@ -137,6 +134,7 @@ $( [string]( $syncHash.DC.lvAllFiles[0].TT | Sort-Object ) )
 # Start the job to get folderlist
 function GetFolders
 {
+	$syncHash.TotalProgress.Visibility = [System.Windows.Visibility]::Visible
 	$syncHash.FolderJob.Handle = $syncHash.FolderJob.PS.BeginInvoke()
 }
 
@@ -144,6 +142,7 @@ function GetFolders
 # Start the job to get all files
 function GetFiles
 {
+	$syncHash.TotalProgress.Visibility = [System.Windows.Visibility]::Visible
 	$syncHash.FilesJob.Handle = $syncHash.FilesJob.PS.BeginInvoke()
 }
 
@@ -151,6 +150,10 @@ function GetFiles
 # Display all the files
 function ListFiles
 {
+	$syncHash.End = Get-Date
+	$syncHash.DC.Window[0] = ""
+	$syncHash.DC.gridWaitProgress[0] = [System.Windows.Visibility]::Hidden
+
 	if ( $syncHash.Data.FullFileList.Count -gt 0 )
 	{
 		# Set how items in listviews are to be grouped and sorted
@@ -201,24 +204,24 @@ function ListFiles
 			else { $syncHash.tiMDG.Visibility = [System.Windows.Visibility]::Collapsed }
 		}
 	}
-
-	$syncHash.End = Get-Date
-	$syncHash.DC.Window[0] = ""
-	$syncHash.DC.TotalProgress[1] = [System.Windows.Visibility]::Hidden
+	else
+	{
+		$syncHash.DC.lvAllFiles[0].Add( ( [PSCustomObject]@{ Name = $syncHash.Data.msgTable.StrNoFilesFound; CreationTime = $syncHash.Start; LastWriteTime = $syncHash.End } ) )
+	}
 
 	GenerateOutput
 	GenerateLog
-	$syncHash.OutputContent.Item( 0 ) = $output
 }
 
 ################################
 # Get the folders and list files
 function PrepGetFolders
 {
+	$syncHash.gridInfo.Visibility = [System.Windows.Visibility]::Visible
 	$syncHash.FolderJob = [pscustomobject]@{ PS = [powershell]::Create().AddScript( { param ( $syncHash )
 		$syncHash.DC.Window[0] = $syncHash.Data.msgTable.StrOPGettingFolders
 
-		if ( $syncHash.User.Enabled ) { $syncHash.Data.Folders.Add( [pscustomobject]@{ "Path" = $syncHash.User.HomeDirectory; "Name" = "H:" } ) }
+		$syncHash.Data.Folders.Add( [pscustomobject]@{ "Path" = $syncHash.User.HomeDirectory; "Name" = "H:" } )
 		$syncHash.Data.GGroups = @()
 		$syncHash.Data.pGroups = Get-ADPrincipalGroupMembership $syncHash.User.SamAccountName | Where-Object { $_.SamAccountName -notmatch "_R$" }
 
@@ -233,11 +236,10 @@ function PrepGetFolders
 
 		# Filter folders
 		$syncHash.DC.Window[0] = $syncHash.Data.msgTable.StrOPFilteringFolders
-		$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.TotalProgress[1] = [System.Windows.Visibility]::Visible } )
 
-		for ( $syncHash.ticker = 0; $syncHash.ticker -lt ( $syncHash.Data.GGroups | Where-Object { $_.Name -notmatch "_R$" } ).Count; $syncHash.ticker += 1 )
+		for ( $ticker = 0; $ticker -lt ( $syncHash.Data.GGroups | Where-Object { $_.Name -notmatch "_R$" } ).Count; $ticker += 1 )
 		{
-			$i = $syncHash.Data.GGroups[$syncHash.ticker]
+			$i = $syncHash.Data.GGroups[$ticker]
 			if ( $i.Description -match "\\\\dfs\\gem" )
 			{
 				$p = ( ( $i.Description -split " $( $syncHash.Data.msgTable.StrDescSplit ) " )[1] -split "\." )[0].Replace( "\\dfs\gem$", "G:" )
@@ -257,14 +259,19 @@ function PrepGetFolders
 			{
 				[void] $syncHash.OtherFolderPermissions.Add( $i.Name )
 			}
-			$syncHash.DC.TotalProgress[0] = [double]( ( ( $syncHash.ticker + 1 ) / ( $syncHash.Data.GGroups | Where-Object { $_.Name -notmatch "_R$" } ).Count ) * 100 )
+			$syncHash.DC.TotalProgress[0] = [double]( ( ( $ticker + 1 ) / ( $syncHash.Data.GGroups | Where-Object { $_.Name -notmatch "_R$" } ).Count ) * 100 )
 		}
 
+		$syncHash.Data.Folders | Sort-Object Path | ForEach-Object {
+			if ( $_.Name -eq "^H:" )
+			{ $syncHash.DC.dgFolderList[0].Add( ( [pscustomobject]@{ "Path" = $_.Name ; "Name" = $_.Name } ) ) }
+			else
+			{ $syncHash.DC.dgFolderList[0].Add( ( [pscustomobject]@{ "Path" = $_.Path ; "Name" = $_.Name } ) ) }
+		}
 		$syncHash.DC.lblFolderCount[0] = $syncHash.Data.Folders.Count
 		$syncHash.DC.lblFileCount[0] = $syncHash.Data.msgTable.StrWaitingFileSearch
 		$syncHash.DC.TotalProgress[0] = 0.0
-		$syncHash.DC.TotalProgress[1] = [System.Windows.Visibility]::Hidden
-		$syncHash.DC.btnSearch[2] = $true
+		$syncHash.DC.btnStartSearch[2] = $syncHash.Data.Folders.Count -gt 0
 	} ).AddArgument( $syncHash ) ; Handle = $null }
 }
 
@@ -274,9 +281,8 @@ function PrepGetFiles
 {
 	$syncHash.FilesJob = [pscustomobject]@{ PS = [powershell]::Create().AddScript( { param ( $syncHash )
 		$syncHash.DC.Window[0] = $syncHash.Data.msgTable.StrOPGettingFiles
-		$syncHash.DC.TotalProgress[1] = [System.Windows.Visibility]::Visible
-
-		$syncHash.Jobs | ForEach-Object { $_.PS.Stop(); $_.PS.Dispose() }
+		$syncHash.DC.gridWaitProgress[0] = [System.Windows.Visibility]::Visible
+		$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.TotalProgress.Maximum = $syncHash.Data.Folders.Count } )
 
 		foreach ( $Folder in $syncHash.Data.Folders )
 		{
@@ -284,7 +290,8 @@ function PrepGetFiles
 				$files = Get-ChildItem2 $Folder.Path -File -Recurse | `
 					Where-Object { $_.LastWriteTime -ge $syncHash.DC.DatePickerStart[1] } | `
 					Select-Object -Property "Name", `
-						@{ Name = "Created"; Expression = { ( Get-Date $_.CreationTime -f "yyyy-MM-dd HH:mm:ss" ) } }, `
+						"CreationTime", `
+						"LastWriteTime", `
 						@{ Name = "FileType"; Expression = {
 								if ( [string]::IsNullOrEmpty( $_.Extension ) ) { $syncHash.Data.msgTable.StrNoExtension }
 								else { $_.Extension.ToLower() } } }, `
@@ -294,12 +301,11 @@ function PrepGetFiles
 							else { $false } } }, `
 						@{ Name = "TT"; Expression = {
 							if ( $_.FullName.StartsWith( $syncHash.User.HomeDirectory ) ) { $_.FullName.Replace( $syncHash.User.HomeDirectory , "H:" ) }
-							else { $_.FullName } } }, `
-						@{ Name = "Updated"; Expression = { ( Get-Date $_.LastWriteTime -f "yyyy-MM-dd HH:mm:ss" ) } }
-				$syncHash.Data.FullFileList.AddRange( $files )
+							else { $_.FullName } } } | ForEach-Object { $syncHash.Data.FullFileList.Add( $_ ) }
 
 				$syncHash.DC.lblFileCount[0] = $syncHash.Data.FullFileList.Count
-				$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.TotalProgress[0] = [double] ( ( ( ( $syncHash.Jobs.Handle.IsCompleted -eq $true ).Count + 1 ) / $syncHash.Jobs.Count ) * 100 ) } )
+				$syncHash.DC.dgFolderList[0] = @( $syncHash.DC.dgFolderList[0] | Where-Object { $Folder.Name -ne $_.Name } )
+				$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.TotalProgress[0] += 1 } )
 			} ).AddArgument( $syncHash ).AddArgument( $Folder )
 			[void] $syncHash.Jobs.Add( [pscustomobject]@{ PS = $p; Handle = $p.BeginInvoke() } )
 		}
@@ -316,24 +322,29 @@ function Reset
 		$syncHash.Data.Folders.Clear()
 		$syncHash.Data.FullFileList.Clear()
 		$syncHash.Data.ErrorHashes.Clear()
-		$syncHash.DC.lvAllFiles[0] = [System.Windows.Data.ListCollectionView]@()
+		$syncHash.OtherFolderPermissions.Clear()
+		$syncHash.DC.lvAllFiles[0] = [System.Collections.ObjectModel.ObservableCollection[Object]]::new()
+		$syncHash.DC.dgFolderList[0] = [System.Collections.ObjectModel.ObservableCollection[Object]]::new()
 		$syncHash.DC.lvFilterMatch[0] = [System.Windows.Data.ListCollectionView]@()
 		$syncHash.DC.lvMultiDotsH[0] = [System.Windows.Data.ListCollectionView]@()
 		$syncHash.DC.lvMultiDotsG[0] = [System.Windows.Data.ListCollectionView]@()
-		$syncHash.DC.rbLatest[1] = $true
+		$syncHash.cbSetAccountDisabled.IsChecked = $false
+		$syncHash.rbLatest.IsChecked = $true
+		$syncHash.DC.gridInput[0] = $true
 		$syncHash.DC.txtQuestion[0] = $syncHash.DC.tbCaseNr[0] = $syncHash.DC.tbID[0] = $syncHash.DC.lblFileCount[0] = $syncHash.DC.lblFolderCount[0] = ""
+		$syncHash.OutputContent.Item( 0 ) = ""
+		$syncHash.DC.lblSummary[0] = ""
+		$syncHash.DC.TotalProgress[0] = 0.0
+		$syncHash.User = $null
 		$syncHash.tiO.Visibility = [System.Windows.Visibility]::Collapsed
 		$syncHash.tiFilterMatch.Visibility = [System.Windows.Visibility]::Collapsed
 		$syncHash.tiMDG.Visibility = [System.Windows.Visibility]::Collapsed
 		$syncHash.tiMDH.Visibility = [System.Windows.Visibility]::Collapsed
 		$syncHash.gbInfo.Visibility = [System.Windows.Visibility]::Hidden
-		$syncHash.spSummary.Visibility = [System.Windows.Visibility]::Hidden
-		$syncHash.OutputContent.Item( 0 ) = ""
-		$syncHash.OtherFolderPermissions.Clear()
-		$syncHash.User = $null
-		$syncHash.DC.spInput[0] = $true
-		$syncHash.DC.btnReset[0] = $syncHash.Data.msgTable.ContentbtnReset
+		$syncHash.gridInfo.Visibility = [System.Windows.Visibility]::Hidden
 	} )
+	$syncHash.Jobs | ForEach-Object { $_.PS.Stop() ; $_.PS.Runspace.Close() ; $_.PS.Runspace.Dispose() }
+	$syncHash.Jobs.Clear()
 }
 
 ################################################
@@ -364,7 +375,7 @@ function Resort
 # Textboxes have new data, create a "UserInput"-string for logging purposes
 function UpdateUserInput
 {
-	$syncHash.DC.spInput[1] = "{0}: {1}`n{2}: {3}" -f $syncHash.Data.msgTable.StrLogMsgId, $syncHash.DC.tbID[0], $syncHash.Data.msgTable.StrLogMsgCaseNr, $syncHash.DC.tbCaseNr[0]
+	$syncHash.DC.gridInput[1] = "{0}: {1}`n{2}: {3}" -f $syncHash.Data.msgTable.StrLogMsgId, $syncHash.tbID.Text, $syncHash.Data.msgTable.StrLogMsgCaseNr, $syncHash.tbCaseNr.Text
 }
 
 ####################### Script start
@@ -374,21 +385,26 @@ Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -ArgumentList $args[1]
 
 $controls = New-Object Collections.ArrayList
-[void]$controls.Add( @{ CName = "btnAbort"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnAbort } ; @{ PropName = "Visibility"; PropVal = [System.Windows.Visibility]::Collapsed } ) } )
+[void]$controls.Add( @{ CName = "btnAbort"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnAbort } ) } )
 [void]$controls.Add( @{ CName = "btnCreateQuestion"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnCreateQuestion } ) } )
 [void]$controls.Add( @{ CName = "btnOpenFolder"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnOpenFolder } ; @{ PropName = "ToolTip"; PropVal = $msgTable.ContentbtnOpenFolderTT } ) } )
-[void]$controls.Add( @{ CName = "btnOpenSummary"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnOpenSummary } ; @{ PropName = "Tag"; PropVal = "" } ) } )
+[void]$controls.Add( @{ CName = "btnOpenSummary"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnOpenSummary } ) } )
 [void]$controls.Add( @{ CName = "btnPrep"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnPrep } ; @{ PropName = "Visibility"; PropVal = [System.Windows.Visibility]::Visible } ) } )
 [void]$controls.Add( @{ CName = "btnReset"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnReset } ; @{ PropName = "Visibility"; PropVal = [System.Windows.Visibility]::Visible } ) } )
-[void]$controls.Add( @{ CName = "btnSearch"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnSearch } ; @{ PropName = "Visibility"; PropVal = [System.Windows.Visibility]::Collapsed } ; @{ PropName = "IsEnabled"; PropVal = $false } ) } )
+[void]$controls.Add( @{ CName = "btnRunVirusScan"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnRunVirusScan } ) } )
+[void]$controls.Add( @{ CName = "btnStartSearch"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnStartSearch } ; @{ PropName = "Visibility"; PropVal = [System.Windows.Visibility]::Collapsed } ; @{ PropName = "IsEnabled"; PropVal = $false } ) } )
 [void]$controls.Add( @{ CName = "btnSearchExt"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnSearchExt } ; @{ PropName = "ToolTip"; PropVal = $msgTable.ContentbtnSearchExtTT } ) } )
 [void]$controls.Add( @{ CName = "btnSearchFileName"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnSearchFileName } ; @{ PropName = "ToolTip"; PropVal = $msgTable.ContentbtnSearchFileNameTT } ) } )
 [void]$controls.Add( @{ CName = "cbExpandGroups"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentcbExpandGroups } ) } )
+[void]$controls.Add( @{ CName = "cbSetAccountDisabled"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentcbSetAccountDisabled } ) } )
 [void]$controls.Add( @{ CName = "DatePickerStart"; Props = @( @{ PropName = "IsEnabled"; PropVal = $false } ; @{ PropName = "SelectedDate"; PropVal = ( Get-Date ).AddDays( -14 ) } ) } )
+[void]$controls.Add( @{ CName = "dgFolderList"; Props = @( @{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new() } ) } )
 [void]$controls.Add( @{ CName = "gbDatePicker"; Props = @( @{ PropName = "Header"; PropVal = $msgTable.ContentgbDatePicker } ) } )
 [void]$controls.Add( @{ CName = "gbInfo"; Props = @( @{ PropName = "Header"; PropVal = $msgTable.ContentgbInfo } ) } )
 [void]$controls.Add( @{ CName = "gbSearch"; Props = @( @{ PropName = "Header"; PropVal = $msgTable.ContentgbSearch } ) } )
 [void]$controls.Add( @{ CName = "gbSettings"; Props = @( @{ PropName = "Header"; PropVal = $msgTable.ContentgbSettings } ) } )
+[void]$controls.Add( @{ CName = "gridInput"; Props = @( @{ PropName = "IsEnabled"; PropVal = $true } ; @{ PropName = "Tag"; PropVal = "" } ) } )
+[void]$controls.Add( @{ CName = "gridWaitProgress"; Props = @( @{ PropName = "Visibility"; PropVal = [System.Windows.Visibility]::Hidden } ) } )
 [void]$controls.Add( @{ CName = "lblCaseNrTitle"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblCaseNrTitle } ) } )
 [void]$controls.Add( @{ CName = "lblFileCount"; Props = @( @{ PropName = "Content"; PropVal = "" } ) } )
 [void]$controls.Add( @{ CName = "lblFileCountTitle"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblFileCountTitle } ) } )
@@ -396,6 +412,7 @@ $controls = New-Object Collections.ArrayList
 [void]$controls.Add( @{ CName = "lblFilterMatch"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblFilterMatch } ) } )
 [void]$controls.Add( @{ CName = "lblFolderCountTitle"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblFolderCountTitle } ) } )
 [void]$controls.Add( @{ CName = "lblFolderCount"; Props = @( @{ PropName = "Content"; PropVal = "" } ) } )
+[void]$controls.Add( @{ CName = "lblFolderListTitle"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblFolderListTitle } ) } )
 [void]$controls.Add( @{ CName = "lblIDTitle"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblIDTitle } ) } )
 [void]$controls.Add( @{ CName = "lblMDG"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblMDG } ) } )
 [void]$controls.Add( @{ CName = "lblMDH"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblMDH } ) } )
@@ -405,17 +422,16 @@ $controls = New-Object Collections.ArrayList
 [void]$controls.Add( @{ CName = "lblUser"; Props = @( @{ PropName = "Content"; PropVal = "" } ) } )
 [void]$controls.Add( @{ CName = "lblUserTitle"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblUserTitle } ) } )
 [void]$controls.Add( @{ CName = "lblValuesTitle"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblValuesTitle } ) } )
-[void]$controls.Add( @{ CName = "lvAllFiles"; Props = @( @{ PropName = "ItemsSource"; PropVal = ( New-Object System.Collections.ObjectModel.ObservableCollection[Object] ) } ) } )
-[void]$controls.Add( @{ CName = "lvFilterMatch"; Props = @( @{ PropName = "ItemsSource"; PropVal = ( New-Object System.Collections.ObjectModel.ObservableCollection[Object] ) } ) } )
+[void]$controls.Add( @{ CName = "lvAllFiles"; Props = @( @{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new() } ) } )
+[void]$controls.Add( @{ CName = "lvFilterMatch"; Props = @( @{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new() } ) } )
 [void]$controls.Add( @{ CName = "lvAN"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlvColumnName } ) } )
 [void]$controls.Add( @{ CName = "lvAC"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlvColumnCreated } ) } )
 [void]$controls.Add( @{ CName = "lvAU"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlvColumnUpdated } ) } )
-[void]$controls.Add( @{ CName = "lvMultiDotsG"; Props = @( @{ PropName = "ItemsSource"; PropVal = ( New-Object System.Collections.ObjectModel.ObservableCollection[Object] ) } ) } )
-[void]$controls.Add( @{ CName = "lvMultiDotsH"; Props = @( @{ PropName = "ItemsSource"; PropVal = ( New-Object System.Collections.ObjectModel.ObservableCollection[Object] ) } ) } )
+[void]$controls.Add( @{ CName = "lvMultiDotsG"; Props = @( @{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new() } ) } )
+[void]$controls.Add( @{ CName = "lvMultiDotsH"; Props = @( @{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new() } ) } )
 [void]$controls.Add( @{ CName = "rbAll"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentrbAll } ; @{ PropName = "IsChecked"; PropVal = $false } ; @{ PropName = "ToolTip"; PropVal = $msgTable.ContentrbAllToolTip } ; @{ PropName = "Visibility"; PropVal = [System.Windows.Visibility]::Collapsed } ) } )
-[void]$controls.Add( @{ CName = "rbLatest"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentrbLatest } ; @{ PropName = "IsChecked"; PropVal = $true } ; @{ PropName = "ToolTip"; PropVal = $msgTable.ContentrbLatestToolTip } ) } )
+[void]$controls.Add( @{ CName = "rbLatest"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentrbLatest } ; @{ PropName = "ToolTip"; PropVal = $msgTable.ContentrbLatestToolTip } ) } )
 [void]$controls.Add( @{ CName = "rbPrevDate"; Props = @( @{ PropName = "IsChecked"; PropVal = $false } ; @{ PropName = "ToolTip"; PropVal = $msgTable.ContentrbPrevDateToolTip } ; ) } )
-[void]$controls.Add( @{ CName = "spInput"; Props = @( @{ PropName = "IsEnabled"; PropVal = $true } ; @{ PropName = "Tag"; PropVal = "" } ) } )
 [void]$controls.Add( @{ CName = "tbCaseNr"; Props = @( @{ PropName = "Text"; PropVal = "" } ) } )
 [void]$controls.Add( @{ CName = "tbID"; Props = @( @{ PropName = "Text"; PropVal = "" } ) } )
 [void]$controls.Add( @{ CName = "tbPrevDateText"; Props = @( @{ PropName = "Text"; PropVal = $msgTable.ContenttbPrevDateText } ) } )
@@ -459,12 +475,11 @@ $syncHash.OutputContent.Add( "" )
 $syncHash.OutputContent.Add_CollectionChanged( {
 	if ( $syncHash.OutputContent.Item( 0 ) -ne "" )
 	{
-		$syncHash.Window.Dispatcher.Invoke( [action] {
-			$syncHash.DC.lblSummary[0] = $syncHash.DC.btnOpenSummary[1] = WriteOutput -Output "$( $syncHash.OutputContent.Item( 0 ) )"
-			$syncHash.spSummary.Visibility = [System.Windows.Visibility]::Visible
-			WriteLogTest -Text $syncHash.logText -UserInput $syncHash.DC.spInput[1] -Success $true -OutputPath $syncHash.DC.btnOpenSummary[1] | Out-Null
-		} )
+		$syncHash.DC.lblSummary[0] = WriteOutput -Output "$( $syncHash.OutputContent.Item( 0 ) )"
+		WriteLogTest -Text $syncHash.logText -UserInput $syncHash.DC.gridInput[1] -Success $true -OutputPath $syncHash.DC.lblSummary[0] | Out-Null
+
 		TextToSpeech -Text $syncHash.Data.msgTable.StrFileSearchFinished
+		$syncHash.DC.TotalProgress[0] = 0.0
 	}
 } )
 
@@ -473,14 +488,12 @@ $syncHash.btnAbort.Add_Click( {
 	$syncHash.Jobs, $syncHash.FilesJob | ForEach-Object { $_.PS.Stop(); $_.PS.Dispose() }
 	$syncHash.Jobs.Clear()
 
-	$this.Visibility = [System.Windows.Visibility]::Collapsed
-	$syncHash.DC.btnReset[1] = [System.Windows.Visibility]::Visible
-	$syncHash.DC.btnSearch[1] = [System.Windows.Visibility]::Collapsed
+	$syncHash.DC.btnStartSearch[1] = [System.Windows.Visibility]::Collapsed
 	$syncHash.DC.btnPrep[1] = [System.Windows.Visibility]::Visible
-	$syncHash.DC.spInput[0] = $true
+	$syncHash.DC.gridInput[0] = $true
 	$syncHash.DC.Window[0] = ""
-	$syncHash.DC.TotalProgress[1] = [System.Windows.Visibility]::Hidden
-	WriteLogTest -Text $syncHash.Data.msgTable.StrLogMsgFileSearchAborted -UserInput $syncHash.DC.spInput[1] -Success $true | Out-Null
+	$syncHash.DC.TotalProgress[0] = 0.0
+	WriteLogTest -Text $syncHash.Data.msgTable.StrLogMsgFileSearchAborted -UserInput $syncHash.DC.gridInput[1] -Success $true | Out-Null
 } )
 
 # Copy text for question to clipboard
@@ -488,17 +501,21 @@ $syncHash.btnCreateQuestion.Add_Click( {
 	$OutputEncoding = ( New-Object System.Text.UnicodeEncoding $false, $false ).psobject.BaseObject
 	$syncHash.DC.txtQuestion[0] | clip
 	ShowMessageBox $syncHash.Data.msgTable.StrQuestionCopied
-	WriteLogTest -Text "$( $syncHash.Data.msgTable.StrLogQuestionCopied )`n**************`n$( $syncHash.DC.txtQuestion[0] )`n**************" -UserInput $syncHash.DC.spInput[1] | Out-Null
+	WriteLogTest -Text "$( $syncHash.Data.msgTable.StrLogQuestionCopied )`n**************`n$( $syncHash.DC.txtQuestion[0] )`n**************" -UserInput $syncHash.DC.gridInput[1] | Out-Null
 } )
 
 # Opens the folder selected file is located in
 $syncHash.btnOpenFolder.Add_Click( {
-	Start-Process explorer -ArgumentList "/select, $( $syncHash.lvAllFiles.SelectedItem.TT )"
-	WriteLogTest -Text $syncHash.Data.msgTable.StrLogMsgOpenFolder -UserInput "$( $syncHash.DC.spInput[1] )`n$( $syncHash.lvAllFiles.SelectedItem.TT )" -Success $true
+	$syncHash.ActiveListView.SelectedItems.TT | ForEach-Object {
+		if ( $_ -match "^H:\\" ) { $Path = $_ -replace "^H:", $syncHash.User.HomeDirectory }
+		else { $Path = $_ }
+		Start-Process explorer -ArgumentList "/select, $Path"
+	}
+	WriteLogTest -Text $syncHash.Data.msgTable.StrLogMsgOpenFolder -UserInput "$( $syncHash.DC.gridInput[1] )`n$( $syncHash.ActiveListView.SelectedItems.TT )" -Success $true
 } )
 
 # Opens the summaryfile
-$syncHash.btnOpenSummary.Add_Click( { & 'C:\Program Files (x86)\Notepad++\notepad++.exe' $this.Tag } )
+$syncHash.btnOpenSummary.Add_Click( { & 'C:\Program Files (x86)\Notepad++\notepad++.exe' $syncHash.DC.lblSummary[0] } )
 
 # Prepare for filesearch by creating jobs and retrieving folderlist
 $syncHash.btnPrep.Add_Click( {
@@ -507,40 +524,73 @@ $syncHash.btnPrep.Add_Click( {
 		PrepGetFolders
 		PrepGetFiles
 		$this.Visibility = [System.Windows.Visibility]::Collapsed
-		$syncHash.DC.btnSearch[1] = [System.Windows.Visibility]::Visible
+		$syncHash.DC.btnStartSearch[1] = [System.Windows.Visibility]::Visible
 		GetFolders
-		WriteLogTest -Text $syncHash.Data.msgTable.StrLogMsgFolderSearch -UserInput $syncHash.DC.spInput[1] -Success $true
+		WriteLogTest -Text $syncHash.Data.msgTable.StrLogMsgFolderSearch -UserInput $syncHash.DC.gridInput[1] -Success $true
 	}
-	else { WriteLogTest -Text $syncHash.logText -UserInput $syncHash.DC.spInput[1] -Success $false -ErrorLogHash $syncHash.DC.ErrorHashes }
+	else { WriteLogTest -Text $syncHash.logText -UserInput $syncHash.DC.gridInput[1] -Success $false -ErrorLogHash $syncHash.DC.ErrorHashes }
 } )
 
 # Reset arrays, values and controls to default values
 $syncHash.btnReset.Add_Click( {
 	Reset
-	$syncHash.DC.spInput[0] = $true
-	$syncHash.DC.btnSearch[1] = [System.Windows.Visibility]::Collapsed
+	$syncHash.DC.gridInput[0] = $true
+	$syncHash.DC.btnStartSearch[1] = [System.Windows.Visibility]::Collapsed
 	$syncHash.DC.btnPrep[1] = [System.Windows.Visibility]::Visible
+	$syncHash.tbCaseNr.Focus()
+} )
+
+# Start a virus scan of selected file
+$syncHash.btnRunVirusScan.Add_Click( {
+	
+	####################################################################
+	
+	# TODO Lägg till för att hantera att flera filer markerats
+	
+	####################################################################
+	foreach ( $File in $syncHash.ActiveListView.SelectedItems )
+	{
+		if ( $File.TT -match "^H:\\" )
+		{ $path = $File.TT -replace "^H:", $syncHash.User.HomeDirectory }
+		else
+		{ $path = $File.TT }
+		$PathToScan = Get-Item $path
+
+		$Shell = New-Object -Com Shell.Application
+		$ShellFolder = $Shell.NameSpace( $PathToScan.Directory.FullName )
+		$ShellFile = $ShellFolder.ParseName( $PathToScan.Name )
+		$ShellFile.InvokeVerb( $syncHash.Data.msgTable.StrVerbVirusScan )
+	}
+	WriteLogTest -Text $syncHash.Data.msgTable.LogScannedFile -UserInput "$( $syncHash.DC.gridInput[1] )`n$( $syncHash.Data.msgTable.LogScannedFileTitle ) $( $syncHash.ActiveListView.SelectedItems.TT )" -Success $true | Out-Null
 } )
 
 # Search on Google for the fileextension
 $syncHash.btnSearchExt.Add_Click( {
-	Start-Process chrome "https://www.google.com/search?q=fileextension+$( $syncHash.lvAllFiles.SelectedItem.FileType )"
-	WriteLogTest -Text $syncHash.Data.msgTable.StrLogMsgSearchExt -UserInput "$( $syncHash.DC.spInput[1] )`n$( $syncHash.lvAllFiles.SelectedItem.FileType )" -Success $true
+	$SelectedExtensions = $syncHash.ActiveListView.SelectedItems.FileType | Select-Object -Unique
+	foreach ( $Ext in $SelectedExtensions )
+	{
+		Start-Process chrome "https://www.google.com/search?q=fileextension+$( $Ext )"
+	}
+	WriteLogTest -Text $syncHash.Data.msgTable.StrLogMsgSearchExt -UserInput "$( $syncHash.DC.gridInput[1] )`n$SelectedExtensions" -Success $true
 } )
 
 # Search on Google for the filename
 $syncHash.btnSearchFileName.Add_Click( {
-	Start-Process chrome "https://www.google.com/search?q=`"$( [string]$syncHash.lvAllFiles.SelectedItem.Name )`""
-	WriteLogTest -Text $syncHash.Data.msgTable.StrLogMsgSearchFileName -UserInput "$( $syncHash.DC.spInput[1] )`n$( $syncHash.lvAllFiles.SelectedItem.Name )" -Success $true
+	$SelectedNames = $syncHash.ActiveListView.SelectedItems.Name | Select-Object -Unique
+	foreach ( $Name in $SelectedNames )
+	{
+		Start-Process chrome "https://www.google.com/search?q=`"$( $Name )`""
+	}
+	WriteLogTest -Text $syncHash.Data.msgTable.StrLogMsgSearchFileName -UserInput "$( $syncHash.DC.gridInput[1] )`n$SelectedNames" -Success $true
 } )
 
 # Starts the search
-$syncHash.btnSearch.Add_Click( {
+$syncHash.btnStartSearch.Add_Click( {
 	$this.IsEnabled = $false
 	$syncHash.DC.lblFileCount[0] = ""
-	$syncHash.DC.btnReset[1] = [System.Windows.Visibility]::Collapsed
-	$syncHash.DC.btnAbort[1] = [System.Windows.Visibility]::Visible
 	$syncHash.Start = Get-Date
+	if ( $syncHash.cbSetAccountDisabled.IsChecked )
+	{ Set-ADUser -Identity $syncHash.User.SamAccountName -Enabled $false }
 
 	GetFiles
 } )
@@ -551,14 +601,14 @@ $syncHash.cbExpandGroups.Add_Unchecked( { $syncHash.Window.Resources.ExpandGroup
 
 # Columnheader is clicked, sort items according to the columns values
 $syncHash.lvAN.Add_Click( { Resort "lvAllFiles" "Name" } )
-$syncHash.lvAC.Add_Click( { Resort "lvAllFiles" "Created" } )
-$syncHash.lvAU.Add_Click( { Resort "lvAllFiles" "Updated" } )
+$syncHash.lvAC.Add_Click( { Resort "lvAllFiles" "CreationTime" } )
+$syncHash.lvAU.Add_Click( { Resort "lvAllFiles" "LastWriteTime" } )
 $syncHash.lvHN.Add_Click( { Resort "lvMultiDotsH" "Name" } )
-$syncHash.lvHC.Add_Click( { Resort "lvMultiDotsH" "Created" } )
-$syncHash.lvHU.Add_Click( { Resort "lvMultiDotsH" "Updated" } )
+$syncHash.lvHC.Add_Click( { Resort "lvMultiDotsH" "CreationTime" } )
+$syncHash.lvHU.Add_Click( { Resort "lvMultiDotsH" "LastWriteTime" } )
 $syncHash.lvGN.Add_Click( { Resort "lvMultiDotsG" "Name" } )
-$syncHash.lvGC.Add_Click( { Resort "lvMultiDotsG" "Created" } )
-$syncHash.lvGU.Add_Click( { Resort "lvMultiDotsG" "Updated" } )
+$syncHash.lvGC.Add_Click( { Resort "lvMultiDotsG" "CreationTime" } )
+$syncHash.lvGU.Add_Click( { Resort "lvMultiDotsG" "LastWriteTime" } )
 
 # Radiobutton for all files is selected, set startdate to two months ago
 $syncHash.rbAll.Add_Checked( { $syncHash.DC.DatePickerStart[1] = ( Get-Date ).AddDays( -60 ) } )
@@ -566,25 +616,20 @@ $syncHash.rbAll.Add_Checked( { $syncHash.DC.DatePickerStart[1] = ( Get-Date ).Ad
 # Radiobutton for files updated in the last two weeks, is selected
 $syncHash.rbLatest.Add_Checked( { $syncHash.DC.DatePickerStart[1] = ( Get-Date ).AddDays( -14 ) } )
 
-# Radiobutton for selected startdate, is selected
-$syncHash.rbPrevDate.Add_Checked( { $syncHash.DC.DatePickerStart[0] = $true } )
+# Set selected listview
+$syncHash.lvAllFiles.Add_IsVisibleChanged( { if ( $this.IsVisible ) { $syncHash.ActiveListView = $this } } )
+$syncHash.lvMultiDotsH.Add_IsVisibleChanged( { if ( $this.IsVisible ) { $syncHash.ActiveListView = $this } } )
+$syncHash.lvMultiDotsG.Add_IsVisibleChanged( { if ( $this.IsVisible ) { $syncHash.ActiveListView = $this } } )
+$syncHash.lvFilterMatch.Add_IsVisibleChanged( { if ( $this.IsVisible ) { $syncHash.ActiveListView = $this } } )
 
-# Radiobutton for selected startdate, is deselected
-$syncHash.rbPrevDate.Add_UnChecked( { $syncHash.DC.DatePickerStart[0] = $false } )
+# Text was entered, set user input text
 $syncHash.tbCaseNr.Add_TextChanged( { UpdateUserInput } )
 $syncHash.tbID.Add_TextChanged( { UpdateUserInput } )
 
 # Progress for gettings files have updated
 $syncHash.TotalProgress.Add_ValueChanged( {
-	if ( $this.Value -ge 100 )
-	{
-		if ( $syncHash.Data.FullFileList.Count -ne 0 )
-		{
-			ListFiles
-			$syncHash.DC.btnAbort[1] = [System.Windows.Visibility]::Collapsed
-			$syncHash.DC.btnReset[1] = [System.Windows.Visibility]::Visible
-		}
-	}
+	if ( $this.Value -eq $this.Maximum -and $syncHash.Jobs.Count -gt 0 ) { ListFiles }
+	elseif ( $this.Value -eq 0 ) { $this.Visibility = [System.Windows.Visibility]::Hidden }
 } )
 
 # Text for quest changed set tabitemheader to include number of folders not reachable
@@ -598,8 +643,10 @@ $syncHash.Window.Add_Loaded( {
 	$syncHash.Window.Activate()
 	$syncHash.tbCaseNr.Focus()
 	$syncHash.cbExpandGroups.IsChecked = $syncHash.Window.Resources.ExpandGroups
+	$syncHash.ActiveListView = $syncHash.lvAllFiles
+	$syncHash.rbLatest.IsChecked = $true
 } )
 
 [void] $syncHash.Window.ShowDialog()
-#$global:syncHash = $syncHash
+# $global:syncHash = $syncHash
 [System.GC]::Collect()
