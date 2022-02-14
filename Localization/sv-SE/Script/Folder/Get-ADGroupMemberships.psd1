@@ -1,11 +1,12 @@
 ConvertFrom-StringData @'
-ErrLogUesrNotFound = finns inte i AD
+ErrLogUserNotFound = finns inte i AD
 LogSummary = Se respektive utfil för sammanfattning
 LogUserFile = Användare
-StrEnd = Nu är hela skriptet färdigt och alla användare har fått en egen lista utskriven i Output-mappen. Du kan använda Output-tabben i Scriptmenu för att öppna filerna.
+QOutputFile = Hur ska informationen exporteras? Som en fil, ange 1, eller som enskilda filer, ange 2
+StrEnd = Nu är hela skriptet färdigt och alla användare har fått en egen lista utskriven i Output-mappen. Du kan använda Output-tabben i Skriptmenyn för att öppna filerna.
 StrNotepad = Notepad öppnas, ange användare
 StrNotepadTitle = Ange id för användare, ett per rad
-StrOpenFiles = Vill du öppna alla filerna nu? (Y\\N)
+StrOpenFiles = Vill du öppna alla filerna nu? ( Y\\N )
 StrOpTitle = Hämtar alla grupper för
 StrOutInfo1 = Det kan finnas en del fel i nedanstående listor. '_' kan vara mellanslag i faktiska sökvägen.
 StrOutInfo2 = De mappnamn som anges för behörigheter utan för G, R och S kan vara felaktiga, eller inte existera.
@@ -16,6 +17,6 @@ StrOutTitleChange = Change-behörighet
 StrOutTitleFull = Full-behörighet
 StrOutTitleRead = Läs-behörighet
 StrOutTitleUnknown = Okänd behörighet
-StrTitle = Detta skript hämtar och sorterar alla behörighetsgrupper för en eller flera användare. Alla filrättigheter exporteras sedan till en TXT-fil per användare.
+StrTitle = Detta skript hämtar och sorterar alla behörighetsgrupper för en eller flera användare. Alla filrättigheter exporteras sedan till en TXT-fil per användare
 StrUserNotFound = Hittade inte användare med id:
 '@

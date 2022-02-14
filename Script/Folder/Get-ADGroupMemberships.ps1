@@ -6,27 +6,70 @@
 
 Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
+class User
+{
+	$Id
+	$Read
+	$Change
+	$Full
+	$Other
+	$OutputFile
+	$msgTable
+
+	User ( $id, $msgTable )
+	{
+		$this.Id = $id
+		$this.Read = @()
+		$this.Change = @()
+		$this.Full = @()
+		$this.msgTable = $msgTable
+	}
+
+	[string] Out ()
+	{
+		$OFS = "`n`t"
+		$outputInfo = "$( $this.Id ) $( $this.msgTable.StrOutTitle )`r`n"
+		$outputInfo += "`r`n`r`n$( $this.msgTable.StrOutTitleRead ):`r`n"
+		$outputInfo += "`t"+$this.Read
+		$outputInfo += "`r`n`r`n$( $this.msgTable.StrOutTitleChange ):`r`n"
+		$outputInfo += "`t"+$this.Change
+		$outputInfo += "`r`n`r`n$( $this.msgTable.StrOutTitleFull ):`r`n"
+		$outputInfo += "`t"+$this.Full
+		$outputInfo += "`r`n`r`n$( $this.msgTable.StrOutTitleUnknown ):`r`n"
+		$outputInfo += "`t"+$this.Other
+		return $outputInfo
+	}
+}
+
+$UsersIn = [System.Collections.ArrayList]::new()
 Write-Host "`n$( $msgTable.StrTitle )`n"
 Write-Host "$( $msgTable.StrNotepad )`n"
-$UsersIn = GetUserInput -DefaultText $msgTable.StrNotepadTitle
+GetUserInput -DefaultText $msgTable.StrNotepadTitle | ForEach-Object { [void] $UsersIn.Add( [User]::new( $_, $msgTable ) ) }
 
 $OutputFiles = @()
 $ErrorHashes = @()
-$success = $true
+$Success = $true
 $LogText = ""
+$Processed = [System.Collections.ArrayList]::new()
 Start-Sleep -Seconds 1
+
+if ( $UsersIn.Count -eq 1 )
+{ $ExportType = 1 }
+else
+{ $ExportType = GetUserChoice -MaxNum 2 -ChoiceText $msgTable.QOutputFile }
 
 foreach ( $User in $UsersIn )
 {
-	Write-Host "`n*****************************`n$( $msgTable.StrOpTitle ) $User."
-	try { $dn = ( Get-ADUser $User ).DistinguishedName }
+	Write-Host "`n*****************************`n$( $msgTable.StrOpTitle ) $( $User.Id )."
+	try { $dn = ( Get-ADUser $User.Id ).DistinguishedName }
 	catch
 	{
 		$dn = $null
-		Write-Host "$( $msgTable.StrUserNotFound ) $User"
-		$ErrorHashes += WriteErrorLogTest -LogText $msgTable.ErrLogUesrNotFound -UserInput $User -Severity "UserInputFail"
-		$success = $false
+		Write-Host "$( $msgTable.StrUserNotFound ) $( $User.Id )"
+		$ErrorHashes += WriteErrorLogTest -LogText $msgTable.ErrLogUserNotFound -UserInput $User.Id -Severity "UserInputFail"
+		$Success = $false
 	}
+
 	if ( $null -ne $dn )
 	{
 		$Read = @()
@@ -36,14 +79,14 @@ foreach ( $User in $UsersIn )
 
 		$Groups1 = Get-ADGroup -LDAPFilter ( "(member:1.2.840.113556.1.4.1941:={0})" -f $dn ) | Select-Object -ExpandProperty Name | Sort-Object Name
 
-		# Sort groups and create list of groups whos name contains '_Fil_' but not '_User_' (this being groupname ending in _F, _C or _R)
+		# Sort groups and create list of groups whos name contains '_Fil_' but not '_User_' (i.e. a groupname ending in _F, _C or _R)
 		$Groups2 = $Groups1 -like "*_Fil_*"
 		$Groups3 = $Groups2 -inotlike "*_User_*"
 
 		# Run for each groups in $Groups3
 		foreach( $Group in $Groups3 )
 		{
-			# Creates groupnames and transforms into proper pathway. First If handles permissions outside G, R and S
+			# Creates groupnames and transforms into proper pathway. First if handles permissions outside G, R and S
 			if ( $Group -notcontains "*_Grp_*" -or "*_Gem_*" -or "*_App_*" )
 			{
 				$X = $Group.Substring( 8 )
@@ -87,33 +130,33 @@ foreach ( $User in $UsersIn )
 		$Other = $Other | Where-Object { $_ -Notlike "*\R" -and $_ -Notlike "*\Ext" }
 
 		# Sort and remove duplicates in each array
-		$Read = $Read | Sort-Object | Select-Object -Unique
-		$Change = $Change | Sort-Object | Select-Object -Unique
-		$Full = $Full | Sort-Object | Select-Object -Unique
-		$Other = $Other | Sort-Object | Where-Object { $Read -notcontains $_ -and $Change -notcontains $_ -and $Full -notcontains $_ } | Select-Object -Unique
+		$User.Read = $Read | Sort-Object | Select-Object -Unique
+		$User.Change = $Change | Sort-Object | Select-Object -Unique
+		$User.Full = $Full | Sort-Object | Select-Object -Unique
+		$User.Other = $Other | Sort-Object | Where-Object { $Read -notcontains $_ -and $Change -notcontains $_ -and $Full -notcontains $_ } | Select-Object -Unique
 
-		$outputInfo = "$( $msgTable.StrOutInfo1 )`r`n$( $msgTable.StrOutInfo2 )`r`n$( $msgTable.StrOutInfo3 )"
-		$outputInfo += "`r`n`r`n$User $( $msgTable.StrOutTitle )`r`n"
-		$outputInfo += "`r`n`r`n$( $msgTable.StrOutTitleRead ):`r`n"
-		$outputInfo += $Read
-		$outputInfo += "`r`n`r`n$( $msgTable.StrOutTitleChange ):`r`n"
-		$outputInfo += $Change
-		$outputInfo += "`r`n`r`n$( $msgTable.StrOutTitleFull ):`r`n"
-		$outputInfo += $Full
-		$outputInfo += "`r`n`r`n$( $msgTable.StrOutTitleUnknown ):`r`n"
-		$outputInfo += $Other
-
-		Write-Host $outputInfo
-
-		# Export to textfile
-		$outputFile = WriteOutput -FileNameAddition $User -Output $outputInfo
-		Write-Host "$( $msgTable.StrOutPath )`n$outputFile"
-		$OutputFiles += $outputFile
-		$LogText += "$( $msgTable.LogUserFile ) $User - $( ( $outputFile -split "\\" )[-1] )`n"
+		if ( $ExportType -eq 2 )
+		{
+			$User.OutputFile = WriteOutput -Output "$( $msgTable.StrOutInfo1 )`r`n$( $msgTable.StrOutInfo2 )`r`n$( $msgTable.StrOutInfo3 )`r`n$( [string]$User.Out() )"
+		}
 	}
 }
 
-WriteLogTest -Text "$( $LogText.Trim() )`n`n$( $msgTable.LogSummary )" -UserInput ( [string]$UsersIn ) -Success $success -ErrorLogHash $ErrorHashes -OutputPath $OutputFiles | Out-Null
+if ( $ExportType -eq 1 )
+{
+	$OFS = "`r`n`r`n*****************************`r`n`r`n"
+	$outputFile = WriteOutput -Output "$( $msgTable.StrOutInfo1 )`r`n$( $msgTable.StrOutInfo2 )`r`n$( $msgTable.StrOutInfo3 )`r`n`r`n$( [string]$UsersIn.Out() )"
+	Write-Host "$( $msgTable.StrOutPath )`n$outputFile"
+	$OutputFiles += $outputFile
+	$LogText += "$( $msgTable.LogUserFile ) $User - $( ( $outputFile -split "\\" )[-1] )`n"
+}
+else
+{
+	$OFS = "`n"
+	$OutputFiles = $UsersIn.OutputFile
+}
+
+WriteLogTest -Text "$( $LogText.Trim() )`n`n$( $msgTable.LogSummary )" -UserInput ( [string]$UsersIn.Id ) -Success $Success -ErrorLogHash $ErrorHashes -OutputPath $OutputFiles | Out-Null
 
 if ( ( Read-Host "`n$( $msgTable.StrOpenFiles )" ) -eq "Y" )
 {
