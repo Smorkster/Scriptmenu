@@ -1,5 +1,5 @@
 <#
-.Synopsis Search for potential viruses [BO]
+.Synopsis Search for potential viruses
 .Requires Role_Servicedesk_Backoffice
 .Description Lists all files in folders a given user have accespermission to.
 .Author Smorkster (smorkster)
@@ -375,7 +375,15 @@ function Resort
 # Textboxes have new data, create a "UserInput"-string for logging purposes
 function UpdateUserInput
 {
+	$syncHash.cbSetAccountDisabled.Content = $syncHash.Data.msgTable.ContentcbSetAccountDisabled
 	$syncHash.DC.gridInput[1] = "{0}: {1}`n{2}: {3}" -f $syncHash.Data.msgTable.StrLogMsgId, $syncHash.tbID.Text, $syncHash.Data.msgTable.StrLogMsgCaseNr, $syncHash.tbCaseNr.Text
+	try
+	{
+		$syncHash.cbSetAccountDisabled.IsChecked = -not ( Get-ADUser -Identity $syncHash.tbID.Text ).Enabled
+		if ( $syncHash.cbSetAccountDisabled.IsChecked )
+		{ $syncHash.cbSetAccountDisabled.Content += " ($( $syncHash.Data.msgTable.StrUserAccountAlreadyLocked ))" }
+	}
+	catch { $syncHash.cbSetAccountDisabled.Content += " ($( $syncHash.Data.msgTable.StrErrUserNotFound ))" }
 }
 
 ####################### Script start
@@ -485,11 +493,14 @@ $syncHash.OutputContent.Add_CollectionChanged( {
 
 # Abort current filesearch
 $syncHash.btnAbort.Add_Click( {
+	ShowMessageBox -Text $syncHash.Jobs.Count
 	$syncHash.Jobs, $syncHash.FilesJob | ForEach-Object { $_.PS.Stop(); $_.PS.Dispose() }
 	$syncHash.Jobs.Clear()
 
-	$syncHash.DC.btnStartSearch[1] = [System.Windows.Visibility]::Collapsed
-	$syncHash.DC.btnPrep[1] = [System.Windows.Visibility]::Visible
+	$syncHash.DC.dgFolderList[0] = [System.Collections.ObjectModel.ObservableCollection[Object]]::new()
+	$syncHash.DC.gridWaitProgress[0] = [System.Windows.Visibility]::Hidden
+	$syncHash.DC.TotalProgress[1] = [System.Windows.Visibility]::Hidden
+	$syncHash.DC.btnStartSearch[2] = $true
 	$syncHash.DC.gridInput[0] = $true
 	$syncHash.DC.Window[0] = ""
 	$syncHash.DC.TotalProgress[0] = 0.0
@@ -542,12 +553,9 @@ $syncHash.btnReset.Add_Click( {
 
 # Start a virus scan of selected file
 $syncHash.btnRunVirusScan.Add_Click( {
-	
-	####################################################################
-	
-	# TODO Lägg till för att hantera att flera filer markerats
-	
-	####################################################################
+	if ( $syncHash.ActiveListView.SelectedItems.Count -gt 2 )
+	{ ShowMessageBox -Text $syncHash.Data.msgTable.StrMultiFileVirusSearch }
+
 	foreach ( $File in $syncHash.ActiveListView.SelectedItems )
 	{
 		if ( $File.TT -match "^H:\\" )

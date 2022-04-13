@@ -59,7 +59,7 @@
             <Setter Property="HorizontalContentAlignment" Value="Center" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
-        <Style TargetType="{x:Type Button}">
+        <Style TargetType="{x:Type Button}" x:Key="BtnBaseStyle">
             <Setter Property="Height" Value="30"/>
             <Setter Property="Margin" Value="5"/>
             <Setter Property="Padding" Value="5"/>
@@ -77,7 +77,7 @@
             <Setter Property="ListView.View" Value="{DynamicResource View}"/>
             <Setter Property="SelectionMode" Value="Extended"/>
             <Setter Property="VirtualizingPanel.IsVirtualizingWhenGrouping" Value="True"/>
-            <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Standard"/>
+            <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling"/>
             <Setter Property="ItemContainerStyle">
                 <Setter.Value>
                     <Style TargetType="{x:Type ListViewItem}">
@@ -103,7 +103,7 @@
         <Style TargetType="{x:Type TabControl}">
             <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"/>
         </Style>
-        <Style TargetType="{x:Type TextBox}">
+        <Style TargetType="{x:Type TextBox}" x:Key="TbBaseStyle">
             <Setter Property="Width" Value="100"/>
             <Setter Property="Margin" Value="5"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
@@ -124,7 +124,7 @@
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="220" MaxHeight="220"/>
+                <RowDefinition/>
                 <RowDefinition/>
                 <RowDefinition/>
             </Grid.RowDefinitions>
@@ -161,9 +161,31 @@
                         </Grid.RowDefinitions>
                         <Label x:Name="lblValuesTitle" Grid.ColumnSpan="2"/>
                         <Label x:Name="lblCaseNrTitle" Grid.Row="1"/>
-                        <TextBox x:Name="tbCaseNr" Grid.Column="1" Grid.Row="1"/>
+                        <TextBox x:Name="tbCaseNr" Grid.Column="1" Grid.Row="1">
+                            <TextBox.Style>
+                                <Style TargetType="TextBox" BasedOn="{StaticResource TbBaseStyle}">
+                                    <Setter Property="IsEnabled" Value="True" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ElementName=btnStartSearch, Path=IsEnabled}" Value="True">
+                                            <Setter Property="IsEnabled" Value="False" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Style>
+                        </TextBox>
                         <Label x:Name="lblIDTitle" Grid.Row="2"/>
-                        <TextBox x:Name="tbID" Grid.Column="1" Grid.Row="2"/>
+                        <TextBox x:Name="tbID" Grid.Column="1" Grid.Row="2">
+                            <TextBox.Style>
+                                <Style TargetType="TextBox" BasedOn="{StaticResource TbBaseStyle}">
+                                    <Setter Property="IsEnabled" Value="True" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ElementName=btnStartSearch, Path=IsEnabled}" Value="True">
+                                            <Setter Property="IsEnabled" Value="False" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Style>
+                        </TextBox>
                         <CheckBox x:Name="cbSetAccountDisabled" Grid.ColumnSpan="2" Grid.Row="3" Margin="5"  VerticalContentAlignment="Center"/>
                     </Grid>
                 </GroupBox>
@@ -172,9 +194,32 @@
                         <ColumnDefinition/>
                         <ColumnDefinition/>
                     </Grid.ColumnDefinitions>
-                    <Button x:Name="btnPrep"/>
-                    <Button x:Name="btnStartSearch" Background="#FF00FF77"/>
-                    <Button x:Name="btnReset" Grid.Column="1" Background="#9900AAB8"/>
+                    <Button x:Name="btnPrep">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource BtnBaseStyle}">
+                                <Style.Triggers>
+                                    <Trigger Property="Visibility" Value="Hidden">
+                                        <Setter Property="IsEnabled" Value="False" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button x:Name="btnStartSearch">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource BtnBaseStyle}">
+                                <Setter Property="Background" Value="#FF00FF77" />
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button x:Name="btnReset">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource BtnBaseStyle}">
+                                <Setter Property="Background" Value="#9900AAB8" />
+                                <Setter Property="Grid.Column" Value="1" />
+                            </Style>
+                        </Button.Style>
+                    </Button>
                 </Grid>
                 <GroupBox x:Name="gbSettings" Grid.Column="1">
                     <StackPanel>
@@ -209,7 +254,7 @@
                                 <RadioButton x:Name="rbAll" VerticalContentAlignment="Center" GroupName="grpDate"/>
                             </StackPanel>
                         </GroupBox>
-                        <CheckBox x:Name="cbExpandGroups" Margin="5"/>
+                        <CheckBox x:Name="cbExpandGroups" Margin="5" IsThreeState="False"/>
                     </StackPanel>
                 </GroupBox>
             </Grid>
@@ -223,7 +268,13 @@
                     <RowDefinition Height="1*"/>
                 </Grid.RowDefinitions>
                 <Label x:Name="lblFolderListTitle"/>
-                <Button x:Name="btnAbort" Grid.Column="1"/>
+                <Button x:Name="btnAbort">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource BtnBaseStyle}">
+                            <Setter Property="Grid.Column" Value="1" />
+                        </Style>
+                    </Button.Style>
+                </Button>
                 <DataGrid x:Name="dgFolderList" Grid.ColumnSpan="2" Grid.Row="1" AutoGenerateColumns="False" HeadersVisibility="None" IsReadOnly="True" ScrollViewer.VerticalScrollBarVisibility="Auto">
                     <DataGrid.Columns>
                         <DataGridTextColumn Binding="{Binding Path}"/>
@@ -231,7 +282,7 @@
                 </DataGrid>
             </Grid>
             <GroupBox x:Name="gbInfo" Grid.Column="1">
-                <Grid x:Name="gridInfo">
+                <Grid x:Name="gridInfo" Margin="5">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="1*"/>
@@ -262,15 +313,25 @@
                             </Style>
                         </Label.Style>
                     </Label>
-                    <Button x:Name="btnOpenSummary" Grid.ColumnSpan="2" Grid.Row="4" Height="30" Margin="5" Padding="5" Visibility="{Binding ElementName=lblSummary, Path=Visibility}"/>
+                    <Button x:Name="btnOpenSummary">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource BtnBaseStyle}">
+                                <Setter Property="Grid.ColumnSpan" Value="2" />
+                                <Setter Property="Grid.Row" Value="4" />
+                                <Setter Property="Margin" Value="5" />
+                                <Setter Property="Padding" Value="5" />
+                                <Setter Property="Visibility" Value="{Binding ElementName=lblSummary, Path=Visibility}" />
+                            </Style>
+                        </Button.Style>
+                    </Button>
                 </Grid>
             </GroupBox>
             <ProgressBar x:Name="TotalProgress" Grid.Row="1" Grid.ColumnSpan="2" Height="10" Margin="5"/>
             <StackPanel x:Name="spActionButtons" Grid.ColumnSpan="2" Grid.Row="2" Orientation="Horizontal">
-                <Button x:Name="btnOpenFolder"/>
-                <Button x:Name="btnSearchExt"/>
-                <Button x:Name="btnSearchFileName"/>
-                <Button x:Name="btnRunVirusScan"/>
+                <Button x:Name="btnOpenFolder" Style="{StaticResource BtnBaseStyle}"/>
+                <Button x:Name="btnSearchExt" Style="{StaticResource BtnBaseStyle}"/>
+                <Button x:Name="btnSearchFileName" Style="{StaticResource BtnBaseStyle}"/>
+                <Button x:Name="btnRunVirusScan" Style="{StaticResource BtnBaseStyle}"/>
             </StackPanel>
         </Grid>
         <TabControl x:Name="tcFileLists" Grid.Row="1">
@@ -281,7 +342,7 @@
                         <RowDefinition/>
                     </Grid.RowDefinitions>
                     <Label x:Name="lblFiles"/>
-                    <ListView Grid.Row="1" x:Name="lvAllFiles" VirtualizingPanel.VirtualizationMode="Recycling" SelectionMode="Extended">
+                    <ListView Grid.Row="1" x:Name="lvAllFiles">
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn DisplayMemberBinding="{Binding Name}" Width="{StaticResource ResourceKey=MCW}">
