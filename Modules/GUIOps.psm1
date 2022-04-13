@@ -5,23 +5,40 @@
 .Author Smorkster (smorkster)
 #>
 
-param ( $culture = "sv-SE" )
+param (
+	[string] $culture = "sv-SE",
+	[switch] $LoadConverters
+)
+
 function CreateWindow
 {
 	<#
 	.Synopsis
 		Creates a PowerShell-object, containing a WPF-window, based on XAML-file with same name as the calling script
+	.Parameter IncludeConverters
+		If converters (see variable at bottom) should be imported
 	.Outputs
 		Returns object and an array containing the names of each named control in the XAML-file
+	.State
+		Prod
 	#>
+
+	param ( [switch] $IncludeConverters )
 	Add-Type -AssemblyName PresentationFramework
 
 	$XamlFile = "$RootDir\Gui\$( $CallingScript.BaseName ).xaml"
 	$inputXML = Get-Content $XamlFile -Raw
-	$inputXML = $inputXML -replace "x:N", 'N' -replace '^<Win.*', '<Window'
-	[XML]$XAML = $inputXML
+	if ( $IncludeConverters )
+	{
+		try { LoadConverters } catch {}
+		$c = New-Object SDGUIConverters.ADUserConverter
+		$AssemblyName = $c.GetType().Assembly.FullName.Split(',')[0]
+		$inputXML = $inputXML -replace 'SDGUIConverterAssembly', $AssemblyName
+	}
+	$inputXML = $inputXML -replace "x:Name", 'Name' -replace '^<Win.*', '<Window'
+	[XML]$Xaml = $inputXML
 
-	$reader = ( New-Object System.Xml.XmlNodeReader $Xaml )
+	$reader = ( [System.Xml.XmlNodeReader]::new( $Xaml ) )
 	try
 	{
 		$Window = [Windows.Markup.XamlReader]::Load( $reader )
@@ -33,9 +50,7 @@ function CreateWindow
 		throw
 	}
 	$vars = @()
-	$xaml.SelectNodes( "//*[@Name]" ) | Foreach-Object {
-		$vars += $_.Name
-	}
+	$Xaml.SelectNodes( "//*[@Name]" ) | Foreach-Object { $vars += $_.Name }
 
 	return $Window, $vars
 }
@@ -66,16 +81,20 @@ function CreateWindowExt
 	.Outputs
 		The hashtable containing all bindings and arrays
 	#>
-	param ( $ControlsToBind )
+	param (
+		[System.Collections.ArrayList] $ControlsToBind,
+		[switch] $IncludeConverters
+	)
 
 	$Bindings = [hashtable]( @{} )
-	$GenErrors = New-Object System.Collections.ArrayList
+	$GenErrors = [System.Collections.ArrayList]::new()
 	$syncHash = [hashtable]::Synchronized( @{} )
 	$syncHash.Data = [hashtable]( @{} )
 	$syncHash.DC = [hashtable]( @{} )
 	$syncHash.Jobs = [hashtable]( @{} )
 	$syncHash.Output = ""
-	$syncHash.Window, $syncHash.Vars = CreateWindow
+	if ( $IncludeConverters ) { $syncHash.Window, $syncHash.Vars = CreateWindow -IncludeConverters }
+	else { $syncHash.Window, $syncHash.Vars = CreateWindow }
 
 	$syncHash.Vars | Foreach-Object {
 		$syncHash.$_ = $syncHash.Window.FindName( $_ )
@@ -102,6 +121,7 @@ function CreateWindowExt
 				$p = "$( $control.Props[$i].PropName -replace "Property" )Property"
 				try
 				{
+					# Connect property $p of control $n to binding at index $i in $Bindings
 					[void][System.Windows.Data.BindingOperations]::SetBinding( $syncHash.$n, $( $syncHash.$n.DependencyObjectType.SystemType )::$p, $Bindings.$n[ $i ] )
 				}
 				catch { [void] $GenErrors.Add( "$n$( $IntmsgTable.ErrNoProperty ) '$p'") }
@@ -110,6 +130,7 @@ function CreateWindowExt
 		else { [void] $GenErrors.Add( "$( $IntmsgTable.ErrNoControl ) $n" ) }
 	}
 
+	# List errors from when binding controls and properties
 	if ( $GenErrors.Count -gt 0 )
 	{
 		$ofs = "`n"
@@ -117,6 +138,11 @@ function CreateWindowExt
 	}
 
 	return $syncHash
+}
+
+function LoadConverters
+{
+	Add-Type -ReferencedAssemblies System.DirectoryServices.AccountManagement, PresentationFramework, System.DirectoryServices, System.Management.Automation, Microsoft.ActiveDirectory.Management -TypeDefinition $Converters
 }
 
 function ShowSplash
@@ -127,13 +153,20 @@ function ShowSplash
 	.Parameter Text
 		The text to show
 	.Parameter Duration
-		How long the text should be shown. Defaults is 1.5 seconds
+		How long the text should be shown. Default is 1.5 seconds
 	.Parameter BorderColor
 		The color of the border of the window
 	.Parameter SelfAdmin
 		The script calling will administrate opening and closing
 	#>
-	param ( [string] $Text, [double] $Duration = 1.5, [string] $BorderColor = "Green", [switch] $SelfAdmin )
+
+	param (
+		[string] $Text,
+		[double] $Duration = 1.5,
+		[string] $BorderColor = "Green",
+		[switch] $SelfAdmin
+	)
+
 	$splash = [System.Windows.Window]@{ WindowStartupLocation = "CenterScreen" ; WindowStyle = "None"; ResizeMode = "NoResize"; SizeToContent = "WidthAndHeight" }
 	$splash.AddChild( [System.Windows.Controls.Label]@{ Content = $Text ; BorderBrush = $BorderColor; BorderThickness = 5 } )
 	if ( $SelfAdmin ) { return $splash }
@@ -145,10 +178,74 @@ function ShowSplash
 	}
 }
 
+$Converters = @"
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.DirectoryServices;
+using System.DirectoryServices.AccountManagement;
+using System.Globalization;
+using System.Management.Automation;
+using System.Windows.Data;
+using Microsoft.ActiveDirectory.Management;
+
+namespace SDGUIConverters
+{
+	public class ADUserConverter : IValueConverter
+	{
+		/// <summary>Convert a SamAccountName (userId) to the username, according to AD</summary>
+		public object Convert( object value, Type targetType, object parameter, CultureInfo culture )
+		{
+			var Id = "";
+			if ( ( (string)value ).IndexOf( '(' ) == -1 )
+			{ Id = (string)value; }
+			else
+			{ Id = ( ( ( ( (string)value ).Split( '(' ) )[1] ).Split( ')' ) )[0]; }
+
+			PrincipalContext pc = new PrincipalContext( ContextType.Domain, "domain.test.com", "DC=domain,DC=test,DC=com" );
+			UserPrincipal up = new UserPrincipal( pc ) { SamAccountName = Id };
+			PrincipalSearcher ps = new PrincipalSearcher( up );
+			var u = ps.FindOne();
+			if ( u == null ) return value;
+			else return u.Name;
+		}
+
+		public object ConvertBack( object value, Type targetType, object parameter, CultureInfo culture ) { throw new NotImplementedException(); }
+	}
+
+	public class ADGrpDistNameConverter : IValueConverter
+	{
+		/// <summary>Convert an AD-groups DistinguishedName to its name</summary>
+		public object Convert( object value, Type targetType, object parameter, CultureInfo culture )
+		{
+			DirectoryEntry de = new DirectoryEntry( "LDAP://DC=domain,DC=test,DC=com" );
+			DirectorySearcher adsSearcher = new DirectorySearcher( de );
+			adsSearcher.Filter = "(DistinguishedName=" + ((string)value) + ")";
+
+			var res = ( adsSearcher.FindOne() ).GetDirectoryEntry();
+			return res.Name.Split( '=' )[1];
+		}
+
+		public object ConvertBack( object value, Type targetType, object parameter, CultureInfo culture ) { throw new NotImplementedException(); }
+	}
+
+	public class ADUserOtherPhoneConverter : IValueConverter
+	{
+		/// <summary>Convert an AD-users otherTelephone-collection to array</summary>
+		public object Convert( object value, Type targetType, object parameter, CultureInfo culture )
+		{ return ( value as ADPropertyValueCollection ).ValueList; }
+
+		public object ConvertBack( object value, Type targetType, object parameter, CultureInfo culture ) { throw new NotImplementedException(); }
+	}
+}
+"@
+
+if ( $LoadConverters ) { LoadConverters }
+
 $RootDir = ( Get-Item $PSCommandPath ).Directory.Parent.FullName
 Import-LocalizedData -BindingVariable IntmsgTable -UICulture $culture -FileName "$( ( $PSCommandPath.Split( "\" ) | Select-Object -Last 1 ).Split( "." )[0] ).psd1" -BaseDirectory "$RootDir\Localization\$culture\Modules"
 
-try { $CallingScript = ( Get-Item $MyInvocation.PSCommandPath ) } catch {}
+$CallingScript = try { ( Get-Item $MyInvocation.PSCommandPath ) } catch { [pscustomobject]@{ BaseName = "NoScript" } }
 try { $Host.UI.RawUI.WindowTitle = "$( $IntmsgTable.ConsoleWinTitlePrefix ): $( ( ( Get-Item $MyInvocation.PSCommandPath ).FullName -split "Script" )[1] )" } catch {}
 
 Export-ModuleMember -Function *
