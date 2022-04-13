@@ -19,10 +19,10 @@ StrNoWrite = <No write permissions>
 StrOutNotFoundTitle = The following folders were not found, and will not be reported:
 StrOutSum = Results written to
 StrOutTitle = Lists the permissions for the following folders under G:\
-StrOwner = Owner:
+StrOwner = Owner
 StrOwnerMissing = Owner not assigned
-StrReadPerm = Read permission:
+StrReadPerm = Read permission
 StrSearching = Retrieves information and writes to file
 StrSum = Summary
-StrWritePerm = Write permission:
+StrWritePerm = Write permission
 '@

@@ -36,7 +36,7 @@ foreach ( $Folder in $FoldersIn )
 Write-Host $msgTable.StrSearching
 
 $output = @()
-$output += "------------------------------------------------------------------------------"
+$output += "------------------------------------------------------------------------------`r`n"
 $output += "$( $msgTable.StrOutTitle )`r`n"
 $output += $Folders
 if ( $FailedFolders.Count -gt 0 )
@@ -48,23 +48,25 @@ $output += "`r`n----------------------------------------------------------------
 
 Start-Sleep 3
 
+$OFS = "`r`n`t"
 foreach ( $Folder in $Folders )
 {
 	$GroupPrefix = ( Invoke-Expression $msgTable.CodeGP ).( $Folder.Substring( 3, 3 ) )
 	$FolderName = $Folder.Substring( 7 )
-	$output += "`r`n************************`r`n$Folder`r`n"
-	$Owner = Get-ADGroup ( ( $GroupPrefix + $FolderName + $msgTable.StrGrpNameSuffixWrite ) -replace "å", "a" -replace "ä", "a" -replace "ö", "o" -replace " ", "_" -replace "é", "e" ) -Properties ManagedBy | Select-Object -ExpandProperty Managedby
+	$Group = Get-ADGroup ( ( $GroupPrefix + $FolderName + $msgTable.StrGrpNameSuffixWrite ) -replace "å", "a" -replace "ä", "a" -replace "ö", "o" -replace " ", "_" -replace "é", "e" ) -Properties Description, ManagedBy
 
-	if ( $null -ne $Owner )
+	$output += "`r`n`r`n************ $( "G:\$( ( $Group.Description -split "\$\\" -split "\." )[1] )" ) ************"
+	$output += "`r`n$( $msgTable.StrOwner )"
+	if ( $null -ne $Group.ManagedBy )
 	{
-		$output += "$( $msgTable.StrOwner ) $( ( Get-ADUser $Owner ).Name )"
+		$output += "`r`n`t$( ( Get-ADUser $Group.ManagedBy ).Name )"
 	}
 	else
 	{
-		$output += $msgTable.StrOwnerMissing
+		$output += "$( $msgTable.StrOwnerMissing )"
 	}
 
-	$output += "`r`n$( $msgTable.StrReadPerm ) "
+	$output += "`r`n`r`n$( $msgTable.StrReadPerm ) "
 
 	$RGroups = Get-ADGroupMember ( ( $GroupPrefix + $FolderName + $msgTable.StrGrpNameSuffixRead ) -replace "å", "a" -replace "ä", "a" -replace "ö", "o" -replace " ", "_" -replace "é", "e" ) | Select-Object -ExpandProperty Name
 	$ROrgGroups = $RGroups | Where-Object { $_ -like ( $Customer + "_org_*" ) }
@@ -76,7 +78,7 @@ foreach ( $Folder in $Folders )
 	}
 	else
 	{
-		$output += $RGroups | Sort-Object
+		$output += "`r`n`t$( $RGroups | Sort-Object )"
 	}
 
 	if ( $null -ne $ROrgGroups )
@@ -90,12 +92,12 @@ foreach ( $Folder in $Folders )
 				$OrgGroupMembers = Get-ADGroupMember $OrgGroup | Select-Object -ExpandProperty Name
 			}
 
-			$output += "`r`n$( Invoke-Expression $msgTable.CodeOrgGrpMembersOutput )"
+			$output += "`r`n$( $msgTable.CodeOrgGrpMembersOutput )"
 			$output += $OrgGroupMembers | Sort-Object
 		}
 	}
 
-	$output += "`r`n$( $msgTable.StrWritePerm ) "
+	$output += "`r`n`r`n$( $msgTable.StrWritePerm ) "
 
 	$CGroups = Get-ADGroupMember ( ( $GroupPrefix + $FolderName + "_User_C" ) -replace "å", "a" -replace "ä", "a" -replace "ö", "o" -replace " ", "_" -replace "é", "e" ) | Select-Object -ExpandProperty Name
 	$COrgGroups = $CGroups | Where-Object { $_ -like ( $Customer + "_org_*" ) }
@@ -107,7 +109,7 @@ foreach ( $Folder in $Folders )
 	}
 	else
 	{
-		$output += $CGroups | Sort-Object
+		$output += "`r`n`t$( $CGroups | Sort-Object )"
 	}
 
 	if ( $null -ne $COrgGroups )

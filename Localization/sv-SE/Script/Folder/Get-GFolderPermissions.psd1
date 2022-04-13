@@ -19,10 +19,10 @@ StrNoWrite = <Inga skriv-behörigheter>
 StrOutNotFoundTitle = Följande mappar hittades inte, och kommer inte rapporteras:
 StrOutSum = Resultat skrivet till
 StrOutTitle = Listar behörigheterna för följande mappar under G:\
-StrOwner = Ägare:
+StrOwner = Ägare
 StrOwnerMissing = Ägare saknas
-StrReadPerm = Läs-behörighet:
+StrReadPerm = Läs-behörighet
 StrSearching = Hämtar information och skriver till fil
 StrSum = Sammanfattning
-StrWritePerm = Skriv-behörighet:
+StrWritePerm = Skriv-behörighet
 '@
