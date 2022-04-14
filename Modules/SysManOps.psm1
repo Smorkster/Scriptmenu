@@ -7,10 +7,17 @@
 
 param ( $culture = "sv-SE" )
 
-########################################################################
-# Changes installed version of a deployed application for given computer
 function ChangeInstallation
 {
+	<#
+	.Description
+		Changes installed version of a deployed application for given computer
+	.Parameter ComputerName
+		Name of the computer where the operations should occur
+	.Parameter OldVersion
+		Name (including version) of the application to be replaced. This name must be in the AD
+	#>
+
 	param( $ComputerName, $OldVersion, $NewVersion )
 
 	$Application = ( Get-ADObject -LDAPFilter "(&(objectclass=group)(name=$OldVersion))" | Select-Object -ExpandProperty name ).Replace( "_I", "" )
@@ -32,25 +39,39 @@ function ChangeInstallation
 	$StateResult = ( Invoke-WebRequest -Uri "$( $ServerUrl )/api/application/Install" -Method Post -Body ( ConvertTo-Json -InputObject $RequestInput ) -UseDefaultCredentials -ContentType "application/json" -ErrorAction Stop )
 }
 
-#########################################################
-# Return the internal id in SysMan for given computername
 function GetSysManComputerId
 {
+	<#
+	.Description
+		Get the internal id in SysMan for a given computer
+	.Parameter ComputerName
+		Name of the computer to check id for
+	.Outputs
+		Internal SysMan-id of the computer
+	#>
 	param ( $ComputerName )
 	return ( Invoke-RestMethod -uri "$( $ServerUrl )/api/Client?name=$ComputerName" -UseDefaultCredentials ).Id
 }
 
-####################################################
-# Return the internal id in SysMan for given user id
 function GetSysManUserId
 {
+	<#
+	.Description
+		Get the internal id in SysMan for given user
+	.Parameter Id
+		UserId (according to AD) of the user to do the lookup for
+	.Outputs
+		Internal SysMan-id of the user
+	#>
+
 	param ( $Id )
-	( Invoke-RestMethod -uri "$( $ServerUrl )/api/User?name=$Id" -UseDefaultCredentials ).Id
+
+	return ( Invoke-RestMethod -uri "$( $ServerUrl )/api/User?name=$Id" -UseDefaultCredentials ).Id
 }
 
 $nudate = Get-Date -Format "yyyy-MM-dd HH:mm"
 $RootDir = ( Get-Item $PSCommandPath ).Directory.Parent.FullName
-$CallingScript = ( Get-Item $MyInvocation.PSCommandPath ).BaseName
+try { $CallingScript = ( Get-Item $MyInvocation.PSCommandPath ).BaseName } catch { $CallingScript = $null }
 Import-LocalizedData -BindingVariable IntmsgTable -UICulture $culture -FileName "$( ( $PSCommandPath.Split( "\" ) | Select-Object -Last 1 ).Split( "." )[0] ).psd1" -BaseDirectory "$RootDir\Localization\$culture\Modules"
 $ServerUrl = $IntmsgTable.SysManServerUrl
 
