@@ -38,11 +38,7 @@ ContentlblFeedbackType = Typ av meddelande
 ContentLblInTest = Använd enbart om du tillfrågats
 ContentlblRateTitle = Ange betyg på denna version av
 ContentlblSurvey = Lämna gärna en kommentar
-<<<<<<< HEAD
-ContentlblO65 = Klicka på Starta för öppna Valmeny för Office 365-skript
-=======
 ContentlblO65 = Klicka på 'Starta' för öppna Valmeny för Office 365-skript
->>>>>>> 228e0a0178dafabbca38ab840f419ccfe11e432a
 ContentrbReport = Felanmälan
 ContentrbSuggestion = Förslag
 ContentrbSurveyRate1 = 1
