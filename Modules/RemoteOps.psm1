@@ -7,16 +7,25 @@
 
 param ( $culture = "sv-SE" )
 
-#############################################################################
-# Create a job to in 10 minutes check for updates of distributed applications
 function RunCycle
 {
+	<#
+	.Description
+		Create a job that will check for updates for distributed applications, the job will start in 10 minutes
+	.Parameter ComputerName
+		Name of the computer that should run the job
+	.Parameter CycleName
+		Name of the scheduledjob
+	#>
+
 	param( $ComputerName, $CycleName )
+
 	try
 	{
 		Invoke-Command -ComputerName $ComputerName -ScriptBlock `
 		{
 			param ( $Name )
+
 			Import-Module PSScheduledJob
 			$z = ( Get-Date ).AddMinutes( 10 ).ToString( "HH:mm:ss" )
 			$T = New-JobTrigger -Once -At $z
@@ -30,18 +39,31 @@ function RunCycle
 	}
 	catch [System.Management.Automation.Remoting.PSRemotingTransportException]
 	{
-		Write-Host $IntmsgTable.RunCycle2
+		Write-Host "$( $IntmsgTable.RunCycle2 ):`n$( $_.CategoryInfo.Reason )`n$( $_.Exception )"
 	}
 	catch
 	{
-		Write-Host "$( $IntmsgTable.RunCycle3):`n$( $_.CategoryInfo.Reason )`n$( $_.Exception )"
+		Write-Host "$( $IntmsgTable.RunCycle3 ):`n$( $_.CategoryInfo.Reason )`n$( $_.Exception )"
 	}
 }
 
-############################################
-# Send a toastmessage to designated computer
 function SendToast
 {
+	<#
+	.Description
+		Send a toastmessage to designated computer
+	.Parameter Message
+		Text to be shown in the toastmessage
+	.Parameter ComputerName
+		Name of the computer to receive the toastmessage
+	.Outputs
+		An integer indicating the success of sending the toastmessage
+		0: The toastmessage was send successfully
+		1: The remote computer cannot be reached. It is either offline, WinRM is not started, or remote control is active.
+		2: An error occured when sending the toastmessage
+		3: The receiving computer does not have Windows 10 installed, and can not receive a toastmessage
+	#>
+
 	param ( $Message, $ComputerName )
 
 	try { $WinVersion = ( Get-CimInstance -ComputerName $ComputerName -ClassName win32_operatingsystem -ErrorAction Stop ).Version } catch { return 1 }
@@ -52,7 +74,7 @@ function SendToast
 			$Template = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent( [Windows.UI.Notifications.ToastTemplateType]::ToastText02 )
 
 			$RawXml = [xml] $Template.GetXml()
-			( $RawXml.toast.visual.binding.text | Where-Object { $_.id -eq "2" } ).AppendChild( $RawXml.CreateTextNode( $using:Message ) ) > $null
+			( $RawXml.Toast.visual.binding.text | Where-Object { $_.id -eq "2" } ).AppendChild( $RawXml.CreateTextNode( $using:Message ) ) > $null
 
 			$SerializedXml = New-Object Windows.Data.Xml.Dom.XmlDocument
 			$SerializedXml.LoadXml( $RawXml.OuterXml )
