@@ -7,14 +7,28 @@
 
 param ( $culture = "sv-SE" )
 
-#############################################################
-# Ask the user how data in specified file should be displayed
-# Returns the selected choise
 function AskDisplayOption
 {
+	<#
+	.Description
+		Ask the user how data in specified file should be displayed
+		Valid alternatives are:
+			Notepad
+			Format-Table, i.e. list data in the console
+			Out-GridView, i.e. a gridview window will display the data
+	.Parameter File
+		File to display
+	.Parameter NoFT
+		Format-Table will not be a valid choice
+	.Parameter NoGW
+		Out-GridView will not be a valid choice
+	.Outputs
+		Returns the selected choise
+	#>
+
 	param ( [string] $File, [switch] $NoFT, [switch] $NoGW )
 
-	if ( $NoFt )
+	if ( $NoFT )
 	{
 		switch ( Read-Host $IntmsgTable.QDisplayOpNoFT )
 		{
@@ -43,16 +57,22 @@ function AskDisplayOption
 	return $dt
 }
 
-################################################################
-# Reads input from the console. The data is pasted with Ctrl + V
-# Returns the input as an array, separated according to Split
 function GetConsolePasteInput
 {
+	<#
+	.Description
+		Reads input from the console. The data is pasted with Ctrl + V
+	.Parameter Folders
+		If the text entered are names of folder. Use other split rules.
+	.Outputs System.Array
+		The input as an array, separated according to Split
+	#>
+
 	param ( [switch] $Folders )
 
 	$Quit = New-Object -ComObject wscript.shell
 
-	$Users1 = @()
+	$TextEntered = @()
 	do
 	{
 		if ( $Folders )
@@ -62,7 +82,7 @@ function GetConsolePasteInput
 
 		if ( $Text -ne '' )
 		{
-			$Users1 += $Text
+			$TextEntered += $Text
 		}
 		else
 		{
@@ -70,15 +90,68 @@ function GetConsolePasteInput
 			$Quit.SendKeys( "~" )
 		}
 	} until ( $Text -eq ( $IntmsgTable.GetConsolePasteInput ) )
-	$Users2 = $Users1 -ne ( $IntmsgTable.GetConsolePasteInput )
+	$TextEntered = $TextEntered -ne ( $IntmsgTable.GetConsolePasteInput )
 
-	return $Users2
+	return $TextEntered
 }
 
-#####################################################
-# Initiates sleep with a progressbar and defined text
+function GetUserChoice
+{
+	<#
+	.Description
+		Display a question and run loop until a correct ansver, number up to MaxNum, or Y/N, is entered
+	.Parameter MaxNum
+		Highest umber the user can enter, that is a valid choise
+	.Parameter YesNo
+		Only yes and no answers are valid
+	.Parameter ChoiceText
+		Text to display when asking for answer
+	#>
+	param (
+	[Parameter( ParameterSetName = "TypeCount", Mandatory = $true )]
+		[int] $MaxNum = 2,
+	[Parameter( ParameterSetName = "TypeYesNo", Mandatory = $true )]
+		[switch]$YesNo,
+	[Parameter( Mandatory = $true )]
+		[string] $ChoiceText = $IntmsgTable.GetChoiceDefaultChoiceText
+	)
+
+	if ( $YesNo )
+	{
+		$err = $IntmsgTable.GetChoiceYesNo
+		$comp = { "Y", "N" }
+	}
+	else
+	{
+		$comp = { 1..$MaxNum }
+		if ( $MaxNum -ne 2 ) { $err = "$( $IntmsgTable.GetChoiceMaxText ) $MaxNum." }
+		else { $err = $IntmsgTable.GetChoice12 }
+	}
+
+	do
+	{
+		$Pass = $true
+		if ( ( $Choice = Read-Host $ChoiceText ) -notin ( . $comp ) )
+		{
+			Write-Host -ForegroundColor Red $err
+			$Pass = $false
+		}
+	}
+	until ( $Pass )
+
+	return $Choice
+}
+
 function StartWait
 {
+	<#
+	.Description
+		Initiates sleep with a progressbar and the defined text in the console
+	.Parameter SecondsToWait
+		Time to for the progressbar to be visible
+	.Parameter MessageText
+		Text to be visible in the progressbar
+	#>
 	param ( $SecondsToWait, $MessageText )
 
 	$MessageText = "$( $IntmsgTable.StartWait1 ) $SecondsToWait $( $IntmsgTable.StartWait2 ) $MessageText"
@@ -86,18 +159,27 @@ function StartWait
 	Write-Progress -Activity $MessageText -Completed
 }
 
-##########################################
-# Use speech synthesizer to play a message
 function TextToSpeech
 {
-	param ( $Text )
+	<#
+	.Description
+		Use speech synthesizer to play a message
+	.Parameter Text
+		Text to be said
+	.Parameter Voice
+		The selected voice to be used
+	#>
 
-	$Voice = New-Object -TypeName System.Speech.Synthesis.SpeechSynthesizer
-	$Voice.Speak( $Text )
+	param ( $Text, $Voice = "Microsoft David Desktop" )
+
+	$Voice = New-Object –TypeName System.Speech.Synthesis.SpeechSynthesizer
+	$Voice.SelectVoiceByHints( [System.Speech.Synthesis.VoiceGender]::Neutral )
+	$Voice.SpeakAsync( $Text )
 }
 
 Add-Type -AssemblyName System.Speech
 $RootDir = ( Get-Item $PSCommandPath ).Directory.Parent.FullName
+try { $CallingScript = ( Get-Item $MyInvocation.PSCommandPath ).BaseName } catch { $CallingScript = $null }
 Import-LocalizedData -BindingVariable IntmsgTable -UICulture $culture -FileName "$( ( $PSCommandPath.Split( "\" ) | Select-Object -Last 1 ).Split( "." )[0] ).psd1" -BaseDirectory "$RootDir\Localization\$culture\Modules"
 
 Export-ModuleMember -Function *
