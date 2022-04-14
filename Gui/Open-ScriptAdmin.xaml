@@ -1,12 +1,59 @@
 <Window
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:sys="clr-namespace:System;assembly=mscorlib"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    MinHeight="800" MinWidth="1500"
+    xmlns:sys="clr-namespace:System;assembly=mscorlib"
+    xmlns:c="clr-namespace:SDGUIConverters;assembly=SDGUIConverterAssembly"
+    xmlns:componentmodel="clr-namespace:System.ComponentModel;assembly=WindowsBase"
     Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
     WindowStartupLocation="CenterScreen"
+    WindowState="Maximized"
     x:Name="Window">
     <Window.Resources>
+        <!--
+        -->
+        <c:ADUserConverter x:Key="Converter"/>
+        <CollectionViewSource x:Key="CvsLogs" Source="{Binding ElementName=cbLogsScriptNames, Path=SelectedItem.ScriptLogs}">
+            <CollectionViewSource.SortDescriptions>
+                <componentmodel:SortDescription PropertyName="LogDate" Direction="Descending"/>
+            </CollectionViewSource.SortDescriptions>
+        </CollectionViewSource>
+        <CollectionViewSource x:Key="CvsRollBackFileVersions" Source="{Binding ElementName=lvRollbackFileNames, Path=SelectedItem.FileLogs}">
+            <CollectionViewSource.SortDescriptions>
+                <componentmodel:SortDescription PropertyName="LogDate" Direction="Descending"/>
+            </CollectionViewSource.SortDescriptions>
+        </CollectionViewSource>
+        <CollectionViewSource x:Key="CvsRollBackFileNames">
+            <CollectionViewSource.SortDescriptions>
+                <componentmodel:SortDescription PropertyName="Script" Direction="Ascending"/>
+            </CollectionViewSource.SortDescriptions>
+        </CollectionViewSource>
+        <CollectionViewSource x:Key="CvsErrorLogs" Source="{Binding ElementName=cbErrorLogsScriptNames, Path=SelectedItem.ScriptErrorLogs}">
+            <CollectionViewSource.SortDescriptions>
+                <componentmodel:SortDescription PropertyName="LogDate" Direction="Descending"/>
+            </CollectionViewSource.SortDescriptions>
+        </CollectionViewSource>
+        <SolidColorBrush x:Key="ValidColor">#8F00FF00</SolidColorBrush>
+        <SolidColorBrush x:Key="InvalidColor">#8FFF0000</SolidColorBrush>
+        <SolidColorBrush x:Key="FalseColor">LightCoral</SolidColorBrush>
+        <SolidColorBrush x:Key="TrueColor">LightGreen</SolidColorBrush>
+        <sys:String x:Key="FailedTestCount">X</sys:String>
+        <sys:String x:Key="InvalidChar">X</sys:String>
+        <sys:String x:Key="LogSearchNoType">X</sys:String>
+        <sys:String x:Key="NewFileTitle">X</sys:String>
+        <sys:String x:Key="ValidChar">&#x221A;</sys:String>
+        <Visibility x:Key="DevFilesVisible">Visible</Visibility>
+        <Visibility x:Key="LogskRowFailedVisible">Visible</Visibility>
+        <Visibility x:Key="LogskRowSuccessVisible">Visible</Visibility>
+        <Visibility x:Key="RollbackRowPs1Visible">Visible</Visibility>
+        <Visibility x:Key="RollbackRowPsd1Visible">Visible</Visibility>
+        <Visibility x:Key="RollbackRowPsm1Visible">Visible</Visibility>
+        <Visibility x:Key="RollbackRowTxtVisible">Visible</Visibility>
+        <Visibility x:Key="RollbackRowXamlVisible">Visible</Visibility>
+        <Visibility x:Key="SurveyRating1Visible">Visible</Visibility>
+        <Visibility x:Key="SurveyRating2Visible">Visible</Visibility>
+        <Visibility x:Key="SurveyRating3Visible">Visible</Visibility>
+        <Visibility x:Key="SurveyRating4Visible">Visible</Visibility>
+        <Visibility x:Key="SurveyRating5Visible">Visible</Visibility>
         <LinearGradientBrush x:Key="HeaderBrush" StartPoint="0,0" EndPoint="1,1">
             <GradientStop Color="#5010A7C0" Offset="0.5"/>
         </LinearGradientBrush>
@@ -14,12 +61,137 @@
             <GradientStop Color="#FF1D1D1D" Offset="0.614"/>
             <GradientStop Color="#FF007F96" Offset="0.853"/>
         </LinearGradientBrush>
+        <Style x:Key="DgLogsRowStyle" TargetType="{x:Type DataGridRow}">
+            <Style.Resources>
+                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="LightSteelBlue"/>
+            </Style.Resources>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Success}" Value="Failed">
+                    <Setter Property="Background" Value="{StaticResource FalseColor}" />
+                    <Setter Property="Visibility" Value="{DynamicResource LogskRowFailedVisible}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Success}" Value="Success">
+                    <Setter Property="Background" Value="{StaticResource TrueColor}" />
+                    <Setter Property="Visibility" Value="{DynamicResource LogskRowSuccessVisible}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="DgRollbackRowStyle" TargetType="{x:Type DataGridRow}">
+            <Style.Resources>
+                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="LightSteelBlue"/>
+            </Style.Resources>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Type}" Value="ps1">
+                    <Setter Property="Visibility" Value="{DynamicResource RollbackRowPs1Visible}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Type}" Value="psd1">
+                    <Setter Property="Visibility" Value="{DynamicResource RollbackRowPsd1Visible}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Type}" Value="psm1">
+                    <Setter Property="Visibility" Value="{DynamicResource RollbackRowPsm1Visible}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Type}" Value="txt">
+                    <Setter Property="Visibility" Value="{DynamicResource RollbackRowTxtVisible}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Type}" Value="xaml">
+                    <Setter Property="Visibility" Value="{DynamicResource RollbackRowXamlVisible}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="DgUpdatesRowStyle" TargetType="{x:Type DataGridRow}">
+            <Style.Resources>
+                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="LightSteelBlue"/>
+            </Style.Resources>
+            <Setter Property="ToolTip" Value="{Binding ToolTip}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding State}" Value="Dev">
+                    <Setter Property="Background" Value="{StaticResource FalseColor}"/>
+                    <Setter Property="Foreground" Value="Black"/>
+                    <Setter Property="FontWeight" Value="Bold"/>
+                    <Setter Property="IsEnabled" Value="False"/>
+                    <Setter Property="Visibility" Value="{DynamicResource DevFilesVisible}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding State}" Value="Test">
+                    <Setter Property="Foreground" Value="Red"/>
+                    <Setter Property="FontWeight" Value="Bold"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="DgSurveyRowStyle" TargetType="{x:Type DataGridRow}">
+            <Style.Resources>
+                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="LightSteelBlue"/>
+            </Style.Resources>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Rating}" Value="1">
+                    <Setter Property="Visibility" Value="{DynamicResource SurveyRating1Visible}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Rating}" Value="2">
+                    <Setter Property="Visibility" Value="{DynamicResource SurveyRating2Visible}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Rating}" Value="3">
+                    <Setter Property="Visibility" Value="{DynamicResource SurveyRating3Visible}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Rating}" Value="4">
+                    <Setter Property="Visibility" Value="{DynamicResource SurveyRating4Visible}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Rating}" Value="5">
+                    <Setter Property="Visibility" Value="{DynamicResource SurveyRating5Visible}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="FailedUpdatesRowStyle" TargetType="{x:Type DataGridRow}">
+            <Style.Resources>
+                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="LightSteelBlue"/>
+            </Style.Resources>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding AllowUpdateAnyway}" Value="False">
+                    <Setter Property="IsEnabled" Value="False"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="DateCell" TargetType="{x:Type TextBlock}">
+            <Setter Property="Height" Value="Auto" />
+            <Setter Property="Margin" Value="5" />
+            <Setter Property="TextAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="NameCell" TargetType="{x:Type TextBlock}">
+            <Setter Property="Height" Value="Auto" />
+            <Setter Property="Margin" Value="5" />
+            <Setter Property="TextAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="InvalidLabel" TargetType="{x:Type Label}">
+            <Setter Property="Background" Value="{StaticResource InvalidColor}"/>
+            <Setter Property="Content" Value="{StaticResource InvalidChar}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="NewFileCell" TargetType="{x:Type TextBlock}">
+            <Setter Property="Text" Value="{DynamicResource NewFileTitle}"/>
+            <Setter Property="FontStyle" Value="Italic" />
+            <Setter Property="Height" Value="Auto" />
+            <Setter Property="Margin" Value="5" />
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="NameLabel" TargetType="{x:Type Label}">
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="10,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="ValidLabel" TargetType="{x:Type Label}">
+            <Setter Property="Background" Value="{StaticResource ValidColor}"/>
+            <Setter Property="Content" Value="{StaticResource ValidChar}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
         <Style x:Key="ColumnElementStyle" TargetType="{x:Type TextBlock}">
-            <Setter Property="Margin" Value="5,1,10,1"/>
+            <Setter Property="Padding" Value="5,1,5,1" />
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
         <Style x:Key="ColumnElementStyleCenter" TargetType="{x:Type TextBlock}">
-            <Setter Property="Margin" Value="5,1,10,1"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
@@ -33,6 +205,11 @@
             <Setter Property="Margin" Value="5"/>
             <Setter Property="Padding" Value="5"/>
         </Style>
+        <Style TargetType="{x:Type CheckBox}">
+            <Setter Property="IsThreeState" Value="False" />
+            <Setter Property="Margin" Value="5" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
         <Style TargetType="{x:Type ComboBox}">
             <Setter Property="Margin" Value="5"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
@@ -40,6 +217,7 @@
         <Style TargetType="{x:Type DataGrid}">
             <Setter Property="AutoGenerateColumns" Value="False"/>
             <Setter Property="CanUserAddRows" Value="False"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
             <Setter Property="IsReadOnly" Value="True"/>
         </Style>
         <Style TargetType="{x:Type DataGridCell}">
@@ -53,24 +231,6 @@
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="MinWidth" Value="0"/>
             <Setter Property="Padding" Value="10,5"/>
-        </Style>
-        <Style TargetType="{x:Type DataGridRow}">
-            <Style.Resources>
-                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="LightSteelBlue"/>
-            </Style.Resources>
-            <Setter Property="ToolTip" Value="{Binding ToolTip}"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding State}" Value="Dev">
-                    <Setter Property="Background" Value="Red"/>
-                    <Setter Property="Foreground" Value="Black"/>
-                    <Setter Property="FontWeight" Value="Bold"/>
-                    <Setter Property="IsEnabled" Value="False"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding State}" Value="Test">
-                    <Setter Property="Foreground" Value="Red"/>
-                    <Setter Property="FontWeight" Value="Bold"/>
-                </DataTrigger>
-            </Style.Triggers>
         </Style>
         <Style TargetType="{x:Type Grid}">
             <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"/>
@@ -96,19 +256,175 @@
             <Setter Property="Margin" Value="5"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
+        <Style TargetType="{x:Type ToolTip}">
+            <Setter Property="ToolTipService.ShowDuration" Value="20"/>
+            <Setter Property="ToolTipService.HorizontalOffset" Value="0"/>
+        </Style>
+        <Window
+            BorderBrush="Black"
+            BorderThickness="3"
+            MaxHeight="800" MinHeight="100"
+            MaxWidth="1200" MinWidth="100"
+            ResizeMode="NoResize"
+            SizeToContent="WidthAndHeight"
+            WindowStartupLocation="CenterOwner"
+            WindowStyle="None"
+            x:Key="DiffWindow" x:Name="DiffWindow">
+            <Window.Resources>
+                <sys:String x:Key="DiffRowAdded">X</sys:String>
+                <sys:String x:Key="DiffRowRemoved">X</sys:String>
+                <Style x:Key="DiffDevLine" TargetType="{x:Type TextBlock}">
+                    <Setter Property="Background" Value="LightGray"/>
+                    <Setter Property="Text" Value="{DynamicResource DiffRowRemoved}" />
+                </Style>
+                <Style x:Key="DiffProdLine" TargetType="{x:Type TextBlock}">
+                    <Setter Property="Background" Value="LightGray"/>
+                    <Setter Property="Text" Value="{DynamicResource DiffRowAdded}" />
+                </Style>
+                <Style x:Key="ColumnElementStyleCenter" TargetType="{x:Type TextBlock}">
+                    <Setter Property="HorizontalAlignment" Value="Center"/>
+                    <Setter Property="VerticalAlignment" Value="Center"/>
+                </Style>
+                <Style TargetType="{x:Type Button}">
+                    <Setter Property="Margin" Value="4" />
+                    <Setter Property="Padding" Value="5" />
+                </Style>
+            </Window.Resources>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="1*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <DataGrid x:Name="dgDiffList" Grid.ColumnSpan="5" AutoGenerateColumns="False" HeadersVisibility="Column" ItemsSource="{Binding DiffList}" SelectionMode="Single">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Width="2*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ContentControl>
+                                        <ContentControl.Style>
+                                            <Style TargetType="ContentControl">
+                                                <Setter Property="ContentTemplate">
+                                                    <Setter.Value>
+                                                        <DataTemplate>
+                                                            <Grid>
+                                                                <TextBlock Text="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridRow}}, Path=Item.DevLine}" Height="Auto" VerticalAlignment="Center"/>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridRow}}, Path=Item.DevLine}" Value="{x:Static sys:String.Empty}">
+                                                        <Setter Property="ContentTemplate">
+                                                            <Setter.Value>
+                                                                <DataTemplate>
+                                                                    <Grid>
+                                                                        <TextBlock Style="{DynamicResource DiffDevLine}"/>
+                                                                    </Grid>
+                                                                </DataTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </ContentControl.Style>
+                                    </ContentControl>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Binding="{Binding LineNr}" ElementStyle="{StaticResource ColumnElementStyleCenter}" Width="Auto"/>
+                        <DataGridTemplateColumn Width="2*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ContentControl>
+                                        <ContentControl.Style>
+                                            <Style TargetType="ContentControl">
+                                                <Setter Property="ContentTemplate">
+                                                    <Setter.Value>
+                                                        <DataTemplate>
+                                                            <Grid>
+                                                                <TextBlock Text="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridRow}}, Path=Item.ProdLine}" Height="Auto" VerticalAlignment="Center"/>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridRow}}, Path=Item.ProdLine}" Value="{x:Static sys:String.Empty}">
+                                                        <Setter Property="ContentTemplate">
+                                                            <Setter.Value>
+                                                                <DataTemplate>
+                                                                    <Grid>
+                                                                        <TextBlock Style="{DynamicResource DiffProdLine}"/>
+                                                                    </Grid>
+                                                                </DataTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </ContentControl.Style>
+                                    </ContentControl>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+                <Button x:Name="btnDiffOpenDev" Grid.Row="1"/>
+                <Button x:Name="btnDiffOpenProd" Grid.Column="1" Grid.Row="1"/>
+                <Button x:Name="btnDiffOpenBoth" Grid.Column="2" Grid.Row="1"/>
+                <Button x:Name="btnDiffCancel" Grid.Column="4" Grid.Row="1"/>
+            </Grid>
+        </Window>
     </Window.Resources>
     <Grid>
         <TabControl x:Name="tbAdmin">
             <TabItem x:Name="tiUpdates">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="45"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
-                    <StackPanel Grid.Row="0" Orientation="Horizontal">
+                    <StackPanel Orientation="Horizontal">
                         <Button x:Name="btnCheckForUpdates"/>
-                        <Button x:Name="btnUpdateScripts"/>
-                        <TextBlock x:Name="tblInfo" Foreground="Red" TextAlignment="Center" VerticalAlignment="Center" Background="#00000000"/>
+                        <Button x:Name="btnUpdateScripts">
+                            <Button.Style>
+                                <Style TargetType="{x:Type Button}">
+                                    <Setter Property="IsEnabled" Value="True" />
+                                    <Setter Property="Margin" Value="5" />
+                                    <Setter Property="Padding" Value="5" />
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ElementName=tbUpdated, Path=SelectedIndex}" Value="0">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding ElementName=dgUpdates, Path=SelectedItems.Count}" Value="0">
+                                            <Setter Property="IsEnabled" Value="False" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Button x:Name="btnUpdateFailedScripts">
+                            <Button.Style>
+                                <Style TargetType="{x:Type Button}">
+                                    <Setter Property="Margin" Value="5" />
+                                    <Setter Property="Padding" Value="5" />
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ElementName=tbUpdated, Path=SelectedIndex}" Value="1">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <TextBlock x:Name="tblInfo" Background="#00000000" Foreground="Red" TextAlignment="Center" VerticalAlignment="Center" Visibility="{Binding ElementName=btnUpdateScripts, Path=Visibility}"/>
                     </StackPanel>
                     <TabControl Grid.Row="1" x:Name="tbUpdated">
                         <TabItem x:Name="tiUpdated">
@@ -117,31 +433,748 @@
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition/>
                                 </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0" x:Name="tblUpdateInfo" Margin="5"/>
-                                <DataGrid Grid.Row="2" x:Name="dgUpdates">
+                                <Grid x:Name="grSearchUpdates">
+                                    <Grid.Style>
+                                        <Style TargetType="{x:Type Grid}">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ElementName=pbUpdates, Path=Value}" Value="0">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Grid.Style>
+                                    <Grid>
+                                        <ProgressBar x:Name="pbUpdates" Background="AliceBlue" Value="0"/>
+                                        <TextBox x:Name="tblUpdatesProgress" Background="Transparent" BorderBrush="Transparent" BorderThickness="0" FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBox.Effect>
+                                                <DropShadowEffect Color="Black" Direction="330" Opacity="0.1" ShadowDepth="4" BlurRadius="4"/>
+                                            </TextBox.Effect>
+                                        </TextBox>
+                                    </Grid>
+                                    <TextBlock x:Name="tblUpdateInfo" Margin="5" Background="#00000000" TextAlignment="Center"/>
+                                </Grid>
+                                <Grid x:Name="grUpdatesInfo">
+                                    <Grid.Style>
+                                        <Style TargetType="{x:Type Grid}">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ElementName=grSearchUpdates, Path=Visibility}" Value="Collapsed">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Grid.Style>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="30"/>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="30"/>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="30"/>
+                                        <ColumnDefinition/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.Resources>
+                                        <Style x:Key="CountStyle" TargetType="{x:Type TextBlock}">
+                                            <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.ControlBrushKey}}" />
+                                            <Setter Property="FontSize" Value="14" />
+                                            <Setter Property="FontWeight" Value="Bold" />
+                                            <Setter Property="TextAlignment" Value="Center" />
+                                            <Setter Property="VerticalAlignment" Value="Center" />
+                                        </Style>
+                                        <Style TargetType="{x:Type TextBlock}">
+                                            <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.ControlBrushKey}}" />
+                                            <Setter Property="VerticalAlignment" Value="Center" />
+                                        </Style>
+                                    </Grid.Resources>
+                                    <TextBlock x:Name="tbUpdatesSummary" Grid.ColumnSpan="6"/>
+                                    <TextBlock x:Name="tbDevCount" Grid.Row="1" Style="{StaticResource CountStyle}"/>
+                                    <StackPanel Grid.Column="1" Grid.Row="1" Margin="5,0,0,0" Orientation="Horizontal">
+                                        <TextBlock x:Name="tbDevTitle"/>
+                                        <CheckBox x:Name="cbShowDevFiles"/>
+                                    </StackPanel>
+                                    <TextBlock x:Name="tbTestCount" Grid.Column="2" Grid.Row="1" Style="{StaticResource CountStyle}"/>
+                                    <TextBlock x:Name="tbTestTitle" Grid.Column="3" Grid.Row="1"/>
+                                    <TextBlock x:Name="tbProdCount" Grid.Column="4" Grid.Row="1" Style="{StaticResource CountStyle}"/>
+                                    <TextBlock x:Name="tbProdTitle" Grid.Column="5" Grid.Row="1"/>
+                                    <StackPanel Grid.ColumnSpan="6" Grid.Row="2" Orientation="Horizontal">
+                                        <Button x:Name="btnUpdatesOpenDiff">
+                                            <Button.Style>
+                                                <Style TargetType="{x:Type Button}">
+                                                    <Setter Property="IsEnabled" Value="False" />
+                                                    <Setter Property="Margin" Value="5" />
+                                                    <Setter Property="Padding" Value="5" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding ElementName=dgUpdates, Path=SelectedItems.Count}" Value="1">
+                                                            <Setter Property="IsEnabled" Value="True" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding ElementName=dgUpdates, Path=SelectedItem.ProdPath}" Value="{x:Null}">
+                                                            <Setter Property="IsEnabled" Value="False" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding ElementName=dgUpdates, Path=SelectedItem.ProdPath}" Value="{x:Static sys:String.Empty}">
+                                                            <Setter Property="IsEnabled" Value="False" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                        <Button x:Name="btnUpdatesOpenDevFile">
+                                            <Button.Style>
+                                                <Style TargetType="{x:Type Button}">
+                                                    <Setter Property="IsEnabled" Value="False" />
+                                                    <Setter Property="Margin" Value="5" />
+                                                    <Setter Property="Padding" Value="5" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding ElementName=dgUpdates, Path=SelectedItems.Count}" Value="1">
+                                                            <Setter Property="IsEnabled" Value="True" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                        <Button x:Name="btnUpdatesOpenProdFile">
+                                            <Button.Style>
+                                                <Style TargetType="{x:Type Button}">
+                                                    <Setter Property="IsEnabled" Value="False" />
+                                                    <Setter Property="Margin" Value="5" />
+                                                    <Setter Property="Padding" Value="5" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding ElementName=dgUpdates, Path=SelectedItems.Count}" Value="1">
+                                                            <Setter Property="IsEnabled" Value="True" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding ElementName=dgUpdates, Path=SelectedItem.ProdPath}" Value="{x:Null}">
+                                                            <Setter Property="IsEnabled" Value="False" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding ElementName=dgUpdates, Path=SelectedItem.ProdPath}" Value="{x:Static sys:String.Empty}">
+                                                            <Setter Property="IsEnabled" Value="False" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                        <Button x:Name="btnUpdatesOpenBothFiles">
+                                            <Button.Style>
+                                                <Style TargetType="{x:Type Button}">
+                                                    <Setter Property="IsEnabled" Value="False" />
+                                                    <Setter Property="Margin" Value="5" />
+                                                    <Setter Property="Padding" Value="5" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding ElementName=dgUpdates, Path=SelectedItems.Count}" Value="1">
+                                                            <Setter Property="IsEnabled" Value="True" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding ElementName=dgUpdates, Path=SelectedItem.ProdPath}" Value="{x:Null}">
+                                                            <Setter Property="IsEnabled" Value="False" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding ElementName=dgUpdates, Path=SelectedItem.ProdPath}" Value="{x:Static sys:String.Empty}">
+                                                            <Setter Property="IsEnabled" Value="False" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                                <DataGrid x:Name="dgUpdates" Grid.Row="2" RowStyle="{StaticResource DgUpdatesRowStyle}">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Binding="{Binding Name}" ElementStyle="{StaticResource ColumnElementStyle}" />
-                                        <DataGridTextColumn Binding="{Binding Path}" ElementStyle="{StaticResource ColumnElementStyle}" />
-                                        <DataGridTextColumn Binding="{Binding DevUpd}" ElementStyle="{StaticResource ColumnElementStyle}" />
-                                        <DataGridTextColumn Binding="{Binding ProdUpd}" ElementStyle="{StaticResource ColumnElementStyle}" />
-                                        <DataGridTextColumn Binding="{Binding State}" ElementStyle="{StaticResource ColumnElementStyle}" />
+                                        <DataGridTextColumn Binding="{Binding Name}" ElementStyle="{StaticResource ColumnElementStyle}" Width="370*"/>
+                                        <DataGridTextColumn Binding="{Binding RelativePath}" ElementStyle="{StaticResource ColumnElementStyle}" Width="630*"/>
+                                        <DataGridTextColumn Binding="{Binding DevUpd}" ElementStyle="{StaticResource DateCell}" Width="165*"/>
+                                        <DataGridTemplateColumn Width="165*">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <ContentControl>
+                                                        <ContentControl.Style>
+                                                            <Style TargetType="ContentControl">
+                                                                <Setter Property="ContentTemplate">
+                                                                    <Setter.Value>
+                                                                        <DataTemplate>
+                                                                            <TextBlock Text="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridRow}}, Path=Item.ProdUpd}"  Style="{StaticResource DateCell}"/>
+                                                                        </DataTemplate>
+                                                                    </Setter.Value>
+                                                                </Setter>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridRow}}, Path=Item.ProdUpd}" Value="{x:Null}">
+                                                                        <Setter Property="ContentTemplate">
+                                                                            <Setter.Value>
+                                                                                <DataTemplate>
+                                                                                    <TextBlock Style="{DynamicResource NewFileCell}"/>
+                                                                                </DataTemplate>
+                                                                            </Setter.Value>
+                                                                        </Setter>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </ContentControl.Style>
+                                                    </ContentControl>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTextColumn Binding="{Binding State}" ElementStyle="{StaticResource ColumnElementStyle}" Width="100*"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Grid>
                         </TabItem>
-                        <TabItem x:Name="tiUpdatedInProd">
+                        <TabItem x:Name="tiFailedUpdates">
+                            <TabItem.Style>
+                                <Style TargetType="{x:Type TabItem}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ElementName=dgFailedUpdates, Path=HasItems}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TabItem.Style>
+                            <DataGrid x:Name="dgFailedUpdates">
+                                <DataGrid.Resources>
+                                    <DataGridLength x:Key="colListWidth">1*</DataGridLength>
+                                    <sys:String x:Key="dgOFColHeaderFunctionName">1</sys:String>
+                                    <sys:String x:Key="dgOFColHeaderHelpMessage">2</sys:String>
+                                    <sys:String x:Key="dgOFColHeaderLineNumbers">3</sys:String>
+                                    <sys:String x:Key="dgIVColHeaderTextLN">1</sys:String>
+                                    <sys:String x:Key="dgIVColHeaderTextSV">2</sys:String>
+                                    <sys:String x:Key="dgIVColHeaderTextSL">3</sys:String>
+                                    <sys:String x:Key="dgOLColHeaderTextLVar">1</sys:String>
+                                    <sys:String x:Key="dgOLColHeaderTextLVal">2</sys:String>
+                                    <sys:String x:Key="NoAcceptedVerb">E</sys:String>
+                                    <sys:String x:Key="dgSIColHeaderTitle">1</sys:String>
+                                    <sys:String x:Key="dgSIColHeaderInfoDesc">2</sys:String>
+                                    <sys:String x:Key="dgTDColHeaderTextL">1</sys:String>
+                                    <sys:String x:Key="dgTDColHeaderTextLN">2</sys:String>
+                                </DataGrid.Resources>
+                                <DataGrid.Columns>
+                                    <!-- Column for Name -->
+                                    <DataGridTemplateColumn Width="Auto">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <ContentControl>
+                                                    <ContentControl.Style>
+                                                        <Style TargetType="ContentControl">
+                                                            <Setter Property="ContentTemplate">
+                                                                <Setter.Value>
+                                                                    <DataTemplate>
+                                                                        <Grid>
+                                                                            <Grid.RowDefinitions>
+                                                                                <RowDefinition/>
+                                                                                <RowDefinition/>
+                                                                                <RowDefinition/>
+                                                                            </Grid.RowDefinitions>
+                                                                            <Label Style="{StaticResource NameLabel}" Content="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridRow}}, Path=Item.File.Name}"/>
+                                                                            <TextBlock Grid.Row="1" Margin="5" TextWrapping="Wrap">
+                                                                                <Run Text="{DynamicResource FailedTestCount}"/>
+                                                                                <Run Text="&#x0a;"/>
+                                                                                <Run Text="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridRow}}, Path=Item.FailedTestCount}"/>
+                                                                            </TextBlock>
+                                                                        </Grid>
+                                                                    </DataTemplate>
+                                                                </Setter.Value>
+                                                            </Setter>
+                                                        </Style>
+                                                    </ContentControl.Style>
+                                                </ContentControl>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <!-- Column to allow update-->
+                                    <DataGridTemplateColumn>
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <CheckBox IsChecked="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridRow}}, Path=Item.UpdateAnyway}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <!-- Column for AcceptedVerb -->
+                                    <DataGridTemplateColumn Width="Auto">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <ContentControl>
+                                                    <ContentControl.Style>
+                                                        <Style TargetType="ContentControl">
+                                                            <Setter Property="ContentTemplate">
+                                                                <Setter.Value>
+                                                                    <DataTemplate>
+                                                                        <Label Style="{StaticResource ValidLabel}"/>
+                                                                    </DataTemplate>
+                                                                </Setter.Value>
+                                                            </Setter>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridRow}}, Path=Item.AcceptedVerb}" Value="False">
+                                                                    <Setter Property="ContentTemplate">
+                                                                        <Setter.Value>
+                                                                            <DataTemplate>
+                                                                                <Label Style="{StaticResource InvalidLabel}" ToolTip="{DynamicResource NoAcceptedVerb}"/>
+                                                                            </DataTemplate>
+                                                                        </Setter.Value>
+                                                                    </Setter>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </ContentControl.Style>
+                                                </ContentControl>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <!-- Column for WritesToLog -->
+                                    <DataGridTemplateColumn Width="Auto">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <ContentControl>
+                                                    <ContentControl.Style>
+                                                        <Style TargetType="ContentControl">
+                                                            <Setter Property="ContentTemplate">
+                                                                <Setter.Value>
+                                                                    <DataTemplate>
+                                                                        <Label Style="{StaticResource ValidLabel}"/>
+                                                                    </DataTemplate>
+                                                                </Setter.Value>
+                                                            </Setter>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridRow}}, Path=Item.WritesToLog}" Value="False">
+                                                                    <Setter Property="ContentTemplate">
+                                                                        <Setter.Value>
+                                                                            <DataTemplate>
+                                                                                <Label Style="{StaticResource InvalidLabel}"/>
+                                                                            </DataTemplate>
+                                                                        </Setter.Value>
+                                                                    </Setter>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </ContentControl.Style>
+                                                </ContentControl>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <!-- Column for ScriptInfo -->
+                                    <DataGridTemplateColumn Width="1*">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <ContentControl>
+                                                    <ContentControl.Style>
+                                                        <Style TargetType="ContentControl">
+                                                            <Setter Property="ContentTemplate">
+                                                                <Setter.Value>
+                                                                    <DataTemplate>
+                                                                        <!-- DataGrid for listing ScriptInfo not specified -->
+                                                                        <DataGrid AutoGenerateColumns="False" HorizontalAlignment="Stretch" ItemsSource="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridRow}}, Path=Item.ScriptInfo}" VerticalAlignment="Stretch" ColumnWidth="1*" HeadersVisibility="Column">
+                                                                            <DataGrid.CellStyle>
+                                                                                <Style TargetType="{x:Type DataGridCell}">
+                                                                                    <Setter Property="ToolTip" Value="{Binding InfoDesc}"/>
+                                                                                </Style>
+                                                                            </DataGrid.CellStyle>
+                                                                            <DataGrid.Columns>
+                                                                                <DataGridTextColumn Binding="{Binding Title}">
+                                                                                    <DataGridTextColumn.Header>
+                                                                                        <TextBlock Text="{DynamicResource dgSIColHeaderTitle}"/>
+                                                                                    </DataGridTextColumn.Header>
+                                                                                </DataGridTextColumn>
+                                                                                <DataGridTextColumn Binding="{Binding InfoDesc}">
+                                                                                    <DataGridTextColumn.Header>
+                                                                                        <TextBlock Text="{DynamicResource dgSIColHeaderInfoDesc}"/>
+                                                                                    </DataGridTextColumn.Header>
+                                                                                </DataGridTextColumn>
+                                                                            </DataGrid.Columns>
+                                                                        </DataGrid>
+                                                                    </DataTemplate>
+                                                                </Setter.Value>
+                                                            </Setter>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridRow}}, Path=Item.ScriptInfo.Count}" Value="0">
+                                                                    <Setter Property="ContentTemplate">
+                                                                        <Setter.Value>
+                                                                            <DataTemplate>
+                                                                                <Label Style="{StaticResource ValidLabel}"/>
+                                                                            </DataTemplate>
+                                                                        </Setter.Value>
+                                                                    </Setter>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </ContentControl.Style>
+                                                </ContentControl>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <!-- Column for ObsoleteFunctions -->
+                                    <DataGridTemplateColumn Width="1*">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <ContentControl>
+                                                    <ContentControl.Style>
+                                                        <Style TargetType="ContentControl">
+                                                            <Setter Property="ContentTemplate">
+                                                                <Setter.Value>
+                                                                    <DataTemplate>
+                                                                        <!-- Datagrid for listing ObsoleteFunctions used -->
+                                                                        <DataGrid AutoGenerateColumns="False" HorizontalAlignment="Stretch" ItemsSource="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridRow}}, Path=Item.ObsoleteFunctions}" VerticalAlignment="Stretch" ColumnWidth="1*" HeadersVisibility="Column">
+                                                                            <DataGrid.CellStyle>
+                                                                                <Style TargetType="{x:Type DataGridCell}">
+                                                                                    <Setter Property="ToolTip">
+                                                                                        <Setter.Value>
+                                                                                            <Border Background="White">
+                                                                                                <StackPanel Background="White">
+                                                                                                    <StackPanel Margin="0" Orientation="Horizontal">
+                                                                                                        <TextBlock FontWeight="Bold" Text="{DynamicResource dgOFColHeaderFunctionName}"/>
+                                                                                                        <TextBlock Text="{Binding FunctionName}"/>
+                                                                                                    </StackPanel>
+                                                                                                    <StackPanel Margin="0" Orientation="Horizontal">
+                                                                                                        <TextBlock FontWeight="Bold" Text="{DynamicResource dgOFColHeaderHelpMessage}"/>
+                                                                                                        <TextBlock Text="{Binding HelpMessage}"/>
+                                                                                                    </StackPanel>
+                                                                                                    <StackPanel Margin="0" Orientation="Horizontal">
+                                                                                                        <TextBlock FontWeight="Bold" Text="{DynamicResource dgOFColHeaderLineNumbers}"/>
+                                                                                                        <TextBlock Text="{Binding LineNumbers}"/>
+                                                                                                    </StackPanel>
+                                                                                                </StackPanel>
+                                                                                            </Border>
+                                                                                        </Setter.Value>
+                                                                                    </Setter>
+                                                                                </Style>
+                                                                            </DataGrid.CellStyle>
+                                                                            <DataGrid.Columns>
+                                                                                <DataGridTextColumn Binding="{Binding FunctionName}">
+                                                                                    <DataGridTextColumn.Header>
+                                                                                        <TextBlock Text="{DynamicResource dgOFColHeaderFunctionName}"/>
+                                                                                    </DataGridTextColumn.Header>
+                                                                                </DataGridTextColumn>
+                                                                                <DataGridTextColumn Binding="{Binding HelpMessage}">
+                                                                                    <DataGridTextColumn.Header>
+                                                                                        <TextBlock Text="{DynamicResource dgOFColHeaderHelpMessage}"/>
+                                                                                    </DataGridTextColumn.Header>
+                                                                                </DataGridTextColumn>
+                                                                                <DataGridTextColumn Binding="{Binding LineNumbers}">
+                                                                                    <DataGridTextColumn.Header>
+                                                                                        <TextBlock Text="{DynamicResource dgOFColHeaderLineNumbers}"/>
+                                                                                    </DataGridTextColumn.Header>
+                                                                                </DataGridTextColumn>
+                                                                            </DataGrid.Columns>
+                                                                        </DataGrid>
+                                                                    </DataTemplate>
+                                                                </Setter.Value>
+                                                            </Setter>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridRow}}, Path=Item.ObsoleteFunctions.Count}" Value="0">
+                                                                    <Setter Property="ContentTemplate">
+                                                                        <Setter.Value>
+                                                                            <DataTemplate>
+                                                                                <Label Style="{StaticResource ValidLabel}"/>
+                                                                            </DataTemplate>
+                                                                        </Setter.Value>
+                                                                    </Setter>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </ContentControl.Style>
+                                                </ContentControl>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <!-- Column for InvalidLocalizations -->
+                                    <DataGridTemplateColumn Width="1*">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <ContentControl>
+                                                    <ContentControl.Style>
+                                                        <Style TargetType="ContentControl">
+                                                            <Setter Property="ContentTemplate">
+                                                                <Setter.Value>
+                                                                    <DataTemplate>
+                                                                        <!-- Datagrid for listing InvalidLocalizations used -->
+                                                                        <DataGrid AutoGenerateColumns="False" HorizontalAlignment="Stretch" ItemsSource="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridRow}}, Path=Item.InvalidLocalizations}" VerticalAlignment="Stretch" ColumnWidth="1*">
+                                                                            <DataGrid.CellStyle>
+                                                                                <Style TargetType="{x:Type DataGridCell}">
+                                                                                    <Setter Property="ToolTip">
+                                                                                        <Setter.Value>
+                                                                                            <Border Background="White">
+                                                                                                <StackPanel Background="White">
+                                                                                                    <StackPanel Margin="0" Orientation="Horizontal">
+                                                                                                        <TextBlock FontWeight="Bold" Text="{DynamicResource dgIVColHeaderTextLN}"/>
+                                                                                                        <TextBlock Text="{Binding ScLineNr}"/>
+                                                                                                    </StackPanel>
+                                                                                                    <StackPanel Margin="0" Orientation="Horizontal">
+                                                                                                        <TextBlock FontWeight="Bold" Text="{DynamicResource dgIVColHeaderTextSV}"/>
+                                                                                                        <TextBlock Text="{Binding ScVar}"/>
+                                                                                                    </StackPanel>
+                                                                                                    <StackPanel Margin="0" Orientation="Horizontal">
+                                                                                                        <TextBlock FontWeight="Bold" Text="{DynamicResource dgIVColHeaderTextSL}"/>
+                                                                                                        <TextBlock Text="{Binding ScLine}"/>
+                                                                                                    </StackPanel>
+                                                                                                </StackPanel>
+                                                                                            </Border>
+                                                                                        </Setter.Value>
+                                                                                    </Setter>
+                                                                                </Style>
+                                                                            </DataGrid.CellStyle>
+                                                                            <DataGrid.Style>
+                                                                                <Style TargetType="{x:Type DataGrid}">
+                                                                                    <Setter Property="HeadersVisibility" Value="Column"/>
+                                                                                </Style>
+                                                                            </DataGrid.Style>
+                                                                            <DataGrid.Columns>
+                                                                                <DataGridTextColumn Binding="{Binding ScLineNr}">
+                                                                                    <DataGridTextColumn.Header>
+                                                                                        <TextBlock Text="{DynamicResource dgIVColHeaderTextLN}"/>
+                                                                                    </DataGridTextColumn.Header>
+                                                                                </DataGridTextColumn>
+                                                                                <DataGridTextColumn Binding="{Binding ScVar}">
+                                                                                    <DataGridTextColumn.Header>
+                                                                                        <TextBlock Text="{DynamicResource dgIVColHeaderTextSV}"/>
+                                                                                    </DataGridTextColumn.Header>
+                                                                                </DataGridTextColumn>
+                                                                                <DataGridTextColumn Binding="{Binding ScLine}">
+                                                                                    <DataGridTextColumn.Header>
+                                                                                        <TextBlock Text="{DynamicResource dgIVColHeaderTextSL}"/>
+                                                                                    </DataGridTextColumn.Header>
+                                                                                </DataGridTextColumn>
+                                                                            </DataGrid.Columns>
+                                                                        </DataGrid>
+                                                                    </DataTemplate>
+                                                                </Setter.Value>
+                                                            </Setter>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridRow}}, Path=Item.InvalidLocalizations.Count}" Value="0">
+                                                                    <Setter Property="ContentTemplate">
+                                                                        <Setter.Value>
+                                                                            <DataTemplate>
+                                                                                <Label Style="{StaticResource ValidLabel}"/>
+                                                                            </DataTemplate>
+                                                                        </Setter.Value>
+                                                                    </Setter>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </ContentControl.Style>
+                                                </ContentControl>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <!-- Column for OrphandLocalizations -->
+                                    <DataGridTemplateColumn Width="1*">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <ContentControl>
+                                                    <ContentControl.Style>
+                                                        <Style TargetType="ContentControl">
+                                                            <Setter Property="ContentTemplate">
+                                                                <Setter.Value>
+                                                                    <DataTemplate>
+                                                                        <!-- Datagrid for listing OrphandLocalizations used -->
+                                                                        <DataGrid AutoGenerateColumns="False" HorizontalAlignment="Stretch" ItemsSource="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridRow}}, Path=Item.OrphandLocalizations}" VerticalAlignment="Stretch" ColumnWidth="1*">
+                                                                            <DataGrid.CellStyle>
+                                                                                <Style TargetType="{x:Type DataGridCell}">
+                                                                                    <Setter Property="ToolTip">
+                                                                                        <Setter.Value>
+                                                                                            <Border Background="White">
+                                                                                                <StackPanel Background="White">
+                                                                                                    <StackPanel Margin="0" Orientation="Horizontal">
+                                                                                                        <TextBlock FontWeight="Bold" Text="{DynamicResource dgOLColHeaderTextLVar}"/>
+                                                                                                        <TextBlock Text="{Binding LocVar}"/>
+                                                                                                    </StackPanel>
+                                                                                                    <StackPanel Margin="0" Orientation="Horizontal">
+                                                                                                        <TextBlock FontWeight="Bold" Text="{DynamicResource dgOLColHeaderTextLVal}"/>
+                                                                                                        <TextBlock Text="{Binding LocVal}"/>
+                                                                                                    </StackPanel>
+                                                                                                </StackPanel>
+                                                                                            </Border>
+                                                                                        </Setter.Value>
+                                                                                    </Setter>
+                                                                                </Style>
+                                                                            </DataGrid.CellStyle>
+                                                                            <DataGrid.Style>
+                                                                                <Style TargetType="{x:Type DataGrid}">
+                                                                                    <Setter Property="HeadersVisibility" Value="Column"/>
+                                                                                </Style>
+                                                                            </DataGrid.Style>
+                                                                            <DataGrid.Columns>
+                                                                                <DataGridTextColumn Binding="{Binding LocVar}">
+                                                                                    <DataGridTextColumn.Header>
+                                                                                        <TextBlock Text="{DynamicResource dgOLColHeaderTextLVar}"/>
+                                                                                    </DataGridTextColumn.Header>
+                                                                                </DataGridTextColumn>
+                                                                                <DataGridTextColumn Binding="{Binding LocVal}">
+                                                                                    <DataGridTextColumn.Header>
+                                                                                        <TextBlock Text="{DynamicResource dgOLColHeaderTextLVal}"/>
+                                                                                    </DataGridTextColumn.Header>
+                                                                                </DataGridTextColumn>
+                                                                            </DataGrid.Columns>
+                                                                        </DataGrid>
+                                                                    </DataTemplate>
+                                                                </Setter.Value>
+                                                            </Setter>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridRow}}, Path=Item.OrphandLocalizations.Count}" Value="0">
+                                                                    <Setter Property="ContentTemplate">
+                                                                        <Setter.Value>
+                                                                            <DataTemplate>
+                                                                                <Label Style="{StaticResource ValidLabel}"/>
+                                                                            </DataTemplate>
+                                                                        </Setter.Value>
+                                                                    </Setter>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </ContentControl.Style>
+                                                </ContentControl>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <!-- Column for TODOs -->
+                                    <DataGridTemplateColumn Width="1*">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <ContentControl>
+                                                    <ContentControl.Style>
+                                                        <Style TargetType="ContentControl">
+                                                            <Setter Property="ContentTemplate">
+                                                                <Setter.Value>
+                                                                    <DataTemplate>
+                                                                        <!-- Datagrid for listing TODOs left in the file -->
+                                                                        <DataGrid AutoGenerateColumns="False" HorizontalAlignment="Stretch" ItemsSource="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridRow}}, Path=Item.TODOs}" VerticalAlignment="Stretch" ColumnWidth="1*">
+                                                                            <DataGrid.Style>
+                                                                                <Style TargetType="{x:Type DataGrid}">
+                                                                                    <Setter Property="HeadersVisibility" Value="Column"/>
+                                                                                </Style>
+                                                                            </DataGrid.Style>
+                                                                            <DataGrid.Columns>
+                                                                                <DataGridTextColumn Binding="{Binding Line}">
+                                                                                    <DataGridTextColumn.Header>
+                                                                                        <TextBlock Text="{DynamicResource dgTDColHeaderTextL}"/>
+                                                                                    </DataGridTextColumn.Header>
+                                                                                </DataGridTextColumn>
+                                                                                <DataGridTextColumn Binding="{Binding LineNumber}">
+                                                                                    <DataGridTextColumn.Header>
+                                                                                        <TextBlock Text="{DynamicResource dgTDColHeaderTextLN}"/>
+                                                                                    </DataGridTextColumn.Header>
+                                                                                </DataGridTextColumn>
+                                                                            </DataGrid.Columns>
+                                                                        </DataGrid>
+                                                                    </DataTemplate>
+                                                                </Setter.Value>
+                                                            </Setter>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridRow}}, Path=Item.TODOs.Count}" Value="0">
+                                                                    <Setter Property="ContentTemplate">
+                                                                        <Setter.Value>
+                                                                            <DataTemplate>
+                                                                                <Label Style="{StaticResource ValidLabel}"/>
+                                                                            </DataTemplate>
+                                                                        </Setter.Value>
+                                                                    </Setter>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </ContentControl.Style>
+                                                </ContentControl>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </TabItem>
+                        <TabItem x:Name="tiUpdatedInProd" Background="Red">
+                            <TabItem.Style>
+                                <Style TargetType="{x:Type TabItem}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ElementName=dgUpdatedInProd, Path=HasItems}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TabItem.Style>
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                     <RowDefinition/>
                                 </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0" x:Name="tblUpdatedInProd" Foreground="Red"/>
-                                <DataGrid Grid.Row="1" x:Name="dgUpdatedInProd">
+                                <TextBlock x:Name="tblUpdatedInProd" Foreground="Red"/>
+                                <StackPanel Grid.Row="1" Orientation="Horizontal">
+                                    <Button x:Name="btnUpdatedInProdOpenDiffs">
+                                        <Button.Style>
+                                            <Style TargetType="{x:Type Button}">
+                                                <Setter Property="IsEnabled" Value="False" />
+                                                <Setter Property="Margin" Value="5" />
+                                                <Setter Property="Padding" Value="5" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding ElementName=dgUpdatedInProd, Path=SelectedItems.Count}" Value="1">
+                                                        <Setter Property="IsEnabled" Value="True" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding ElementName=dgUpdatedInProd, Path=SelectedItem.DevPath}" Value="{x:Null}">
+                                                        <Setter Property="IsEnabled" Value="False" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding ElementName=dgUpdatedInProd, Path=SelectedItem.DevPath}" Value="{x:Static sys:String.Empty}">
+                                                        <Setter Property="IsEnabled" Value="False" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                    <Button x:Name="btnUpdatedInProdOpenDevFile">
+                                        <Button.Style>
+                                            <Style TargetType="{x:Type Button}">
+                                                <Setter Property="IsEnabled" Value="False" />
+                                                <Setter Property="Margin" Value="5" />
+                                                <Setter Property="Padding" Value="5" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding ElementName=dgUpdatedInProd, Path=SelectedItems.Count}" Value="1">
+                                                        <Setter Property="IsEnabled" Value="True" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding ElementName=dgUpdatedInProd, Path=SelectedItem.DevPath}" Value="{x:Null}">
+                                                        <Setter Property="IsEnabled" Value="False" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding ElementName=dgUpdatedInProd, Path=SelectedItem.DevPath}" Value="{x:Static sys:String.Empty}">
+                                                        <Setter Property="IsEnabled" Value="False" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                    <Button x:Name="btnUpdatedInProdOpenProdFile">
+                                        <Button.Style>
+                                            <Style TargetType="{x:Type Button}">
+                                                <Setter Property="IsEnabled" Value="False" />
+                                                <Setter Property="Margin" Value="5" />
+                                                <Setter Property="Padding" Value="5" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding ElementName=dgUpdatedInProd, Path=SelectedItems.Count}" Value="1">
+                                                        <Setter Property="IsEnabled" Value="True" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                    <Button x:Name="btnUpdatedInProdOpenBothFiles">
+                                        <Button.Style>
+                                            <Style TargetType="{x:Type Button}">
+                                                <Setter Property="IsEnabled" Value="False" />
+                                                <Setter Property="Margin" Value="5" />
+                                                <Setter Property="Padding" Value="5" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding ElementName=dgUpdatedInProd, Path=SelectedItems.Count}" Value="1">
+                                                        <Setter Property="IsEnabled" Value="True" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding ElementName=dgUpdatedInProd, Path=SelectedItem.DevPath}" Value="{x:Null}">
+                                                        <Setter Property="IsEnabled" Value="False" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding ElementName=dgUpdatedInProd, Path=SelectedItem.DevPath}" Value="{x:Static sys:String.Empty}">
+                                                        <Setter Property="IsEnabled" Value="False" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                </StackPanel>
+                                <DataGrid Grid.Row="2" x:Name="dgUpdatedInProd">
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Binding="{Binding Name}" ElementStyle="{StaticResource ColumnElementStyle}" />
-                                        <DataGridTextColumn Binding="{Binding Path}" ElementStyle="{StaticResource ColumnElementStyle}" />
-                                        <DataGridTextColumn Binding="{Binding DevUpd}" ElementStyle="{StaticResource ColumnElementStyle}" />
-                                        <DataGridTextColumn Binding="{Binding ProdUpd}" ElementStyle="{StaticResource ColumnElementStyle}" />
+                                        <DataGridTextColumn Binding="{Binding RelativePath}" ElementStyle="{StaticResource ColumnElementStyle}" />
+                                        <DataGridTextColumn Binding="{Binding DevUpd, StringFormat='yyyy-MM-dd hh:mm:ss'}" ElementStyle="{StaticResource ColumnElementStyle}" />
+                                        <DataGridTextColumn Binding="{Binding ProdUpd, StringFormat='yyyy-MM-dd hh:mm:ss'}" ElementStyle="{StaticResource ColumnElementStyle}" />
                                         <DataGridTextColumn Binding="{Binding State}" ElementStyle="{StaticResource ColumnElementStyle}" />
                                     </DataGrid.Columns>
                                 </DataGrid>
@@ -151,19 +1184,92 @@
                 </Grid>
             </TabItem>
             <TabItem x:Name="tiLogs">
-                <Grid>
+                <Grid x:Name="gridLogs">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="400"/>
+                        <ColumnDefinition Width="Auto" MinWidth="440"/>
                         <ColumnDefinition/>
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
-                    <Button x:Name="btnReadLogs"/>
-                    <ComboBox x:Name="cbLogsScriptNames" Grid.Row="1" Margin="5" IsEnabled="{Binding HasItems, RelativeSource={RelativeSource Self}}" DisplayMemberPath="ScriptName"/>
-                    <DataGrid Grid.Row="2" x:Name="dgLogs" SelectionMode="Single" ItemsSource="{Binding ElementName=cbLogsScriptNames, Path=SelectedItem.ScriptLogs}">
+                    <Button x:Name="btnReadLogs">
+                        <Button.Style>
+                            <Style TargetType="{x:Type Button}">
+                                <Setter Property="Margin" Value="5" />
+                                <Setter Property="Padding" Value="5" />
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ElementName=cbLogsScriptNames, Path=ItemsSource.Count}" Value="0">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.Style>
+                            <Style TargetType="{x:Type Grid}">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ElementName=cbLogsScriptNames, Path=ItemsSource.Count}" Value="0">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Style>
+                        <ComboBox x:Name="cbLogSearchType">
+                            <ComboBoxItem Content="ComputerName"/>
+                            <ComboBoxItem Content="LogText"/>
+                            <ComboBoxItem Content="Operator"/>
+                            <ComboBoxItem Content="UserInput"/>
+                        </ComboBox>
+                        <TextBox x:Name="tbLogSearchText" Grid.Column="1">
+                            <TextBox.Style>
+                                <Style TargetType="{x:Type TextBox}">
+                                    <Setter Property="IsEnabled" Value="True" />
+                                    <Setter Property="Margin" Value="5" />
+                                    <Setter Property="ToolTip" Value="{x:Null}" />
+                                    <Setter Property="VerticalContentAlignment" Value="Center" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ElementName=cbLogSearchType, Path=SelectedIndex}" Value="-1">
+                                            <Setter Property="IsEnabled" Value="False" />
+                                            <Setter Property="ToolTip" Value="{StaticResource LogSearchNoType}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Style>
+                        </TextBox>
+                        <Button x:Name="btnLogSearch" Grid.Column="2">
+                            <Button.Style>
+                                <Style TargetType="{x:Type Button}">
+                                    <Setter Property="Margin" Value="5" />
+                                    <Setter Property="Padding" Value="5" />
+                                    <Setter Property="IsEnabled" Value="{Binding ElementName=tbLogSearchText, Path=IsEnabled}" />
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </Grid>
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ComboBox x:Name="cbLogsScriptNames" Margin="5" IsEnabled="{Binding HasItems, RelativeSource={RelativeSource Self}}" DisplayMemberPath="ScriptName"/>
+                        <Button x:Name="btnClearLogSearch" Grid.Column="1" Visibility="Collapsed"/>
+                    </Grid>
+                    <StackPanel Grid.Row="3" Orientation="Horizontal">
+                        <CheckBox x:Name="cbLogsFilterSuccessFailed" IsChecked="True"/>
+                        <CheckBox x:Name="cbLogsFilterSuccessSuccess" IsChecked="True"/>
+                    </StackPanel>
+                    <DataGrid x:Name="dgLogs" Grid.Row="4" SelectionMode="Single" ItemsSource="{Binding Source={StaticResource CvsLogs}}" RowStyle="{StaticResource DgLogsRowStyle}">
                         <DataGrid.Resources>
                             <Style TargetType="DataGridRow">
                                 <Style.Triggers>
@@ -176,43 +1282,43 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Binding="{Binding LogDate}" ElementStyle="{StaticResource ColumnElementStyle}" />
                             <DataGridTextColumn Binding="{Binding Success}" ElementStyle="{StaticResource ColumnElementStyle}" />
-                            <DataGridTextColumn Binding="{Binding Operator}" ElementStyle="{StaticResource ColumnElementStyle}" />
+                            <DataGridTextColumn Binding="{Binding Operator, Converter={StaticResource Converter}}" ElementStyle="{StaticResource ColumnElementStyle}" />
                         </DataGrid.Columns>
                     </DataGrid>
-                    <GroupBox x:Name="gbLogInfo" Grid.Column="1" Grid.Row="2">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="200"/>
-                                <ColumnDefinition Width="2*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition/>
-                                <RowDefinition/>
-                                <RowDefinition Height="40"/>
-                                <RowDefinition Height="40"/>
-                                <RowDefinition Height="40"/>
-                            </Grid.RowDefinitions>
-                            <Label x:Name="lblLogUserInputTitle" VerticalAlignment="Top"/>
-                            <Border Grid.Column="1" Style="{StaticResource tblBorder}">
+                    <Grid x:Name="gridLogInfo" Grid.Column="1" Grid.RowSpan="{Binding ElementName=gridLogs, Path=RowDefinitions.Count}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="200"/>
+                            <ColumnDefinition Width="2*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition Height="40"/>
+                            <RowDefinition Height="40"/>
+                            <RowDefinition Height="40"/>
+                        </Grid.RowDefinitions>
+                        <Label x:Name="lblLogUserInputTitle" VerticalAlignment="Top"/>
+                        <Border Grid.Column="1" Style="{StaticResource tblBorder}">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <TextBlock x:Name="tbLogUserInput" Text="{Binding ElementName=dgLogs, Path=SelectedItem.UserInput}"/>
-                            </Border>
-                            <Label x:Name="lblLogTextTitle" Grid.Row="1" VerticalAlignment="Top"/>
-                            <Border Grid.Column="1" Grid.Row="1" Style="{StaticResource tblBorder}">
-                                <TextBlock x:Name="tbLogText" Text="{Binding ElementName=dgLogs, Path=SelectedItem.LogText}"/>
-                            </Border>
-                            <Label x:Name="lblLogComputerNameTitle" Grid.Row="2"/>
-                            <Border Grid.Column="1" Grid.Row="2" Style="{StaticResource tblBorder}">
-                                <TextBlock x:Name="tbLogComputer" Text="{Binding ElementName=dgLogs, Path=SelectedItem.ComputerName}"/>
-                            </Border>
-                            <Label x:Name="lblLogErrorLogTitle" Grid.Row="3"/>
-                            <ComboBox x:Name="cbLogErrorlog" Grid.Column="1" Grid.Row="3" ItemsSource="{Binding ElementName=dgLogs, Path=SelectedItem.ErrorLogDate}" IsEnabled="{Binding HasItems, RelativeSource={RelativeSource Self}}"/>
-                            <Button x:Name="btnOpenErrorLog" Grid.Column="2" Grid.Row="3" IsEnabled="{Binding ElementName=cbLogErrorlog, Path=IsEnabled}"/>
-                            <Label x:Name="lblLogOutputFileTitle" Grid.Row="4"/>
-                            <ComboBox x:Name="cbLoOutputFiles" Grid.Column="1" Grid.Row="4" ItemsSource="{Binding ElementName=dgLogs, Path=SelectedItem.OutputFile}" IsEnabled="{Binding HasItems, RelativeSource={RelativeSource Self}}"/>
-                            <Button x:Name="btnOpenOutputFile" Grid.Column="2" Grid.Row="4" IsEnabled="{Binding ElementName=cbLoOutputFiles, Path=IsEnabled}"/>
-                        </Grid>
-                    </GroupBox>
+                            </ScrollViewer>
+                        </Border>
+                        <Label x:Name="lblLogTextTitle" Grid.Row="1" VerticalAlignment="Top"/>
+                        <Border Grid.Column="1" Grid.Row="1" Style="{StaticResource tblBorder}">
+                            <TextBlock x:Name="tbLogText" Text="{Binding ElementName=dgLogs, Path=SelectedItem.LogText}" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                        </Border>
+                        <Label x:Name="lblLogComputerNameTitle" Grid.Row="2"/>
+                        <Border Grid.Column="1" Grid.Row="2" Style="{StaticResource tblBorder}">
+                            <TextBlock x:Name="tbLogComputer" Text="{Binding ElementName=dgLogs, Path=SelectedItem.ComputerName}"/>
+                        </Border>
+                        <Label x:Name="lblLogErrorLogTitle" Grid.Row="3"/>
+                        <ComboBox x:Name="cbLogErrorlog" Grid.Column="1" Grid.Row="3" ItemsSource="{Binding ElementName=dgLogs, Path=SelectedItem.ErrorLogDate}" IsEnabled="{Binding HasItems, RelativeSource={RelativeSource Self}}"/>
+                        <Button x:Name="btnOpenErrorLog" Grid.Column="2" Grid.Row="3" IsEnabled="{Binding ElementName=cbLogErrorlog, Path=IsEnabled}"/>
+                        <Label x:Name="lblLogOutputFileTitle" Grid.Row="4"/>
+                        <ComboBox x:Name="cbLoOutputFiles" Grid.Column="1" Grid.Row="4" ItemsSource="{Binding ElementName=dgLogs, Path=SelectedItem.OutputFile}" IsEnabled="{Binding HasItems, RelativeSource={RelativeSource Self}}"/>
+                        <Button x:Name="btnOpenOutputFile" Grid.Column="2" Grid.Row="4" IsEnabled="{Binding ElementName=cbLoOutputFiles, Path=IsEnabled}"/>
+                    </Grid>
                 </Grid>
             </TabItem>
             <TabItem x:Name="tiErrorLogs">
@@ -222,14 +1328,86 @@
                         <ColumnDefinition/>
                     </Grid.ColumnDefinitions>
                     <Grid Grid.Column="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="21*"/>
+                            <ColumnDefinition Width="179*"/>
+                        </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition/>
                         </Grid.RowDefinitions>
-                        <Button x:Name="btnReadErrorLogs"/>
-                        <ComboBox x:Name="cbErrorLogsScriptNames" Grid.Row="1" IsEnabled="{Binding HasItems, RelativeSource={RelativeSource Self}}" DisplayMemberPath="ScriptName"/>
-                        <DataGrid x:Name="dgErrorLogs" Grid.Row="2" SelectionMode="Single" ItemsSource="{Binding ElementName=cbErrorLogsScriptNames, Path=SelectedItem.ScriptErrorLogs}">
+                        <Button x:Name="btnReadErrorLogs" Grid.ColumnSpan="2">
+                            <Button.Style>
+                                <Style TargetType="{x:Type Button}">
+                                    <Setter Property="Margin" Value="5" />
+                                    <Setter Property="Padding" Value="5" />
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ElementName=cbErrorLogsScriptNames, Path=ItemsSource.Count}" Value="0">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Grid Grid.ColumnSpan="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.Style>
+                                <Style TargetType="{x:Type Grid}">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ElementName=cbErrorLogsScriptNames, Path=ItemsSource.Count}" Value="0">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
+                            <ComboBox x:Name="cbErrorLogSearchType">
+                                <ComboBoxItem Content="ComputerName"/>
+                                <ComboBoxItem Content="LogText"/>
+                                <ComboBoxItem Content="Operator"/>
+                                <ComboBoxItem Content="UserInput"/>
+                            </ComboBox>
+                            <TextBox x:Name="tbErrorLogSearchText" Grid.Column="1">
+                                <TextBox.Style>
+                                    <Style TargetType="{x:Type TextBox}">
+                                        <Setter Property="IsEnabled" Value="True" />
+                                        <Setter Property="Margin" Value="5" />
+                                        <Setter Property="ToolTip" Value="{x:Null}" />
+                                        <Setter Property="VerticalContentAlignment" Value="Center" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ElementName=cbErrorLogSearchType, Path=SelectedIndex}" Value="-1">
+                                                <Setter Property="IsEnabled" Value="False" />
+                                                <Setter Property="ToolTip" Value="{StaticResource LogSearchNoType}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBox.Style>
+                            </TextBox>
+                            <Button x:Name="btnErrorLogSearch" Grid.Column="2">
+                                <Button.Style>
+                                    <Style TargetType="{x:Type Button}">
+                                        <Setter Property="Margin" Value="5" />
+                                        <Setter Property="Padding" Value="5" />
+                                        <Setter Property="IsEnabled" Value="{Binding ElementName=tbErrorLogSearchText, Path=IsEnabled}" />
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </Grid>
+                        <Grid Grid.Row="1" Grid.ColumnSpan="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ComboBox x:Name="cbErrorLogsScriptNames" IsEnabled="{Binding HasItems, RelativeSource={RelativeSource Self}}" DisplayMemberPath="ScriptName"/>
+                            <Button x:Name="btnClearErrorLogSearch" Grid.Column="1" Visibility="Collapsed"/>
+                        </Grid>
+                        <DataGrid x:Name="dgErrorLogs" Grid.Row="2" SelectionMode="Single" ItemsSource="{Binding Source={StaticResource CvsErrorLogs}}" RowStyle="{StaticResource DgLogsRowStyle}" Grid.ColumnSpan="2">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Binding="{Binding LogDate}" ElementStyle="{StaticResource ColumnElementStyle}" MinWidth="130"/>
                             </DataGrid.Columns>
@@ -256,7 +1434,7 @@
                                 </Grid.RowDefinitions>
                                 <Label x:Name="lblErrLogOperator"/>
                                 <Border Grid.Column="1" Style="{StaticResource tblBorder}">
-                                    <TextBlock x:Name="tblErrLogOperator" Text="{Binding ElementName=gridErrorInfo, Path=DataContext.Operator}"/>
+                                    <TextBlock x:Name="tblErrLogOperator" Text="{Binding ElementName=gridErrorInfo, Path=DataContext.Operator, Converter={StaticResource Converter}}"/>
                                 </Border>
                                 <Label x:Name="lblErrLogSeverity" Grid.Column="2"/>
                                 <Border Grid.Column="3" Style="{StaticResource tblBorder}">
@@ -279,23 +1457,79 @@
                     </Grid>
                 </Grid>
             </TabItem>
-            <TabItem x:Name="tiRollback">
+            <TabItem x:Name="tiRollback" >
                 <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition MaxWidth="270" Width="Auto" />
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
-                    <StackPanel Grid.Row="0" Orientation="Horizontal">
+                    <ListView x:Name="lvRollbackFileNames" Grid.RowSpan="4" DisplayMemberPath="Script" ItemsSource="{Binding Source={StaticResource CvsRollBackFileNames}}"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
                         <Button x:Name="btnListRollbacks"/>
                         <Button x:Name="btnOpenRollbackFile"/>
                         <Button x:Name="btnDoRollback"/>
                     </StackPanel>
-                    <ComboBox x:Name="cbRollbackScriptNames" Grid.Row="1" Margin="5" IsEnabled="{Binding HasItems, RelativeSource={RelativeSource Self}}" DisplayMemberPath="ScriptName"/>
-                    <DataGrid x:Name="dgRollbacks" Grid.Row="2" ItemsSource="{Binding ElementName=cbRollbackScriptNames, Path=SelectedItem.ScriptLogs}" SelectionMode="Single">
+                    <StackPanel x:Name="spRollbackFilterOptions" Grid.Column="1" Grid.Row="1">
+                        <Label x:Name="lblRollbackFiltersTitle" FontSize="14" FontWeight="Bold"/>
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel.Style>
+                                <Style TargetType="{x:Type StackPanel}">
+                                    <Setter Property="IsEnabled" Value="True" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ElementName=lvRollbackFileNames, Path=SelectedItems.Count}" Value="0">
+                                            <Setter Property="IsEnabled" Value="False" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <Label x:Name="lblRollbackFilterUpdatedByTitle"/>
+                            <ComboBox x:Name="cbRollbackFilterUpdatedBy" Text="{Binding Path=SelectedValue, Converter={StaticResource Converter}}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Converter={StaticResource Converter}}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                                <ComboBox.Style>
+                                    <Style TargetType="{x:Type ComboBox}">
+                                        <Setter Property="SelectedIndex" Value="-1" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=ItemsSource.Count}" Value="1">
+                                                <Setter Property="SelectedIndex" Value="0" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ComboBox.Style>
+                            </ComboBox>
+                            <Label x:Name="lblRollbackFilterTypeTitle"/>
+                            <CheckBox x:Name="cbRollbackFilterTypePs1" IsChecked="True"/>
+                            <CheckBox x:Name="cbRollbackFilterTypePsd1" IsChecked="True"/>
+                            <CheckBox x:Name="cbRollbackFilterTypePsm1" IsChecked="True"/>
+                            <CheckBox x:Name="cbRollbackFilterTypeTxt" IsChecked="True"/>
+                            <CheckBox x:Name="cbRollbackFilterTypeXaml" IsChecked="True"/>
+                        </StackPanel>
+                    </StackPanel>
+                    <ProgressBar x:Name="pbListingRollbacks" Grid.Column="1" Grid.Row="1">
+                        <ProgressBar.Style>
+                            <Style TargetType="{x:Type ProgressBar}">
+                                <Setter Property="Height" Value="{Binding ElementName=spRollbackFilterOptions, Path=Height}" />
+                                <Setter Property="IsIndeterminate" Value="True" />
+                                <Setter Property="Margin" Value="0" />
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </Style>
+                        </ProgressBar.Style>
+                    </ProgressBar>
+                    <DataGrid x:Name="dgRollbacks" Grid.Column="1" Grid.Row="2" Grid.RowSpan="2" HeadersVisibility="Column" ItemsSource="{Binding Source={StaticResource CvsRollBackFileVersions}}" SelectionMode="Single" RowStyle="{StaticResource DgRollbackRowStyle}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Binding="{Binding ScriptDate}" ElementStyle="{StaticResource ColumnElementStyle}" />
-                            <DataGridTextColumn Binding="{Binding UpdatedBy}" ElementStyle="{StaticResource ColumnElementStyle}" />
+                            <DataGridTextColumn Binding="{Binding File}" ElementStyle="{StaticResource ColumnElementStyle}" />
+                            <DataGridTextColumn Binding="{Binding Updated}" ElementStyle="{StaticResource DateCell}" />
+                            <DataGridTextColumn Binding="{Binding UpdatedBy, Converter={StaticResource Converter}}" ElementStyle="{StaticResource NameCell}" />
+                            <DataGridTextColumn Binding="{Binding Type}" ElementStyle="{StaticResource ColumnElementStyleCenter}" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
@@ -311,27 +1545,49 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
                     <Button x:Name="btnListSurveys"/>
-                    <DataGrid x:Name="dgSurveyScripts" Grid.Row="1" Grid.RowSpan="2">
+                    <DataGrid x:Name="dgSurveyScripts" Grid.Row="1" Grid.RowSpan="3">
                         <DataGrid.Columns>
                             <DataGridTextColumn Binding="{Binding ScriptName}" ElementStyle="{StaticResource ColumnElementStyle}" Width="220"/>
                             <DataGridTextColumn Binding="{Binding SurvaceyCount}" ElementStyle="{StaticResource ColumnElementStyle}"/>
                         </DataGrid.Columns>
                     </DataGrid>
-                    <Label x:Name="lblSurveyScriptVersionTitle" Grid.Column="1"/>
-                    <ComboBox x:Name="cbSurveyScriptVersion" Grid.Column="2" ItemsSource="{Binding ElementName=dgSurveyScripts, Path=SelectedItem.Surveys}" DisplayMemberPath="Key" IsEnabled="{Binding HasItems, RelativeSource={RelativeSource Self}}" SelectedIndex="0"/>
-                    <Label x:Name="lblSurveyTotSumTitle" Grid.Column="1" Grid.Row="1"/>
-                    <Border Grid.Column="2" Grid.Row="1" Style="{StaticResource tblBorder}">
+                    <Label x:Name="lblSurveyTotSumTitle" Grid.Column="1"/>
+                    <Border Grid.Column="2" Style="{StaticResource tblBorder}">
                         <TextBlock x:Name="tblSurveyTotSum" Text="{Binding ElementName=dgSurveyScripts, Path=SelectedItem.Surveys.Count}"/>
                     </Border>
-                    <DataGrid x:Name="dgSurveyAnswers" Grid.Column="1" Grid.ColumnSpan="3" Grid.Row="2" Margin="5" ItemsSource="{Binding ElementName=cbSurveyScriptVersion, Path=SelectedItem.Value}">
+                    <Label x:Name="lblSurveyScriptVersionTitle" Grid.Column="1" Grid.Row="1"/>
+                    <ComboBox x:Name="cbSurveyScriptVersion" Grid.Column="2" Grid.Row="1" ItemsSource="{Binding ElementName=dgSurveyScripts, Path=SelectedItem.Surveys}" DisplayMemberPath="Key" IsEnabled="{Binding HasItems, RelativeSource={RelativeSource Self}}">
+                        <ComboBox.Style>
+                            <Style TargetType="{x:Type ComboBox}">
+                                <Setter Property="Margin" Value="5" />
+                                <Setter Property="SelectedIndex" Value="-1" />
+                                <Setter Property="VerticalContentAlignment" Value="Center" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=ItemsSource.Count}" Value="1">
+                                        <Setter Property="SelectedIndex" Value="0" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ComboBox.Style>
+                    </ComboBox>
+                    <Label x:Name="lblSurveyFilterTitle" Grid.Column="1" Grid.Row="2"/>
+                    <StackPanel Grid.Column="2" Grid.Row="2" Orientation="Horizontal">
+                        <CheckBox x:Name="cbSurveyFilterRating1" Content="1" IsChecked="True"/>
+                        <CheckBox x:Name="cbSurveyFilterRating2" Content="2" IsChecked="True"/>
+                        <CheckBox x:Name="cbSurveyFilterRating3" Content="3" IsChecked="True"/>
+                        <CheckBox x:Name="cbSurveyFilterRating4" Content="4" IsChecked="True"/>
+                        <CheckBox x:Name="cbSurveyFilterRating5" Content="5" IsChecked="True"/>
+                    </StackPanel>
+                    <DataGrid x:Name="dgSurveyAnswers" Grid.Column="1" Grid.ColumnSpan="3" Grid.Row="3" Margin="5" ItemsSource="{Binding ElementName=cbSurveyScriptVersion, Path=SelectedItem.Value}" RowStyle="{StaticResource DgSurveyRowStyle}">
                         <DataGrid.Columns>
-                            <DataGridTemplateColumn>
+                            <DataGridTemplateColumn Width="1*">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock x:Name="TextBlockComment" Text="{Binding Path=Comment}" Width="830" Padding="5"/>
+                                        <TextBlock x:Name="TextBlockComment" HorizontalAlignment="Stretch" Padding="5" Text="{Binding Path=Comment}" TextWrapping="Wrap"/>
                                         <DataTemplate.Triggers>
                                             <DataTrigger Binding="{Binding Comment}" Value="{x:Static sys:String.Empty}">
                                                 <Setter TargetName="TextBlockComment" Property="Background" Value="LightGray"/>
@@ -341,8 +1597,9 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTextColumn Binding="{Binding Rating}" ElementStyle="{StaticResource ColumnElementStyleCenter}" Width="100"/>
-                            <DataGridTextColumn Binding="{Binding Operator}" ElementStyle="{StaticResource ColumnElementStyle}" Width="200"/>
+                            <DataGridTextColumn Binding="{Binding Rating}" ElementStyle="{StaticResource ColumnElementStyleCenter}" Width="70"/>
+                            <DataGridTextColumn Binding="{Binding Operator, Converter={StaticResource Converter}}" ElementStyle="{StaticResource ColumnElementStyle}" Width="Auto"/>
+                            <DataGridTextColumn Binding="{Binding LogDate}" ElementStyle="{StaticResource ColumnElementStyle}" Width="Auto"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
