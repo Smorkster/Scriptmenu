@@ -52,6 +52,7 @@ ErrLogInvalidId = No user account was found with the specified id
 LogScannedFile = Started virus scan
 LogScannedFileTitle = Filename
 StrDescSplit = on
+StrEnableUser = Should the user account be activated?
 StrErrUserNotFound = no user have that id
 StrFileSearchFinished = Finished searching for files
 StrLogMsgCaseNr = Case number

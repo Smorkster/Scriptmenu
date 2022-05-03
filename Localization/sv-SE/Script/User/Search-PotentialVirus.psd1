@@ -52,6 +52,7 @@ ErrLogInvalidId = Inget användarkonto hittades med angivet HSA-id
 LogScannedFile = Körde virusscan
 LogScannedFileTitle = Filnamn
 StrDescSplit = på
+StrEnableUser = Ska användarkontot aktiveras?
 StrErrUserNotFound = ingen användare med det id:t
 StrFileSearchFinished = Finished searching for files
 StrLogMsgCaseNr = Ärendenummer

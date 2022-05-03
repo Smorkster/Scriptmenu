@@ -97,7 +97,7 @@
         <Style TargetType="{x:Type RadioButton}">
             <Setter Property="Margin" Value="5"/>
         </Style>
-        <Style TargetType="{x:Type StackPanel}">
+        <Style TargetType="{x:Type StackPanel}" x:Key="SpBaseStyle">
             <Setter Property="Margin" Value="5"/>
         </Style>
         <Style TargetType="{x:Type TabControl}">
@@ -327,7 +327,14 @@
                 </Grid>
             </GroupBox>
             <ProgressBar x:Name="TotalProgress" Grid.Row="1" Grid.ColumnSpan="2" Height="10" Margin="5"/>
-            <StackPanel x:Name="spActionButtons" Grid.ColumnSpan="2" Grid.Row="2" Orientation="Horizontal">
+            <StackPanel x:Name="spActionButtons">
+                <StackPanel.Style>
+                    <Style TargetType="StackPanel" BasedOn="{StaticResource SpBaseStyle}">
+                        <Setter Property="Grid.ColumnSpan" Value="2" />
+                        <Setter Property="Grid.Row" Value="2" />
+                        <Setter Property="Orientation" Value="Horizontal" />
+                    </Style>
+                </StackPanel.Style>
                 <Button x:Name="btnOpenFolder" Style="{StaticResource BtnBaseStyle}"/>
                 <Button x:Name="btnSearchExt" Style="{StaticResource BtnBaseStyle}"/>
                 <Button x:Name="btnSearchFileName" Style="{StaticResource BtnBaseStyle}"/>

@@ -3,12 +3,12 @@
 .Requires Role_Servicedesk_Backoffice
 .Description Lists all files in folders a given user have accespermission to.
 .Author Smorkster (smorkster)
-#>
-
-###################################################################
-# Checks if necessary values are given, if so enabled search-button
 function CheckReady
 {
+	<#
+	.Synopsis
+		Checks if necessary values are given, if so enabled search-button
+	#>
 	$message = ""
 
 	if ( -not ( ( $syncHash.DC.tbCaseNr[0] -match "^RITM\d{7}" ) -or ( $syncHash.DC.tbCaseNr[0] -match "^INC\d{7}" ) ) )
@@ -50,10 +50,13 @@ function CheckReady
 	}
 }
 
-################
-# Create logtext
 function GenerateLog
 {
+	<#
+	.Synopsis
+		Create logtext
+	#>
+
 	$syncHash.logText = @"
 $( $syncHash.Data.msgTable.StrLogMsgSearchTime ): $( $syncHash.Start.ToString( "yyyy-MM-dd HH:mm:ss"  ) ) - $( $syncHash.End.ToString( "HH:mm:ss" ) )
 $( $a = $syncHash.End - $syncHash.Start
@@ -71,10 +74,13 @@ $( $syncHash.Data.msgTable.StrLogMsgFilsWithDoubleExtG ) $( $syncHash.DC.lvMulti
 "@
 }
 
-#######################
-# Create the outputtext
 function GenerateOutput
 {
+	<#
+	.Synopsis
+		Create the outputtext
+	#>
+
 	$ofs = "`n"
 	$syncHash.OutputContent.Item( 0 ) = @"
 $( $syncHash.Data.msgTable.StrOutput1 )
@@ -130,26 +136,35 @@ $( [string]( $syncHash.DC.lvAllFiles[0].TT | Sort-Object ) )
 "@
 }
 
-#################################
-# Start the job to get folderlist
 function GetFolders
 {
+	<#
+	.Synopsis
+		Start the job to get folderlist
+	#>
+
 	$syncHash.TotalProgress.Visibility = [System.Windows.Visibility]::Visible
 	$syncHash.FolderJob.Handle = $syncHash.FolderJob.PS.BeginInvoke()
 }
 
-################################
-# Start the job to get all files
 function GetFiles
 {
+	<#
+	.Synopsis
+		Start the job to get all files
+	#>
+
 	$syncHash.TotalProgress.Visibility = [System.Windows.Visibility]::Visible
 	$syncHash.FilesJob.Handle = $syncHash.FilesJob.PS.BeginInvoke()
 }
 
-#######################
-# Display all the files
 function ListFiles
 {
+	<#
+	.Synopsis
+		List all the files
+	#>
+
 	$syncHash.End = Get-Date
 	$syncHash.DC.Window[0] = ""
 	$syncHash.DC.gridWaitProgress[0] = [System.Windows.Visibility]::Hidden
@@ -161,48 +176,46 @@ function ListFiles
 		$sort1 = [System.ComponentModel.SortDescription]@{ Direction = "Ascending"; PropertyName = "FileType" }
 		$sort2 = [System.ComponentModel.SortDescription]@{ Direction = "Ascending"; PropertyName = "Name" }
 
-		if ( $syncHash.Data.FullFileList.Count -gt 0 )
+		$syncHash.Data.ListAllFiles = [System.Windows.Data.ListCollectionView]@( $syncHash.Data.FullFileList.ForEach( { $_ } ) )
+
+		$syncHash.Data.ListAllFiles.GroupDescriptions.Add( $groupBy )
+		$syncHash.Data.ListAllFiles.SortDescriptions.Add( $sort1 )
+		$syncHash.Data.ListAllFiles.SortDescriptions.Add( $sort2 )
+		$syncHash.DC.lvAllFiles[0] = $syncHash.Data.ListAllFiles
+
+		$ListFilterMatched = [System.Windows.Data.ListCollectionView]@( $syncHash.Data.FullFileList | Where-Object { $_.FilterMatch -eq $true } )
+		if ( $ListFilterMatched.Count -gt 0 )
 		{
-			$syncHash.Data.ListAllFiles = [System.Windows.Data.ListCollectionView]@( $syncHash.Data.FullFileList.ForEach( { $_ } ) )
-
-			$syncHash.Data.ListAllFiles.GroupDescriptions.Add( $groupBy )
-			$syncHash.Data.ListAllFiles.SortDescriptions.Add( $sort1 )
-			$syncHash.Data.ListAllFiles.SortDescriptions.Add( $sort2 )
-			$syncHash.DC.lvAllFiles[0] = $syncHash.Data.ListAllFiles
-
-			$ListFilterMatched = [System.Windows.Data.ListCollectionView]@( $syncHash.Data.FullFileList | Where-Object { $_.FilterMatch -eq $true } )
-			if ( $ListFilterMatched.Count -gt 0 )
-			{
-				$syncHash.tiFilterMatch.Visibility = [System.Windows.Visibility]::Visible
-				$ListFilterMatched.GroupDescriptions.Add( $groupBy )
-				$ListFilterMatched.SortDescriptions.Add( $sort1 )
-				$ListFilterMatched.SortDescriptions.Add( $sort2 )
-				$syncHash.DC.lvFilterMatch[0] = $ListFilterMatched
-			}
-			else { $syncHash.tiFilterMatch.Visibility = [System.Windows.Visibility]::Collapsed }
-
-			$ListMultiDotH = [System.Windows.Data.ListCollectionView]@( $syncHash.Data.FullFileList | Where-Object { $_.TT -match "^H:\\" } | Where-Object { ( ( $_.Name.Split( "\" ) | Select-Object -Last 1 ).Split( "." ) ).Count -gt 2 } )
-			if ( $ListMultiDotH.Count -gt 0 )
-			{
-				$syncHash.tiMDH.Visibility = [System.Windows.Visibility]::Visible
-				$ListMultiDotH.GroupDescriptions.Add( $groupBy )
-				$ListMultiDotH.SortDescriptions.Add( $sort1 )
-				$ListMultiDotH.SortDescriptions.Add( $sort2 )
-				$syncHash.DC.lvMultiDotsH[0] = $ListMultiDotH
-			}
-			else { $syncHash.tiMDH.Visibility = [System.Windows.Visibility]::Collapsed }
-
-			$ListMultiDotG = [System.Windows.Data.ListCollectionView]@( $syncHash.Data.FullFileList | Where-Object { $_.TT -match "^G:\\" } | Where-Object { ( ( $_.Name.Split( "\" ) | Select-Object -Last 1 ).Split( "." ) ).Count -gt 2 } )
-			if ( $ListMultiDotG.Count -gt 0 )
-			{
-				$syncHash.tiMDG.Visibility = [System.Windows.Visibility]::Visible
-				$ListMultiDotG.GroupDescriptions.Add( $groupBy )
-				$ListMultiDotG.SortDescriptions.Add( $sort1 )
-				$ListMultiDotG.SortDescriptions.Add( $sort2 )
-				$syncHash.DC.lvMultiDotsG[0] = $ListMultiDotG
-			}
-			else { $syncHash.tiMDG.Visibility = [System.Windows.Visibility]::Collapsed }
+			$syncHash.tiFilterMatch.Visibility = [System.Windows.Visibility]::Visible
+			$ListFilterMatched.GroupDescriptions.Add( $groupBy )
+			$ListFilterMatched.SortDescriptions.Add( $sort1 )
+			$ListFilterMatched.SortDescriptions.Add( $sort2 )
+			$syncHash.DC.lvFilterMatch[0] = $ListFilterMatched
 		}
+		else { $syncHash.tiFilterMatch.Visibility = [System.Windows.Visibility]::Collapsed }
+
+		$ListMultiDotH = [System.Windows.Data.ListCollectionView]@( $syncHash.Data.FullFileList | Where-Object { $_.TT -match "^H:\\" } | Where-Object { ( ( $_.Name.Split( "\" ) | Select-Object -Last 1 ).Split( "." ) ).Count -gt 2 } )
+		if ( $ListMultiDotH.Count -gt 0 )
+		{
+			$syncHash.tiMDH.Visibility = [System.Windows.Visibility]::Visible
+			$ListMultiDotH.GroupDescriptions.Add( $groupBy )
+			$ListMultiDotH.SortDescriptions.Add( $sort1 )
+			$ListMultiDotH.SortDescriptions.Add( $sort2 )
+			$syncHash.DC.lvMultiDotsH[0] = $ListMultiDotH
+		}
+		else { $syncHash.tiMDH.Visibility = [System.Windows.Visibility]::Collapsed }
+
+		$ListMultiDotG = [System.Windows.Data.ListCollectionView]@( $syncHash.Data.FullFileList | Where-Object { $_.TT -match "^G:\\" } | Where-Object { ( ( $_.Name.Split( "\" ) | Select-Object -Last 1 ).Split( "." ) ).Count -gt 2 } )
+		if ( $ListMultiDotG.Count -gt 0 )
+		{
+			$syncHash.tiMDG.Visibility = [System.Windows.Visibility]::Visible
+			$ListMultiDotG.GroupDescriptions.Add( $groupBy )
+			$ListMultiDotG.SortDescriptions.Add( $sort1 )
+			$ListMultiDotG.SortDescriptions.Add( $sort2 )
+			$syncHash.DC.lvMultiDotsG[0] = $ListMultiDotG
+		}
+		else { $syncHash.tiMDG.Visibility = [System.Windows.Visibility]::Collapsed }
+		$syncHash.spActionButtons.IsEnabled = $true
 	}
 	else
 	{
@@ -213,10 +226,13 @@ function ListFiles
 	GenerateLog
 }
 
-################################
-# Get the folders and list files
 function PrepGetFolders
 {
+	<#
+	.Synopsis
+		Get the folders and list files
+	#>
+
 	$syncHash.gridInfo.Visibility = [System.Windows.Visibility]::Visible
 	$syncHash.FolderJob = [pscustomobject]@{ PS = [powershell]::Create().AddScript( { param ( $syncHash )
 		$syncHash.DC.Window[0] = $syncHash.Data.msgTable.StrOPGettingFolders
@@ -275,10 +291,13 @@ function PrepGetFolders
 	} ).AddArgument( $syncHash ) ; Handle = $null }
 }
 
-###############################################################################################
-# Create the job (runspace) that will retrieve a list of all files the user have permission for
 function PrepGetFiles
 {
+	<#
+	.Description
+		Create the job (runspace) that will retrieve a list of all files the user have permission for
+	#>
+
 	$syncHash.FilesJob = [pscustomobject]@{ PS = [powershell]::Create().AddScript( { param ( $syncHash )
 		$syncHash.DC.Window[0] = $syncHash.Data.msgTable.StrOPGettingFiles
 		$syncHash.DC.gridWaitProgress[0] = [System.Windows.Visibility]::Visible
@@ -314,10 +333,13 @@ function PrepGetFiles
 	} ).AddArgument( $syncHash ) ; Handle = $null }
 }
 
-####################
-# Reset all controls
 function Reset
 {
+	<#
+	.Synopsis
+		Reset all controls
+	#>
+
 	$syncHash.Window.Dispatcher.Invoke( [action] {
 		$syncHash.Data.Folders.Clear()
 		$syncHash.Data.FullFileList.Clear()
@@ -347,11 +369,14 @@ function Reset
 	$syncHash.Jobs.Clear()
 }
 
-################################################
-# Columnheader is clicked, resort listview-items
-# Grouping is unchanged
 function Resort
 {
+	<#
+	.Description
+		Columnheader is clicked, resort listview-items
+		Grouping is unchanged
+	#>
+
 	param ( $listview, $sortBy )
 
 	$List = [System.Windows.Data.ListCollectionView]( $syncHash.DC.$listview[0] | Sort-Object $sortBy )
@@ -371,10 +396,13 @@ function Resort
 	$syncHash.DC.$listview[0] = $List
 }
 
-###########################################################################
-# Textboxes have new data, create a "UserInput"-string for logging purposes
 function UpdateUserInput
 {
+	<#
+	.Description
+		Textboxes have new data, create a "UserInput"-string for logging purposes
+	#>
+
 	$syncHash.cbSetAccountDisabled.Content = $syncHash.Data.msgTable.ContentcbSetAccountDisabled
 	$syncHash.DC.gridInput[1] = "{0}: {1}`n{2}: {3}" -f $syncHash.Data.msgTable.StrLogMsgId, $syncHash.tbID.Text, $syncHash.Data.msgTable.StrLogMsgCaseNr, $syncHash.tbCaseNr.Text
 	try
@@ -549,27 +577,36 @@ $syncHash.btnReset.Add_Click( {
 	$syncHash.DC.btnStartSearch[1] = [System.Windows.Visibility]::Collapsed
 	$syncHash.DC.btnPrep[1] = [System.Windows.Visibility]::Visible
 	$syncHash.tbCaseNr.Focus()
+	$syncHash.spActionButtons.IsEnabled = $false
+
+	if ( ( ShowMessageBox -Text $syncHash.Data.msgTable.StrEnableUser -Button ( [System.Windows.MessageBoxButton]::YesNo ) ) -eq "Yes" )
+	{
+		Set-ADUser -Identity $syncHash.DC.tbID.Text -Enabled $true
+	}
 } )
 
 # Start a virus scan of selected file
 $syncHash.btnRunVirusScan.Add_Click( {
-	if ( $syncHash.ActiveListView.SelectedItems.Count -gt 2 )
-	{ ShowMessageBox -Text $syncHash.Data.msgTable.StrMultiFileVirusSearch }
-
-	foreach ( $File in $syncHash.ActiveListView.SelectedItems )
+	if ( $syncHash.ActiveListView.SelectedItems.Count -gt 0 )
 	{
-		if ( $File.TT -match "^H:\\" )
-		{ $path = $File.TT -replace "^H:", $syncHash.User.HomeDirectory }
-		else
-		{ $path = $File.TT }
-		$PathToScan = Get-Item $path
+		if ( $syncHash.ActiveListView.SelectedItems.Count -gt 2 )
+		{ ShowMessageBox -Text $syncHash.Data.msgTable.StrMultiFileVirusSearch }
 
-		$Shell = New-Object -Com Shell.Application
-		$ShellFolder = $Shell.NameSpace( $PathToScan.Directory.FullName )
-		$ShellFile = $ShellFolder.ParseName( $PathToScan.Name )
-		$ShellFile.InvokeVerb( $syncHash.Data.msgTable.StrVerbVirusScan )
+		foreach ( $File in $syncHash.ActiveListView.SelectedItems )
+		{
+			if ( $File.TT -match "^H:\\" )
+			{ $path = $File.TT -replace "^H:", $syncHash.User.HomeDirectory }
+			else
+			{ $path = $File.TT }
+			$PathToScan = Get-Item $path
+
+			$Shell = New-Object -Com Shell.Application
+			$ShellFolder = $Shell.NameSpace( $PathToScan.Directory.FullName )
+			$ShellFile = $ShellFolder.ParseName( $PathToScan.Name )
+			$ShellFile.InvokeVerb( $syncHash.Data.msgTable.StrVerbVirusScan )
+		}
+		WriteLogTest -Text $syncHash.Data.msgTable.LogScannedFile -UserInput "$( $syncHash.DC.gridInput[1] )`n$( $syncHash.Data.msgTable.LogScannedFileTitle ) $( $syncHash.ActiveListView.SelectedItems.TT )" -Success $true | Out-Null
 	}
-	WriteLogTest -Text $syncHash.Data.msgTable.LogScannedFile -UserInput "$( $syncHash.DC.gridInput[1] )`n$( $syncHash.Data.msgTable.LogScannedFileTitle ) $( $syncHash.ActiveListView.SelectedItems.TT )" -Success $true | Out-Null
 } )
 
 # Search on Google for the fileextension
@@ -656,5 +693,5 @@ $syncHash.Window.Add_Loaded( {
 } )
 
 [void] $syncHash.Window.ShowDialog()
-# $global:syncHash = $syncHash
+$global:syncHash = $syncHash
 [System.GC]::Collect()
