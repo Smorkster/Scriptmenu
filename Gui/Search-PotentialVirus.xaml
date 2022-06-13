@@ -1,465 +1,1090 @@
 <Window
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:sys="clr-namespace:System;assembly=mscorlib"
-    WindowState="Maximized"
-    Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
-    Width="992"
-    x:Name="Window">
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        WindowState="Maximized"
+        Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+        Width="992"
+        x:Name="Window">
     <Window.Resources>
         <sys:Double x:Key="CW">130</sys:Double>
         <sys:Double x:Key="MCW">1000</sys:Double>
+        <Thickness x:Key="StdMargin">5</Thickness>
         <sys:String x:Key="DoneText">X</sys:String>
         <sys:String x:Key="WaitingText">X</sys:String>
         <Visibility x:Key="V">Hidden</Visibility>
-        <GroupStyle x:Key="gs">
+        <GroupStyle x:Key="Gs">
             <GroupStyle.ContainerStyle>
-                <Style TargetType="{x:Type GroupItem}">
+                <Style TargetType="GroupItem">
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate>
-                                <Expander IsExpanded="{Binding ElementName=cbExpandGroups, Path=IsChecked, Mode=OneWay}" Width="Auto" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                                <Expander IsExpanded="{Binding ElementName=cbExpandGroups, Path=IsChecked, Mode=OneWay}"
+                                          Width="Auto"
+                                          HorizontalAlignment="Stretch"
+                                          HorizontalContentAlignment="Stretch">
                                     <Expander.Header>
                                         <Border>
                                             <Border.Background>
-                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                <LinearGradientBrush StartPoint="0,0"
+                                                                     EndPoint="1,1">
                                                     <LinearGradientBrush.GradientStops>
                                                         <GradientStopCollection>
-                                                            <GradientStop Color="LightGray" Offset="0.0" />
-                                                            <GradientStop Color="White" Offset="1.1" />
+                                                            <GradientStop Color="#FFE8E8E8"
+                                                                          Offset="0.0" />
+                                                            <GradientStop Color="White"
+                                                                          Offset="1.1" />
                                                         </GradientStopCollection>
                                                     </LinearGradientBrush.GradientStops>
                                                 </LinearGradientBrush>
                                             </Border.Background>
-                                            <TextBlock Text="{Binding Name}" Foreground="Black" FontSize="14" HorizontalAlignment="Stretch" Width="{StaticResource MCW}" Padding="3"/>
+                                            <TextBlock Text="{Binding Name}"
+                                                       Foreground="Black"
+                                                       FontSize="14"
+                                                       HorizontalAlignment="Stretch"
+                                                       Width="{StaticResource MCW}"
+                                                       Padding="3" />
                                         </Border>
                                     </Expander.Header>
-                                    <ItemsPresenter/>
+                                    <ItemsPresenter />
                                 </Expander>
                             </ControlTemplate>
                         </Setter.Value>
                     </Setter>
                     <Style.Triggers>
-                        <DataTrigger Binding="{Binding Name}" Value="Files matching filter">
-                            <Setter Property="Background" Value="Red"/>
+                        <DataTrigger Binding="{Binding Name}"
+                                     Value="Files matching filter">
+                            <Setter Property="Background"
+                                    Value="Red" />
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
             </GroupStyle.ContainerStyle>
         </GroupStyle>
-        <Style x:Key="WaitingLabel" TargetType="{x:Type Label}">
-            <Setter Property="Content" Value="{StaticResource WaitingText}" />
-            <Setter Property="Foreground" Value="Red" />
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Style TargetType="Border"
+               x:Key="BorderGroupStyle">
+            <Setter Property="BorderBrush"
+                    Value="Black" />
+            <Setter Property="BorderThickness"
+                    Value="2,0,0,0" />
+            <Setter Property="Grid.ColumnSpan"
+                    Value="{Binding RelativeSource={RelativeSource AncestorType=Grid}, Path=ColumnDefinitions.Count}" />
         </Style>
-        <Style x:Key="DoneLabel" TargetType="{x:Type Label}">
-            <Setter Property="Content" Value="{StaticResource DoneText}" />
-            <Setter Property="Foreground" Value="Green" />
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Style TargetType="Button"
+               x:Key="BtnBaseStyle">
+            <Setter Property="Height"
+                    Value="30" />
+            <Setter Property="Margin"
+                    Value="{StaticResource StdMargin}" />
+            <Setter Property="Padding"
+                    Value="5" />
         </Style>
-        <Style TargetType="{x:Type Button}" x:Key="BtnBaseStyle">
-            <Setter Property="Height" Value="30"/>
-            <Setter Property="Margin" Value="5"/>
-            <Setter Property="Padding" Value="5"/>
+        <Style TargetType="CheckBox"
+               x:Key="CbBaseStyle">
+            <Setter Property="IsThreeState"
+                    Value="False" />
+            <Setter Property="Margin"
+                    Value="{StaticResource StdMargin}" />
         </Style>
-        <Style TargetType="{x:Type DatePickerTextBox}">
-            <Setter Property="IsReadOnly" Value="True"/>
+        <Style TargetType="DatePickerTextBox">
+            <Setter Property="IsReadOnly"
+                    Value="True" />
         </Style>
-        <Style TargetType="{x:Type GroupBox}">
-            <Setter Property="Margin" Value="5"/>
+        <Style TargetType="Grid"
+               x:Key="GridBaseStyle">
+            <Setter Property="Margin"
+                    Value="{StaticResource StdMargin}" />
         </Style>
-        <Style TargetType="{x:Type Label}">
-            <Setter Property="Margin" Value="5"/>
+        <Style TargetType="GroupBox">
+            <Setter Property="Margin"
+                    Value="{StaticResource StdMargin}" />
         </Style>
-        <Style TargetType="{x:Type ListView}">
-            <Setter Property="ListView.View" Value="{DynamicResource View}"/>
-            <Setter Property="SelectionMode" Value="Extended"/>
-            <Setter Property="VirtualizingPanel.IsVirtualizingWhenGrouping" Value="True"/>
-            <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling"/>
+        <Style TargetType="Label"
+               x:Key="LblBaseStyle">
+            <Setter Property="Margin"
+                    Value="{StaticResource StdMargin}" />
+            <Setter Property="VerticalContentAlignment"
+                    Value="Center" />
+        </Style>
+        <Style TargetType="Label"
+               BasedOn="{StaticResource LblBaseStyle}"
+               x:Key="DoneLabel">
+            <Setter Property="Content"
+                    Value="{StaticResource DoneText}" />
+            <Setter Property="Foreground"
+                    Value="Green" />
+            <Setter Property="HorizontalContentAlignment"
+                    Value="Center" />
+        </Style>
+        <Style TargetType="Label"
+               BasedOn="{StaticResource LblBaseStyle}"
+               x:Key="WaitingLabel">
+            <Setter Property="Content"
+                    Value="{StaticResource WaitingText}" />
+            <Setter Property="Foreground"
+                    Value="Red" />
+        </Style>
+        <Style TargetType="ListView"
+               x:Key="LvBaseStyle">
+            <Setter Property="IsEnabled"
+                    Value="True" />
+            <Setter Property="ListView.View"
+                    Value="{DynamicResource View}" />
+            <Setter Property="SelectionMode"
+                    Value="Extended" />
+            <Setter Property="VirtualizingPanel.IsVirtualizingWhenGrouping"
+                    Value="True" />
+            <Setter Property="VirtualizingPanel.VirtualizationMode"
+                    Value="Recycling" />
             <Setter Property="ItemContainerStyle">
                 <Setter.Value>
-                    <Style TargetType="{x:Type ListViewItem}">
-                        <Setter Property="ToolTip" Value="{Binding TT}"/>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="ToolTip"
+                                Value="{Binding TT}" />
                     </Style>
                 </Setter.Value>
             </Setter>
             <Style.Triggers>
-                <Trigger Property="HasItems" Value="False">
-                    <Setter Property="IsEnabled" Value="False"/>
-                </Trigger>
-                <Trigger Property="HasItems" Value="True">
-                    <Setter Property="IsEnabled" Value="True"/>
+                <Trigger Property="HasItems"
+                         Value="False">
+                    <Setter Property="IsEnabled"
+                            Value="False" />
                 </Trigger>
             </Style.Triggers>
         </Style>
-        <Style TargetType="{x:Type RadioButton}">
-            <Setter Property="Margin" Value="5"/>
+        <Style TargetType="RadioButton"
+               x:Key="RbBaseStyle">
+            <Setter Property="GroupName"
+                    Value="RbGrpDate" />
+            <Setter Property="Margin"
+                    Value="{StaticResource StdMargin}" />
+            <Setter Property="VerticalContentAlignment"
+                    Value="Center" />
         </Style>
-        <Style TargetType="{x:Type StackPanel}" x:Key="SpBaseStyle">
-            <Setter Property="Margin" Value="5"/>
+        <Style TargetType="StackPanel"
+               x:Key="SpBaseStyle">
+            <Setter Property="Margin"
+                    Value="{StaticResource StdMargin}" />
         </Style>
-        <Style TargetType="{x:Type TabControl}">
-            <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"/>
+        <Style TargetType="TabControl"
+               x:Key="TCtrlBaseStyle">
+            <Setter Property="Background"
+                    Value="{DynamicResource {x:Static SystemColors.ControlBrushKey}}" />
         </Style>
-        <Style TargetType="{x:Type TextBox}" x:Key="TbBaseStyle">
-            <Setter Property="Width" Value="100"/>
-            <Setter Property="Margin" Value="5"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Style TargetType="TextBlock"
+               x:Key="TblBaseStyle">
+            <Setter Property="Margin"
+                    Value="{StaticResource StdMargin}" />
+            <Setter Property="VerticalAlignment"
+                    Value="Center" />
         </Style>
-        <Style TargetType="{x:Type ToolTip}">
-            <Setter Property="ToolTipService.InitialShowDelay" Value="0"/>
-            <Setter Property="ToolTipService.BetweenShowDelay" Value="0"/>
+        <Style x:Key="TblRbTextStyle"
+               BasedOn="{StaticResource TblBaseStyle}"
+               TargetType="TextBlock">
+            <Setter Property="Grid.Column"
+                    Value="1" />
+        </Style>
+        <Style TargetType="TextBlock"
+               x:Key="TblTitleStyle">
+            <Setter Property="Margin"
+                    Value="{StaticResource StdMargin}" />
+        </Style>
+        <Style TargetType="TextBlock"
+               x:Key="TblGroupTitleStyle">
+            <Setter Property="FontSize"
+                    Value="15" />
+            <Setter Property="FontWeight"
+                    Value="Bold" />
+            <Setter Property="Margin"
+                    Value="10,0,0,0" />
+        </Style>
+        <Style TargetType="TextBox"
+               x:Key="TbBaseStyle">
+            <Setter Property="Width"
+                    Value="100" />
+            <Setter Property="Margin"
+                    Value="{StaticResource StdMargin}" />
+            <Setter Property="VerticalContentAlignment"
+                    Value="Center" />
+            <Setter Property="BorderBrush"
+                    Value="#FFABADB3" />
+            <Setter Property="BorderThickness"
+                    Value="1" />
+            <Setter Property="Grid.Column"
+                    Value="1" />
+            <Setter Property="IsEnabled"
+                    Value="True" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ElementName=BtnStartSearch, Path=IsEnabled}"
+                             Value="True">
+                    <Setter Property="IsEnabled"
+                            Value="False" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="TextBox"
+               BasedOn="{StaticResource TbBaseStyle}"
+               x:Key="TbInputStyle">
+            <Style.Triggers>
+                <Trigger Property="Text"
+                         Value="">
+                    <Setter Property="BorderBrush"
+                            Value="Red" />
+                </Trigger>
+                <Trigger Property="BorderBrush"
+                         Value="Red">
+                    <Setter Property="BorderThickness"
+                            Value="3" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="ToolTip"
+               x:Key="TtBaseStyle">
+            <Setter Property="ToolTipService.InitialShowDelay"
+                    Value="0" />
+            <Setter Property="ToolTipService.BetweenShowDelay"
+                    Value="0" />
         </Style>
     </Window.Resources>
-    <Grid>
+    <Grid x:Name="GridMain">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="1*"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="1*" />
         </Grid.RowDefinitions>
-        <Grid>
+        <Grid x:Name="GridTop">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition/>
-                <ColumnDefinition/>
+                <ColumnDefinition />
+                <ColumnDefinition />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition/>
-                <RowDefinition/>
-                <RowDefinition/>
+                <RowDefinition />
+                <RowDefinition Height="20" />
+                <RowDefinition />
             </Grid.RowDefinitions>
-            <Grid x:Name="gridSearch">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
+            <Grid x:Name="GridSearch">
                 <Grid.Style>
-                    <Style TargetType="{x:Type Grid}">
-                        <Setter Property="Visibility" Value="Visible" />
+                    <Style TargetType="Grid">
+                        <Setter Property="Visibility"
+                                Value="Visible" />
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding ElementName=gridWaitProgress, Path=Visibility}" Value="Visible">
-                                <Setter Property="Visibility" Value="Hidden" />
+                            <DataTrigger Binding="{Binding ElementName=GridWaitProgress, Path=Visibility}"
+                                         Value="Visible">
+                                <Setter Property="Visibility"
+                                        Value="Hidden" />
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </Grid.Style>
-                <GroupBox x:Name="gbSearch">
-                    <Grid x:Name="gridInput">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="160"/>
-                            <ColumnDefinition Width="1*"/>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        <Label x:Name="lblValuesTitle" Grid.ColumnSpan="2"/>
-                        <Label x:Name="lblCaseNrTitle" Grid.Row="1"/>
-                        <TextBox x:Name="tbCaseNr" Grid.Column="1" Grid.Row="1">
-                            <TextBox.Style>
-                                <Style TargetType="TextBox" BasedOn="{StaticResource TbBaseStyle}">
-                                    <Setter Property="IsEnabled" Value="True" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding ElementName=btnStartSearch, Path=IsEnabled}" Value="True">
-                                            <Setter Property="IsEnabled" Value="False" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBox.Style>
-                        </TextBox>
-                        <Label x:Name="lblIDTitle" Grid.Row="2"/>
-                        <TextBox x:Name="tbID" Grid.Column="1" Grid.Row="2">
-                            <TextBox.Style>
-                                <Style TargetType="TextBox" BasedOn="{StaticResource TbBaseStyle}">
-                                    <Setter Property="IsEnabled" Value="True" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding ElementName=btnStartSearch, Path=IsEnabled}" Value="True">
-                                            <Setter Property="IsEnabled" Value="False" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBox.Style>
-                        </TextBox>
-                        <CheckBox x:Name="cbSetAccountDisabled" Grid.ColumnSpan="2" Grid.Row="3" Margin="5"  VerticalContentAlignment="Center"/>
-                    </Grid>
-                </GroupBox>
-                <Grid Grid.Row="1" Width="{Binding ElementName=gbSearch,Path=ActualWidth}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid x:Name="GridInput">
+                    <Grid.Style>
+                        <Style TargetType="Grid"
+                               BasedOn="{StaticResource GridBaseStyle}">
+                            <Setter Property="VerticalAlignment"
+                                    Value="Top" />
+                        </Style>
+                    </Grid.Style>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
-                        <ColumnDefinition/>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="1*" />
                     </Grid.ColumnDefinitions>
-                    <Button x:Name="btnPrep">
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition />
+                        <RowDefinition />
+                        <RowDefinition />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <Border Style="{StaticResource BorderGroupStyle}">
+                        <TextBlock x:Name="TblGroupInputTitle">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock"
+                                       BasedOn="{StaticResource TblGroupTitleStyle}">
+                                    <Setter Property="Grid.ColumnSpan"
+                                            Value="2" />
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Border>
+                    <TextBlock x:Name="TblValuesTitle">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock"
+                                   BasedOn="{StaticResource TblTitleStyle}">
+                                <Setter Property="Grid.ColumnSpan"
+                                        Value="2" />
+                                <Setter Property="Grid.Row"
+                                        Value="1" />
+                                <Setter Property="FontStyle"
+                                        Value="Italic" />
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <TextBlock x:Name="TblCaseNrTitle">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock"
+                                   BasedOn="{StaticResource TblTitleStyle}">
+                                <Setter Property="Grid.Row"
+                                        Value="2" />
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <TextBox x:Name="TbCaseNr">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox"
+                                   BasedOn="{StaticResource TbInputStyle}">
+                                <Setter Property="Grid.Row"
+                                        Value="2" />
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
+                    <TextBlock x:Name="TblIdTitle">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock"
+                                   BasedOn="{StaticResource TblTitleStyle}">
+                                <Setter Property="Grid.Row"
+                                        Value="3" />
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <TextBox x:Name="TbId">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox"
+                                   BasedOn="{StaticResource TbInputStyle}">
+                                <Setter Property="Grid.Row"
+                                        Value="3" />
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
+                    <CheckBox x:Name="CbSetAccountDisabled">
+                        <CheckBox.Style>
+                            <Style TargetType="CheckBox"
+                                   BasedOn="{StaticResource CbBaseStyle}">
+                                <Setter Property="Grid.ColumnSpan"
+                                        Value="2" />
+                                <Setter Property="Grid.Row"
+                                        Value="4" />
+                            </Style>
+                        </CheckBox.Style>
+                    </CheckBox>
+                </Grid>
+                <Grid x:Name="GridSearchButtons">
+                    <Grid.Style>
+                        <Style TargetType="Grid">
+                            <Setter Property="Grid.Row"
+                                    Value="1" />
+                            <Setter Property="Width"
+                                    Value="{Binding ElementName=GbSearch, Path=ActualWidth}" />
+                        </Style>
+                    </Grid.Style>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="BtnPrep">
                         <Button.Style>
-                            <Style TargetType="Button" BasedOn="{StaticResource BtnBaseStyle}">
+                            <Style TargetType="Button"
+                                   BasedOn="{StaticResource BtnBaseStyle}">
+                                <Setter Property="IsEnabled"
+                                        Value="False" />
                                 <Style.Triggers>
-                                    <Trigger Property="Visibility" Value="Hidden">
-                                        <Setter Property="IsEnabled" Value="False" />
+                                    <Trigger Property="Visibility"
+                                             Value="Hidden">
+                                        <Setter Property="IsEnabled"
+                                                Value="False" />
                                     </Trigger>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding ElementName=TbId, Path=BorderBrush.Color}"
+                                                       Value="#FFABADB3" />
+                                            <Condition Binding="{Binding ElementName=TbCaseNr, Path=BorderBrush.Color}"
+                                                       Value="#FFABADB3" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="IsEnabled"
+                                                Value="True" />
+                                    </MultiDataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </Button.Style>
                     </Button>
-                    <Button x:Name="btnStartSearch">
+                    <Button x:Name="BtnStartSearch">
                         <Button.Style>
-                            <Style TargetType="Button" BasedOn="{StaticResource BtnBaseStyle}">
-                                <Setter Property="Background" Value="#FF00FF77" />
+                            <Style TargetType="Button"
+                                   BasedOn="{StaticResource BtnBaseStyle}">
+                                <Setter Property="Background"
+                                        Value="#FF00FF77" />
                             </Style>
                         </Button.Style>
                     </Button>
-                    <Button x:Name="btnReset">
+                    <Button x:Name="BtnReset">
                         <Button.Style>
-                            <Style TargetType="Button" BasedOn="{StaticResource BtnBaseStyle}">
-                                <Setter Property="Background" Value="#9900AAB8" />
-                                <Setter Property="Grid.Column" Value="1" />
+                            <Style TargetType="Button"
+                                   BasedOn="{StaticResource BtnBaseStyle}">
+                                <Setter Property="Background"
+                                        Value="#9900AAB8" />
+                                <Setter Property="Grid.Column"
+                                        Value="1" />
                             </Style>
                         </Button.Style>
                     </Button>
                 </Grid>
-                <GroupBox x:Name="gbSettings" Grid.Column="1">
+                <Grid x:Name="GridSearchSettings">
+                    <Grid.Style>
+                        <Style TargetType="Grid"
+                               BasedOn="{StaticResource GridBaseStyle}">
+                            <Setter Property="Grid.Column"
+                                    Value="1" />
+                            <Setter Property="Grid.RowSpan"
+                                    Value="2" />
+                            <Setter Property="VerticalAlignment"
+                                    Value="Top" />
+                        </Style>
+                    </Grid.Style>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Border Style="{StaticResource BorderGroupStyle}">
+                        <TextBlock x:Name="TblGroupSearchSettingsTitle">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock"
+                                       BasedOn="{StaticResource TblGroupTitleStyle}" />
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Border>
+                    <RadioButton x:Name="RbLatest">
+                        <RadioButton.Style>
+                            <Style TargetType="RadioButton"
+                                   BasedOn="{StaticResource RbBaseStyle}">
+                                <Setter Property="Grid.Row"
+                                        Value="1" />
+                            </Style>
+                        </RadioButton.Style>
+                    </RadioButton>
+                    <TextBlock x:Name="TblRbLatestText">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource TblRbTextStyle}">
+                                <Setter Property="Grid.Row"
+                                        Value="1" />
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <RadioButton x:Name="RbPrevDate">
+                        <RadioButton.Style>
+                            <Style TargetType="RadioButton"
+                                   BasedOn="{StaticResource RbBaseStyle}">
+                                <Setter Property="Grid.Row"
+                                        Value="2" />
+                                <Setter Property="VerticalAlignment"
+                                        Value="Top" />
+                            </Style>
+                        </RadioButton.Style>
+                    </RadioButton>
                     <StackPanel>
-                        <GroupBox x:Name="gbDatePicker">
-                            <StackPanel>
-                                <RadioButton x:Name="rbLatest" VerticalContentAlignment="Center" GroupName="grpDate"/>
-                                <RadioButton x:Name="rbPrevDate" VerticalContentAlignment="Top" GroupName="grpDate">
-                                    <StackPanel Width="Auto" Margin="0">
-                                        <TextBlock x:Name="tbPrevDateText"/>
-                                        <DatePicker x:Name="DatePickerStart" IsEnabled="{Binding ElementName=rbPrevDate, Path=IsChecked}" Margin="0" Width="Auto">
-                                            <DatePicker.Resources>
-                                                <Style TargetType="DatePickerTextBox">
-                                                    <Setter Property="HorizontalAlignment" Value="Center" />
-                                                    <Setter Property="Margin" Value="0" />
-                                                    <Setter Property="VerticalAlignment" Value="Center" />
-                                                </Style>
-                                            </DatePicker.Resources>
-                                            <DatePicker.Style>
-                                                <Style TargetType="DatePicker">
-                                                    <Setter Property="Padding" Value="0" />
-                                                    <Setter Property="Visibility" Value="Visible" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding ElementName=rbPrevDate, Path=IsChecked}" Value="False">
-                                                            <Setter Property="Visibility" Value="Collapsed" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </DatePicker.Style>
-                                        </DatePicker>
-                                    </StackPanel>
-                                </RadioButton>
-                                <RadioButton x:Name="rbAll" VerticalContentAlignment="Center" GroupName="grpDate"/>
-                            </StackPanel>
-                        </GroupBox>
-                        <CheckBox x:Name="cbExpandGroups" Margin="5" IsThreeState="False"/>
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Setter Property="Grid.Column"
+                                        Value="1" />
+                                <Setter Property="Grid.Row"
+                                        Value="2" />
+                                <Setter Property="Margin"
+                                        Value="0" />
+                                <Setter Property="Width"
+                                        Value="Auto" />
+                            </Style>
+                        </StackPanel.Style>
+                        <TextBlock x:Name="TblPrevDateText">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock"
+                                       BasedOn="{StaticResource TblRbTextStyle}" />
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <DatePicker x:Name="DatePickerStart">
+                            <DatePicker.Style>
+                                <Style TargetType="DatePicker">
+                                    <Setter Property="Margin"
+                                            Value="5" />
+                                    <Setter Property="Padding"
+                                            Value="0" />
+                                    <Setter Property="Visibility"
+                                            Value="Visible" />
+                                    <Setter Property="Width"
+                                            Value="Auto" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ElementName=RbPrevDate, Path=IsChecked}"
+                                                     Value="False">
+                                            <Setter Property="Visibility"
+                                                    Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DatePicker.Style>
+                            <DatePicker.Resources>
+                                <Style TargetType="DatePickerTextBox">
+                                    <Setter Property="HorizontalAlignment"
+                                            Value="Stretch" />
+                                    <Setter Property="Margin"
+                                            Value="0" />
+                                    <Setter Property="VerticalAlignment"
+                                            Value="Center" />
+                                </Style>
+                            </DatePicker.Resources>
+                        </DatePicker>
                     </StackPanel>
-                </GroupBox>
+                    <RadioButton x:Name="RbAll">
+                        <RadioButton.Style>
+                            <Style TargetType="RadioButton"
+                                   BasedOn="{StaticResource RbBaseStyle}">
+                                <Setter Property="Grid.Row"
+                                        Value="3" />
+                            </Style>
+                        </RadioButton.Style>
+                    </RadioButton>
+                    <TextBlock x:Name="TblRbAllText">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock"
+                                   BasedOn="{StaticResource TblRbTextStyle}">
+                                <Setter Property="Grid.Row"
+                                        Value="3" />
+                                <Setter Property="Visibility"
+                                        Value="{Binding ElementName=RbAll, Path=Visibility}" />
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <CheckBox x:Name="CbExpandGroups">
+                        <CheckBox.Style>
+                            <Style TargetType="CheckBox"
+                                   BasedOn="{StaticResource CbBaseStyle}">
+                                <Setter Property="Grid.Row"
+                                        Value="4" />
+                            </Style>
+                        </CheckBox.Style>
+                    </CheckBox>
+                    <TextBlock x:Name="TblCbExpandGroups">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock"
+                                   BasedOn="{StaticResource TblRbTextStyle}">
+                                <Setter Property="Grid.Row"
+                                        Value="4" />
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <CheckBox x:Name="CbGroupExtensions">
+                        <CheckBox.Style>
+                            <Style TargetType="CheckBox"
+                                   BasedOn="{StaticResource CbBaseStyle}">
+                                <Setter Property="Grid.Row"
+                                        Value="5" />
+                            </Style>
+                        </CheckBox.Style>
+                    </CheckBox>
+                    <TextBlock x:Name="TblCbGroupExtensions">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock"
+                                   BasedOn="{StaticResource TblRbTextStyle}">
+                                <Setter Property="Grid.Row"
+                                        Value="5" />
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Grid>
             </Grid>
-            <Grid x:Name="gridWaitProgress">
+            <Grid x:Name="GridWaitProgress"
+                  Visibility="Hidden">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="1*"/>
-                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="1*" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="1*"/>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="1*" />
                 </Grid.RowDefinitions>
-                <Label x:Name="lblFolderListTitle"/>
-                <Button x:Name="btnAbort">
+                <TextBlock x:Name="TblFolderListTitle">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock"
+                               BasedOn="{StaticResource TblTitleStyle}" />
+                    </TextBlock.Style>
+                </TextBlock>
+                <Button x:Name="BtnAbort">
                     <Button.Style>
-                        <Style TargetType="Button" BasedOn="{StaticResource BtnBaseStyle}">
-                            <Setter Property="Grid.Column" Value="1" />
+                        <Style TargetType="Button"
+                               BasedOn="{StaticResource BtnBaseStyle}">
+                            <Setter Property="Grid.Column"
+                                    Value="1" />
                         </Style>
                     </Button.Style>
                 </Button>
-                <DataGrid x:Name="dgFolderList" Grid.ColumnSpan="2" Grid.Row="1" AutoGenerateColumns="False" HeadersVisibility="None" IsReadOnly="True" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <DataGrid x:Name="DgFolderList">
+                    <DataGrid.Style>
+                        <Style TargetType="DataGrid">
+                            <Setter Property="AutoGenerateColumns"
+                                    Value="False" />
+                            <Setter Property="Grid.ColumnSpan"
+                                    Value="2" />
+                            <Setter Property="Grid.Row"
+                                    Value="1" />
+                            <Setter Property="HeadersVisibility"
+                                    Value="Column" />
+                            <Setter Property="IsReadOnly"
+                                    Value="True" />
+                            <Setter Property="ScrollViewer.VerticalScrollBarVisibility"
+                                    Value="Auto" />
+                        </Style>
+                    </DataGrid.Style>
                     <DataGrid.Columns>
-                        <DataGridTextColumn Binding="{Binding Path}"/>
+                        <DataGridTextColumn Binding="{Binding Path}" />
                     </DataGrid.Columns>
                 </DataGrid>
             </Grid>
-            <GroupBox x:Name="gbInfo" Grid.Column="1">
-                <Grid x:Name="gridInfo" Margin="5">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="1*"/>
-                    </Grid.ColumnDefinitions>
+            <Grid x:Name="GridInfo">
+                <Grid.Style>
+                    <Style TargetType="Grid"
+                           BasedOn="{StaticResource GridBaseStyle}">
+                        <Setter Property="Grid.Column"
+                                Value="2" />
+                        <Setter Property="VerticalAlignment"
+                                Value="Top" />
+                    </Style>
+                </Grid.Style>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="1*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+                <Border Style="{StaticResource BorderGroupStyle}">
+                    <TextBlock x:Name="TblGroupSummaryTitle">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock"
+                                   BasedOn="{StaticResource TblGroupTitleStyle}" />
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Border>
+                <TextBlock x:Name="TblUserTitle">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock"
+                               BasedOn="{StaticResource TblTitleStyle}">
+                            <Setter Property="Grid.Row"
+                                    Value="1" />
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <TextBlock x:Name="TblUser">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock"
+                               BasedOn="{StaticResource TblBaseStyle}">
+                            <Setter Property="Grid.Column"
+                                    Value="1" />
+                            <Setter Property="Grid.Row"
+                                    Value="1" />
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <TextBlock x:Name="TblFolderCountTitle">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock"
+                               BasedOn="{StaticResource TblTitleStyle}">
+                            <Setter Property="Grid.Row"
+                                    Value="2" />
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <TextBlock x:Name="TblFolderCount">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock"
+                               BasedOn="{StaticResource TblBaseStyle}">
+                            <Setter Property="Grid.Column"
+                                    Value="1" />
+                            <Setter Property="Grid.Row"
+                                    Value="2" />
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <TextBlock x:Name="TblFileCountTitle">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock"
+                               BasedOn="{StaticResource TblTitleStyle}">
+                            <Setter Property="Grid.Row"
+                                    Value="3" />
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <TextBlock x:Name="TblFileCount">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock"
+                               BasedOn="{StaticResource TblBaseStyle}">
+                            <Setter Property="Grid.Column"
+                                    Value="1" />
+                            <Setter Property="Grid.Row"
+                                    Value="3" />
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <TextBlock x:Name="TblSummaryTitle">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock"
+                               BasedOn="{StaticResource TblTitleStyle}">
+                            <Setter Property="Grid.Row"
+                                    Value="4" />
+                            <Setter Property="Visibility"
+                                    Value="{Binding ElementName=TblSummary, Path=Visibility}" />
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <TextBlock x:Name="TblSummary">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock"
+                               BasedOn="{StaticResource TblBaseStyle}">
+                            <Setter Property="Grid.Column"
+                                    Value="4" />
+                            <Setter Property="Grid.Row"
+                                    Value="4" />
+                            <Setter Property="Visibility"
+                                    Value="Visible" />
+                            <Style.Triggers>
+                                <Trigger Property="Text"
+                                         Value="{x:Static sys:String.Empty}">
+                                    <Setter Property="Visibility"
+                                            Value="Hidden" />
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <Button x:Name="BtnOpenSummary">
+                    <Button.Style>
+                        <Style TargetType="Button"
+                               BasedOn="{StaticResource BtnBaseStyle}">
+                            <Setter Property="Grid.ColumnSpan"
+                                    Value="2" />
+                            <Setter Property="Grid.Row"
+                                    Value="5" />
+                            <Setter Property="Visibility"
+                                    Value="{Binding ElementName=TblSummary, Path=Visibility}" />
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </Grid>
+            <ProgressBar x:Name="TotalProgress">
+                <ProgressBar.Style>
+                    <Style TargetType="ProgressBar">
+                        <Setter Property="Grid.ColumnSpan"
+                                Value="2" />
+                        <Setter Property="Grid.Row"
+                                Value="1" />
+                        <Setter Property="Margin"
+                                Value="{StaticResource StdMargin}" />
+                    </Style>
+                </ProgressBar.Style>
+            </ProgressBar>
+            <Grid x:Name="GridActionButtons">
+                <Grid.Style>
+                    <Style TargetType="Grid"
+                           BasedOn="{StaticResource GridBaseStyle}">
+                        <Setter Property="Grid.Row"
+                                Value="2" />
+                        <Setter Property="IsEnabled"
+                                Value="False" />
+                    </Style>
+                </Grid.Style>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition />
+                    <ColumnDefinition />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <Button x:Name="BtnOpenFolder">
+                    <Button.Style>
+                        <Style TargetType="Button"
+                               BasedOn="{StaticResource BtnBaseStyle}" />
+                    </Button.Style>
+                </Button>
+                <Button x:Name="BtnSearchExt">
+                    <Button.Style>
+                        <Style TargetType="Button"
+                               BasedOn="{StaticResource BtnBaseStyle}">
+                            <Setter Property="Grid.Column"
+                                    Value="1" />
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <Button x:Name="BtnSearchFileName">
+                    <Button.Style>
+                        <Style TargetType="Button"
+                               BasedOn="{StaticResource BtnBaseStyle}">
+                            <Setter Property="Grid.Column"
+                                    Value="2" />
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <Button x:Name="BtnRunVirusScan">
+                    <Button.Style>
+                        <Style TargetType="Button"
+                               BasedOn="{StaticResource BtnBaseStyle}">
+                            <Setter Property="Grid.Column"
+                                    Value="3" />
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </Grid>
+        </Grid>
+        <TabControl x:Name="TcFileLists">
+            <TabControl.Style>
+                <Style TargetType="TabControl"
+                       BasedOn="{StaticResource TCtrlBaseStyle}">
+                    <Setter Property="Grid.Row"
+                            Value="1" />
+                </Style>
+            </TabControl.Style>
+            <TabItem x:Name="TiFiles">
+                <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition/>
-                        <RowDefinition/>
-                        <RowDefinition/>
-                        <RowDefinition/>
-                        <RowDefinition/>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition />
                     </Grid.RowDefinitions>
-                    <Label x:Name="lblUserTitle"/>
-                    <Label x:Name="lblUser" Grid.Column="1"/>
-                    <Label x:Name="lblFolderCountTitle" Grid.Row="1"/>
-                    <Label x:Name="lblFolderCount" Grid.Column="1" Grid.Row="1"/>
-                    <Label x:Name="lblFileCountTitle" Grid.Row="2"/>
-                    <Label x:Name="lblFileCount" Grid.Column="1" Grid.Row="2"/>
-                    <Label x:Name="lblSummaryTitle" Grid.Row="3" Margin="5" Visibility="{Binding ElementName=lblSummary, Path=Visibility}"/>
-                    <Label x:Name="lblSummary" Grid.Column="1" Grid.Row="3" Margin="5">
-                        <Label.Style>
-                            <Style TargetType="{x:Type Label}">
-                                <Setter Property="Visibility" Value="Visible" />
-                                <Style.Triggers>
-                                    <Trigger Property="Content" Value="{x:Static sys:String.Empty}">
-                                        <Setter Property="Visibility" Value="Hidden" />
-                                    </Trigger>
-                                </Style.Triggers>
+                    <TextBlock x:Name="TblFiles" />
+                    <ListView x:Name="LvAllFiles">
+                        <ListView.Style>
+                            <Style TargetType="ListView"
+                                   BasedOn="{StaticResource LvBaseStyle}">
+                                <Setter Property="Grid.Row"
+                                        Value="1" />
                             </Style>
-                        </Label.Style>
-                    </Label>
-                    <Button x:Name="btnOpenSummary">
+                        </ListView.Style>
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn DisplayMemberBinding="{Binding Name}"
+                                                Width="{StaticResource ResourceKey=MCW}">
+                                    <GridViewColumnHeader x:Name="LvAN" />
+                                </GridViewColumn>
+                                <GridViewColumn DisplayMemberBinding="{Binding Size}"
+                                                Width="100">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}"
+                                                       TextAlignment="Right" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                    <GridViewColumnHeader x:Name="LvAS" />
+                                </GridViewColumn>
+                                <GridViewColumn DisplayMemberBinding="{Binding CreationTime, StringFormat='yyyy-MM-dd HH:mm:ss'}"
+                                                Width="{StaticResource ResourceKey=CW}">
+                                    <GridViewColumnHeader x:Name="LvAC" />
+                                </GridViewColumn>
+                                <GridViewColumn DisplayMemberBinding="{Binding LastWriteTime, StringFormat='yyyy-MM-dd HH:mm:ss'}"
+                                                Width="{StaticResource ResourceKey=CW}">
+                                    <GridViewColumnHeader x:Name="LvAU" />
+                                </GridViewColumn>
+                                <GridViewColumn DisplayMemberBinding="{Binding Owner}"
+                                                Width="500">
+                                    <GridViewColumnHeader x:Name="LvAO" />
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                        <ListView.GroupStyle>
+                            <StaticResource ResourceKey="Gs" />
+                        </ListView.GroupStyle>
+                    </ListView>
+                </Grid>
+            </TabItem>
+            <TabItem x:Name="TiMDH">
+                <TabItem.Style>
+                    <Style TargetType="TabItem">
+                        <Setter Property="Visibility"
+                                Value="Collapsed" />
+                    </Style>
+                </TabItem.Style>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="30" />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <TextBlock x:Name="TblMDH" />
+                    <ListView x:Name="LvMultiDotsH">
+                        <ListView.Style>
+                            <Style TargetType="ListView"
+                                   BasedOn="{StaticResource LvBaseStyle}">
+                                <Setter Property="Grid.Row"
+                                        Value="1" />
+                            </Style>
+                        </ListView.Style>
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn DisplayMemberBinding="{Binding Name}"
+                                                Width="{StaticResource ResourceKey=MCW}">
+                                    <GridViewColumnHeader x:Name="LvHN"
+                                                          Content="{Binding ElementName=LvAN,Path=Content}" />
+                                </GridViewColumn>
+                                <GridViewColumn DisplayMemberBinding="{Binding Created}"
+                                                Width="{StaticResource ResourceKey=CW}">
+                                    <GridViewColumnHeader x:Name="LvHC"
+                                                          Content="{Binding ElementName=LvAC,Path=Content}" />
+                                </GridViewColumn>
+                                <GridViewColumn DisplayMemberBinding="{Binding Updated}"
+                                                Width="{StaticResource ResourceKey=CW}">
+                                    <GridViewColumnHeader x:Name="LvHU"
+                                                          Content="{Binding ElementName=LvAU,Path=Content}" />
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                        <ListView.GroupStyle>
+                            <StaticResource ResourceKey="Gs" />
+                        </ListView.GroupStyle>
+                    </ListView>
+                </Grid>
+            </TabItem>
+            <TabItem x:Name="TiFilterMatch">
+                <TabItem.Style>
+                    <Style TargetType="TabItem">
+                        <Setter Property="Visibility"
+                                Value="Collapsed" />
+                    </Style>
+                </TabItem.Style>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="30" />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <TextBlock x:Name="TblFilterMatch" />
+                    <ListView x:Name="LvFilterMatch"
+                              Grid.Row="1">
+                        <ListView.Style>
+                            <Style TargetType="ListView"
+                                   BasedOn="{StaticResource LvBaseStyle}">
+                                <Setter Property="Grid.Row"
+                                        Value="1" />
+                            </Style>
+                        </ListView.Style>
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn DisplayMemberBinding="{Binding Name}"
+                                                Width="{StaticResource ResourceKey=MCW}">
+                                    <GridViewColumnHeader x:Name="LvFMN"
+                                                          Content="{Binding ElementName=LvAN,Path=Content}" />
+                                </GridViewColumn>
+                                <GridViewColumn DisplayMemberBinding="{Binding Created}"
+                                                Width="{StaticResource ResourceKey=CW}">
+                                    <GridViewColumnHeader x:Name="LvFMC"
+                                                          Content="{Binding ElementName=LvAC,Path=Content}" />
+                                </GridViewColumn>
+                                <GridViewColumn DisplayMemberBinding="{Binding Updated}"
+                                                Width="{StaticResource ResourceKey=CW}">
+                                    <GridViewColumnHeader x:Name="LvFMU"
+                                                          Content="{Binding ElementName=LvAU,Path=Content}" />
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                        <ListView.GroupStyle>
+                            <StaticResource ResourceKey="Gs" />
+                        </ListView.GroupStyle>
+                    </ListView>
+                </Grid>
+            </TabItem>
+            <TabItem x:Name="TiMDG">
+                <TabItem.Style>
+                    <Style TargetType="TabItem">
+                        <Setter Property="Visibility"
+                                Value="Collapsed" />
+                    </Style>
+                </TabItem.Style>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="30" />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <TextBlock x:Name="TblMDG" />
+                    <ListView x:Name="LvMultiDotsG">
+                        <ListView.Style>
+                            <Style TargetType="ListView"
+                                   BasedOn="{StaticResource LvBaseStyle}">
+                                <Setter Property="Grid.Row"
+                                        Value="1" />
+                            </Style>
+                        </ListView.Style>
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn DisplayMemberBinding="{Binding Name}"
+                                                Width="{StaticResource ResourceKey=MCW}">
+                                    <GridViewColumnHeader x:Name="LvGN"
+                                                          Content="{Binding ElementName=LvAN,Path=Content}" />
+                                </GridViewColumn>
+                                <GridViewColumn DisplayMemberBinding="{Binding Created}"
+                                                Width="{StaticResource ResourceKey=CW}">
+                                    <GridViewColumnHeader x:Name="LvGC"
+                                                          Content="{Binding ElementName=LvAC,Path=Content}" />
+                                </GridViewColumn>
+                                <GridViewColumn DisplayMemberBinding="{Binding Updated}"
+                                                Width="{StaticResource ResourceKey=CW}">
+                                    <GridViewColumnHeader x:Name="LvGU"
+                                                          Content="{Binding ElementName=LvAU,Path=Content}" />
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                        <ListView.GroupStyle>
+                            <StaticResource ResourceKey="Gs" />
+                        </ListView.GroupStyle>
+                    </ListView>
+                </Grid>
+            </TabItem>
+            <TabItem x:Name="TiO"
+                     Visibility="Hidden">
+                <TabItem.Style>
+                    <Style TargetType="TabItem">
+                        <Setter Property="Visibility"
+                                Value="Collapsed" />
+                    </Style>
+                </TabItem.Style>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="30" />
+                        <RowDefinition Height="40" />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <TextBlock x:Name="TblO" />
+                    <Button x:Name="BtnCreateQuestion">
                         <Button.Style>
-                            <Style TargetType="Button" BasedOn="{StaticResource BtnBaseStyle}">
-                                <Setter Property="Grid.ColumnSpan" Value="2" />
-                                <Setter Property="Grid.Row" Value="4" />
-                                <Setter Property="Margin" Value="5" />
-                                <Setter Property="Padding" Value="5" />
-                                <Setter Property="Visibility" Value="{Binding ElementName=lblSummary, Path=Visibility}" />
+                            <Style TargetType="Button"
+                                   BasedOn="{StaticResource BtnBaseStyle}">
+                                <Setter Property="Grid.Row"
+                                        Value="1" />
                             </Style>
                         </Button.Style>
                     </Button>
-                </Grid>
-            </GroupBox>
-            <ProgressBar x:Name="TotalProgress" Grid.Row="1" Grid.ColumnSpan="2" Height="10" Margin="5"/>
-            <StackPanel x:Name="spActionButtons">
-                <StackPanel.Style>
-                    <Style TargetType="StackPanel" BasedOn="{StaticResource SpBaseStyle}">
-                        <Setter Property="Grid.ColumnSpan" Value="2" />
-                        <Setter Property="Grid.Row" Value="2" />
-                        <Setter Property="Orientation" Value="Horizontal" />
-                    </Style>
-                </StackPanel.Style>
-                <Button x:Name="btnOpenFolder" Style="{StaticResource BtnBaseStyle}"/>
-                <Button x:Name="btnSearchExt" Style="{StaticResource BtnBaseStyle}"/>
-                <Button x:Name="btnSearchFileName" Style="{StaticResource BtnBaseStyle}"/>
-                <Button x:Name="btnRunVirusScan" Style="{StaticResource BtnBaseStyle}"/>
-            </StackPanel>
-        </Grid>
-        <TabControl x:Name="tcFileLists" Grid.Row="1">
-            <TabItem x:Name="tiFiles">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition/>
-                    </Grid.RowDefinitions>
-                    <Label x:Name="lblFiles"/>
-                    <ListView Grid.Row="1" x:Name="lvAllFiles">
-                        <ListView.View>
-                            <GridView>
-                                <GridViewColumn DisplayMemberBinding="{Binding Name}" Width="{StaticResource ResourceKey=MCW}">
-                                    <GridViewColumnHeader x:Name="lvAN"/>
-                                </GridViewColumn>
-                                <GridViewColumn DisplayMemberBinding="{Binding CreationTime, StringFormat='yyyy-MM-dd HH:mm:ss'}" Width="{StaticResource ResourceKey=CW}">
-                                    <GridViewColumnHeader x:Name="lvAC"/>
-                                </GridViewColumn>
-                                <GridViewColumn DisplayMemberBinding="{Binding LastWriteTime, StringFormat='yyyy-MM-dd HH:mm:ss'}" Width="{StaticResource ResourceKey=CW}">
-                                    <GridViewColumnHeader x:Name="lvAU"/>
-                                </GridViewColumn>
-                            </GridView>
-                        </ListView.View>
-                        <ListView.GroupStyle>
-                            <StaticResource ResourceKey="gs"/>
-                        </ListView.GroupStyle>
-                    </ListView>
-                </Grid>
-            </TabItem>
-            <TabItem x:Name="tiMDH" Visibility="Collapsed">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="30"/>
-                        <RowDefinition/>
-                    </Grid.RowDefinitions>
-                    <Label x:Name="lblMDH"/>
-                    <ListView x:Name="lvMultiDotsH" Grid.Row="1">
-                        <ListView.View>
-                            <GridView>
-                                <GridViewColumn DisplayMemberBinding="{Binding Name}" Width="{StaticResource ResourceKey=MCW}">
-                                    <GridViewColumnHeader x:Name="lvHN" Content="{Binding ElementName=lvAN,Path=Content}"/>
-                                </GridViewColumn>
-                                <GridViewColumn DisplayMemberBinding="{Binding Created}" Width="{StaticResource ResourceKey=CW}">
-                                    <GridViewColumnHeader x:Name="lvHC" Content="{Binding ElementName=lvAC,Path=Content}"/>
-                                </GridViewColumn>
-                                <GridViewColumn DisplayMemberBinding="{Binding Updated}" Width="{StaticResource ResourceKey=CW}">
-                                    <GridViewColumnHeader x:Name="lvHU" Content="{Binding ElementName=lvAD,Path=Content}"/>
-                                </GridViewColumn>
-                            </GridView>
-                        </ListView.View>
-                        <ListView.GroupStyle>
-                            <StaticResource ResourceKey="gs"/>
-                        </ListView.GroupStyle>
-                    </ListView>
-                </Grid>
-            </TabItem>
-            <TabItem x:Name="tiFilterMatch" Visibility="Collapsed">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="30"/>
-                        <RowDefinition/>
-                    </Grid.RowDefinitions>
-                    <Label x:Name="lblFilterMatch"/>
-                    <ListView x:Name="lvFilterMatch" Grid.Row="1">
-                        <ListView.View>
-                            <GridView>
-                                <GridViewColumn DisplayMemberBinding="{Binding Name}" Width="{StaticResource ResourceKey=MCW}">
-                                    <GridViewColumnHeader x:Name="lvFMN" Content="{Binding ElementName=lvAN,Path=Content}"/>
-                                </GridViewColumn>
-                                <GridViewColumn DisplayMemberBinding="{Binding Created}" Width="{StaticResource ResourceKey=CW}">
-                                    <GridViewColumnHeader x:Name="lvFMC" Content="{Binding ElementName=lvAC,Path=Content}"/>
-                                </GridViewColumn>
-                                <GridViewColumn DisplayMemberBinding="{Binding Updated}" Width="{StaticResource ResourceKey=CW}">
-                                    <GridViewColumnHeader x:Name="lvFMU" Content="{Binding ElementName=lvAD,Path=Content}"/>
-                                </GridViewColumn>
-                            </GridView>
-                        </ListView.View>
-                        <ListView.GroupStyle>
-                            <StaticResource ResourceKey="gs"/>
-                        </ListView.GroupStyle>
-                    </ListView>
-                </Grid>
-            </TabItem>
-            <TabItem x:Name="tiMDG" Visibility="Collapsed">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="30"/>
-                        <RowDefinition/>
-                    </Grid.RowDefinitions>
-                    <Label x:Name="lblMDG"/>
-                    <ListView x:Name="lvMultiDotsG" Grid.Row="1">
-                        <ListView.View>
-                            <GridView>
-                                <GridViewColumn DisplayMemberBinding="{Binding Name}" Width="{StaticResource ResourceKey=MCW}">
-                                    <GridViewColumnHeader x:Name="lvGN" Content="{Binding ElementName=lvAN,Path=Content}"/>
-                                </GridViewColumn>
-                                <GridViewColumn DisplayMemberBinding="{Binding Created}" Width="{StaticResource ResourceKey=CW}">
-                                    <GridViewColumnHeader x:Name="lvGC" Content="{Binding ElementName=lvAC,Path=Content}"/>
-                                </GridViewColumn>
-                                <GridViewColumn DisplayMemberBinding="{Binding Updated}" Width="{StaticResource ResourceKey=CW}">
-                                    <GridViewColumnHeader x:Name="lvGU" Content="{Binding ElementName=lvAU,Path=Content}"/>
-                                </GridViewColumn>
-                            </GridView>
-                        </ListView.View>
-                        <ListView.GroupStyle>
-                            <StaticResource ResourceKey="gs"/>
-                        </ListView.GroupStyle>
-                    </ListView>
-                </Grid>
-            </TabItem>
-            <TabItem x:Name="tiO" Visibility="Hidden">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="30"/>
-                        <RowDefinition Height="40"/>
-                        <RowDefinition/>
-                    </Grid.RowDefinitions>
-                    <Label x:Name="lblO"/>
-                    <Button x:Name="btnCreateQuestion" Grid.Row="1"/>
-                    <TextBox x:Name="txtQuestion" Grid.Row="2" Width="Auto" VerticalContentAlignment="Top" AcceptsReturn="True"/>
+                    <TextBox x:Name="TbQuestion">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox"
+                                   BasedOn="{StaticResource TbBaseStyle}">
+                                <Setter Property="AcceptsReturn"
+                                        Value="True" />
+                                <Setter Property="Grid.Row"
+                                        Value="2" />
+                                <Setter Property="VerticalContentAlignment"
+                                        Value="Top" />
+                                <Setter Property="Width"
+                                        Value="Auto" />
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
                 </Grid>
             </TabItem>
         </TabControl>
