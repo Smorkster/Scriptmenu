@@ -1,6 +1,6 @@
 <#
-.Synopsis List ALL folderpermissions for one or more users
-.Description List ALL folderpermissions for one or more users.
+.Synopsis List all folderpermissions for one or more users
+.Description List all folderpermissions for one or more users.
 .Author Smorkster (smorkster)
 #>
 
@@ -9,163 +9,212 @@ Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 
 class User
 {
+	$Ad
+	$AllGroups
 	$Id
-	$Read
-	$Change
-	$Full
-	$Other
 	$OutputFile
-	$msgTable
+	$AppFolder
+	$GFolder
+	$RFolder
+	$SFolder
+	$OtherFolder
+	$Other
+	$Summary
 
-	User ( $id, $msgTable )
+	User ( $id )
 	{
+		$this.Ad = Get-ADUser $id
 		$this.Id = $id
-		$this.Read = @()
-		$this.Change = @()
-		$this.Full = @()
-		$this.msgTable = $msgTable
-	}
-
-	[string] Out ()
-	{
-		$OFS = "`n`t"
-		$outputInfo = "$( $this.Id ) $( $this.msgTable.StrOutTitle )`r`n"
-		$outputInfo += "`r`n`r`n$( $this.msgTable.StrOutTitleRead ):`r`n"
-		$outputInfo += "`t"+$this.Read
-		$outputInfo += "`r`n`r`n$( $this.msgTable.StrOutTitleChange ):`r`n"
-		$outputInfo += "`t"+$this.Change
-		$outputInfo += "`r`n`r`n$( $this.msgTable.StrOutTitleFull ):`r`n"
-		$outputInfo += "`t"+$this.Full
-		$outputInfo += "`r`n`r`n$( $this.msgTable.StrOutTitleUnknown ):`r`n"
-		$outputInfo += "`t"+$this.Other
-		return $outputInfo
+		$this.AllGroups = [System.Collections.ArrayList]::new()
+		$this.GFolder = [System.Collections.ArrayList]::new()
+		$this.AppFolder = [System.Collections.ArrayList]::new()
+		$this.RFolder = [System.Collections.ArrayList]::new()
+		$this.SFolder = [System.Collections.ArrayList]::new()
+		$this.OtherFolder = [System.Collections.ArrayList]::new()
+		$this.Other = [System.Collections.ArrayList]::new()
+		$this.Summary = ""
 	}
 }
 
-$UsersIn = [System.Collections.ArrayList]::new()
+function StripDescription
+{
+	param (
+		[string] $Text
+	)
+	$Text -replace $msgTable.CodeDescReplace -replace $msgTable.CodeMatchDescGGroup, "G:\" -replace $msgTable.CodeMatchDescSGroup, "S:\" 
+}
+
 Write-Host "`n$( $msgTable.StrTitle )`n"
 Write-Host "$( $msgTable.StrNotepad )`n"
-GetUserInput -DefaultText $msgTable.StrNotepadTitle | ForEach-Object { [void] $UsersIn.Add( [User]::new( $_, $msgTable ) ) }
-
-$OutputFiles = @()
-$ErrorHashes = @()
+$UsersIn = [System.Collections.ArrayList]::new()
+$UnknownIds = [System.Collections.ArrayList]::new()
+$ErrorHashes = [System.Collections.ArrayList]::new()
 $Success = $true
-$LogText = ""
-$Processed = [System.Collections.ArrayList]::new()
-Start-Sleep -Seconds 1
 
-if ( $UsersIn.Count -eq 1 )
-{ $ExportType = 1 }
-else
-{ $ExportType = GetUserChoice -MaxNum 2 -ChoiceText $msgTable.QOutputFile }
-
-foreach ( $User in $UsersIn )
-{
-	Write-Host "`n*****************************`n$( $msgTable.StrOpTitle ) $( $User.Id )."
-	try { $dn = ( Get-ADUser $User.Id ).DistinguishedName }
+$UserInput = GetUserInput -DefaultText $msgTable.StrNotepadTitle
+$UserInput | Where-Object { $_ } | ForEach-Object {
+	$id = $_
+	try { [void] $UsersIn.Add( [User]::new( $id ) ) }
 	catch
 	{
-		$dn = $null
-		Write-Host "$( $msgTable.StrUserNotFound ) $( $User.Id )"
-		$ErrorHashes += WriteErrorLogTest -LogText $msgTable.ErrLogUserNotFound -UserInput $User.Id -Severity "UserInputFail"
-		$Success = $false
+		[void] $UnknownIds.Add( $id )
+		[void] $ErrorHashes.Add( ( WriteErrorLogTest -LogText $msgTable.ErrLogUserNotFound -UserInput $id -Severity "UserInputFail" ) )
 	}
+}
+if ( $UsersIn.Count -gt 0 )
+{
+	$Granularity = GetUserChoice -YesNo -ChoiceText $msgTable.QSearchGranularity
+	$OFS = ""
 
-	if ( $null -ne $dn )
+	foreach ( $User in $UsersIn )
 	{
-		$Read = @()
-		$Change = @()
-		$Full = @()
-		$Other = @()
-
-		$Groups1 = Get-ADGroup -LDAPFilter ( "(member:1.2.840.113556.1.4.1941:={0})" -f $dn ) | Select-Object -ExpandProperty Name | Sort-Object Name
-
-		# Sort groups and create list of groups whos name contains '_Fil_' but not '_User_' (i.e. a groupname ending in _F, _C or _R)
-		$Groups2 = $Groups1 -like "*_Fil_*"
-		$Groups3 = $Groups2 -inotlike "*_User_*"
-
-		# Run for each groups in $Groups3
-		foreach( $Group in $Groups3 )
+		$title = "$( $msgTable.StrOpTitle ) $( $User.Ad.Name )"
+		Write-Host "`n$( 0..( $title.Length - 1 ) | ForEach-Object { "*" } )`n$title`n`n"
+		if ( $User.Ad -eq $null )
 		{
-			# Creates groupnames and transforms into proper pathway. First if handles permissions outside G, R and S
-			if ( $Group -notcontains "*_Grp_*" -or "*_Gem_*" -or "*_App_*" )
-			{
-				$X = $Group.Substring( 8 )
-				$Server = $X.Substring( 0, $X.IndexOf( '_' ) )
-				$Y = $X.Substring( $X.IndexOf( '_' ) )
-				if ( $Group -notmatch "_R$|_C$|_F$" ) { $Mapp = $Y.Substring( 1, $Y.Length -1 ) }
-				else { $Mapp = $Y.Substring( 1, $Y.Length -3 ) }
-				$Path = "\\$Server\$Mapp"
-			}
+			Write-Host "$( $msgTable.StrUserNotFound ) $( $User.Id )"
+			$ErrorHashes += WriteErrorLogTest -LogText $msgTable.ErrLogUserNotFound -UserInput $User.Id -Severity "UserInputFail"
+			$Success = $false
+		}
+		else
+		{
+			if ( $Granularity -eq "Y" )
+			{ $User.AllGroups = Get-ADGroup -LDAPFilter "(member:1.2.840.113556.1.4.1941:=$( $User.Ad ))" -Properties Description }
 			else
-			{
-				switch ( $Group )
+			{ $User.AllGroups = ( Get-ADUser $User.Ad -Properties memberof ).memberof | Get-ADGroup -Properties Description }
+
+			$User.AllGroups | ForEach-Object {
+				if ( $_.name -match ".*_Fil_.*" )
 				{
-					"*_Grp_*" { $Type = "Grp_" }
-					"*_Gem_*" { $Type = "Gem_" }
-					"*_App_*" { $Type = "App_" }
+					if ( $_.Name -match $msgTable.CodeMatchReadPermGrp )
+					{ $PLvl = $msgTable.StrPLvlRead }
+					elseif ( $_.Name -match $msgTable.CodeMatchWritePermGrp )
+					{ $PLvl = $msgTable.StrPLvlChange }
+					elseif ( $_.Name -match $msgTable.CodeMatchFullPermGrp )
+					{ $PLvl = $msgTable.StrPLvlFull }
+					else
+					{ $PLvl = $msgTable.StrUnknownPerm }
+					$grp = [pscustomobject]@{ PLvl = $PLvl ; Group = $_ }
+
+					if ( $_.Name -match $msgTable.CodeMatchSpecialArea )
+					{
+						[void] $User.RFolder.Add( $grp )
+					}
+					elseif ( $_.Description -match $msgTable.CodeMatchDescSGroup )
+					{
+						[void] $User.SFolder.Add( $grp )
+					}
+					elseif ( $_.Description -match $msgTable.CodeMatchAppGrp )
+					{
+						[void] $User.AppFolder.Add( $grp )
+					}
+					elseif ( $_.Name -match "User_C$" )
+					{
+						[void] $User.GFolder.Add( $grp )
+					}
+					elseif ( $_.Name -match "User_R$" )
+					{
+						[void] $User.GFolder.Add( $grp )
+					}
+					else
+					{
+						[void] $User.OtherFolder.Add( $grp )
+					}
+
 				}
-
-				$Kund = $Group.SubString( 0, 3 )
-				$X = $Group.Substring( $Group.LastIndexOf( 'Grp_' ) )
-				if ( ( $Group -match "_R$|_C$|_F$" ) ) { $Y = $Group.Substring( $Group.LastIndexOf( '_' ) ) }
-				else { $Y = "" }
-
-				$Z = $X.Replace( $Type, "" )
-				$Mapp = $Z.Replace( $Y, "" )
-				$Path = "G:\$Kund\$Mapp"
+				else
+				{ [void] $User.Other.Add( [pscustomobject]@{ Grp = [string]$_.Name[0..2] ; Group = $_ } ) }
 			}
 
-			# Depending of name-suffix pathway is sorted to correct array.
-			switch ( $Group.Substring( $Group.LastIndexOf( '_' ) ) )
+			$User.Summary = "$( $User.Ad.Name ) $( $msgTable.StrOutTitle )`r`n"
+
+			if ( $User.GFolder.Count -gt 0 )
 			{
-				"_R" { $Read += "$Path`r`n" }
-				"_C" { $Change += "$Path`r`n" }
-				"_F" { $Full += "$Path`r`n" }
-				default { $Other += "$Path`r`n" }
+				$User.Summary += "`r`n================ $( $msgTable.StrFolderPermissionsG ) ================`r`n"
+				$User.GFolder | Group-Object PLvl | ForEach-Object {
+					$User.Summary += "`r`n$( $_.Name )`r`n"
+					$_.Group | ForEach-Object {
+						$User.Summary += "$( StripDescription $_.Group.Description )`r`n`t$( $_.Group.Name )`r`n"
+						}
+					}
+			}
+
+			if ( $User.RFolder.Count -gt 0 )
+			{
+				$User.Summary += "`r`n================ $( $msgTable.StrFolderPermissionsR ) ================`r`n"
+				$User.RFolder | Group-Object PLvl | ForEach-Object {
+					$User.Summary += "`r`n$( $_.Name )`r`n"
+					$_.Group | ForEach-Object {
+						$User.Summary += "$( StripDescription $_.Group.Description )`r`n`t$( $_.Group.Name )`r`n"
+						}
+					}
+			}
+
+			if ( $User.SFolder.Count -gt 0 )
+			{
+				$User.Summary += "`r`n================ $( $msgTable.StrFolderPermissionsS ) ================`r`n"
+				$User.SFolder | Group-Object PLvl | ForEach-Object {
+					$User.Summary += "`r`n$( $_.Name )`r`n"
+					$_.Group | ForEach-Object {
+						$User.Summary += "$( StripDescription $_.Group.Description )`r`n`t$( $_.Group.Name )`r`n"
+						}
+					}
+			}
+
+			if ( $User.OtherFolder.Count -gt 0 )
+			{
+				$User.Summary += "`r`n================ $( $msgTable.StrTitleOtherFiles ) ================`r`n"
+				$User.OtherFolder | Group-Object PLvl | Sort-Object Name | ForEach-Object {
+					$User.Summary += "`r`n$( $_.Name )`r`n"
+					$_.Group.Group | Sort-Object Name | ForEach-Object {
+						$User.Summary += "$( $_.Name )`r`n`t$( StripDescription $_.Description )`r`n"
+						}
+					}
+			}
+
+			if ( $User.AppFolder.Count -gt 0 )
+			{
+				$User.Summary += "`r`n================ $( $msgTable.StrTitleAppGroups ) ================`r`n"
+				$User.Appfolder | Group-Object PLvl | Sort-Object Name | ForEach-Object {
+					$User.Summary += "`r`n$( $_.Name )`r`n"
+					$_.Group.Group | Sort-Object Name | ForEach-Object {
+						$User.Summary += "$( $_.Name )`r`n`t$( StripDescription $_.Description )`r`n"
+						}
+					}
+			}
+
+			if ( $User.Other.Count -gt 0 )
+			{
+				$User.Summary += "`r`n================ $( $msgTable.StrTitleOtherGroups ) ================`r`n"
+				$User.Other | Group-Object Grp | Sort-Object Name | ForEach-Object {
+					$User.Summary += "`r`n`r`n======== $( $_.Name ) $( $msgTable.StrTitleSubGroups ) ========`r`n"
+					$_.Group | ForEach-Object {
+						$User.Summary += "$( $_.Group.Name )`r`n`t$( $_.Group.Description )`r`n"
+					}
+				}
+				$User.OutputFile = WriteOutput -FileNameAddition $User.Id -Output $User.Summary
 			}
 		}
+	}
 
-		# Remove pathway created due to groups giving read-permission for DFS-links
-		$Read = $Read | Where-Object { $_ -Notlike "*\R" -and $_ -Notlike "*\Ext" }
-		$Other = $Other | Where-Object { $_ -Notlike "*\R" -and $_ -Notlike "*\Ext" }
-
-		# Sort and remove duplicates in each array
-		$User.Read = $Read | Sort-Object | Select-Object -Unique
-		$User.Change = $Change | Sort-Object | Select-Object -Unique
-		$User.Full = $Full | Sort-Object | Select-Object -Unique
-		$User.Other = $Other | Sort-Object | Where-Object { $Read -notcontains $_ -and $Change -notcontains $_ -and $Full -notcontains $_ } | Select-Object -Unique
-
-		if ( $ExportType -eq 2 )
-		{
-			$User.OutputFile = WriteOutput -Output "$( $msgTable.StrOutInfo1 )`r`n$( $msgTable.StrOutInfo2 )`r`n$( $msgTable.StrOutInfo3 )`r`n$( [string]$User.Out() )"
+	if ( ( GetUserChoice -MaxNum 2 -ChoiceText $msgTable.QDisplayOptions ) -eq 1 )
+	{
+		$OFS = "`r`n`r`n"
+		$UsersIn.Summary
+	}
+	else
+	{
+		$UsersIn | ForEach-Object {
+			Write-Host "$( $msgTable.StrOpeningFile ) $( $_.Ad.Name )"
+			Start-Process notepad $_.OutputFile
 		}
 	}
 }
 
-if ( $ExportType -eq 1 )
-{
-	$OFS = "`r`n`r`n*****************************`r`n`r`n"
-	$outputFile = WriteOutput -Output "$( $msgTable.StrOutInfo1 )`r`n$( $msgTable.StrOutInfo2 )`r`n$( $msgTable.StrOutInfo3 )`r`n`r`n$( [string]$UsersIn.Out() )"
-	Write-Host "$( $msgTable.StrOutPath )`n$outputFile"
-	$OutputFiles += $outputFile
-	$LogText += "$( $msgTable.LogUserFile ) $User - $( ( $outputFile -split "\\" )[-1] )`n"
-}
-else
-{
-	$OFS = "`n"
-	$OutputFiles = $UsersIn.OutputFile
-}
+if ( $UnknownIds.Count -gt 0 )
+{ Write-Host "$( $UnknownIds.Count ) $( $msgTable.StrUnknownIdsCount )" -Foreground Cyan }
 
-WriteLogTest -Text "$( $LogText.Trim() )`n`n$( $msgTable.LogSummary )" -UserInput ( [string]$UsersIn.Id ) -Success $Success -ErrorLogHash $ErrorHashes -OutputPath $OutputFiles | Out-Null
+WriteLogTest -Text "$( $UsersIn.Count ) $( $msgTable.LogUserCount )`r`n`r`n$( ( $UsersIn.AllGroups | Select-Object -Unique ).Count ) $( $msgTable.LogGroupCount )" -UserInput ( [string] $UserInput ) -Success $Success -ErrorLogHash $ErrorHashes -OutputPath $UsersIn.OutputFile | Out-Null
 
-if ( ( Read-Host "`n$( $msgTable.StrOpenFiles )" ) -eq "Y" )
-{
-	foreach ( $file in $OutputFiles )
-	{
-		Start-Process notepad $file
-	}
-}
-
-Write-Host "$( $msgTable.StrEnd )"
+Write-Host "`r`n$( $msgTable.StrEnd )"
 EndScript
