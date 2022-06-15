@@ -245,6 +245,79 @@
             <Setter Property="ToolTipService.BetweenShowDelay"
                     Value="0" />
         </Style>
+        <Window x:Key="StreamsList"
+                x:Name="StreamsList"
+                WindowStartupLocation="CenterScreen">
+            <Window.Style>
+                <Style TargetType="Window">
+                    <Setter Property="Height"
+                            Value="220" />
+                    <Setter Property="Visibility"
+                            Value="Hidden" />
+                    <Setter Property="Width"
+                            Value="1470" />
+                </Style>
+            </Window.Style>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <TextBlock x:Name="TblStreamsListInfo" />
+                <TextBlock x:Name="TblStreamsListFileName">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Grid.Row"
+                                    Value="1" />
+                            <Setter Property="TextWrapping"
+                                    Value="Wrap" />
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <DataGrid x:Name="DgStreamsList">
+                    <DataGrid.Style>
+                        <Style TargetType="DataGrid">
+                            <Setter Property="AutoGenerateColumns"
+                                    Value="False" />
+                            <Setter Property="Grid.Row"
+                                    Value="2" />
+                            <Setter Property="HeadersVisibility"
+                                    Value="Column" />
+                            <Setter Property="ItemsSource"
+                                    Value="{Binding Path=DataContext.Streams}" />
+                            <Setter Property="Margin"
+                                    Value="0" />
+                        </Style>
+                    </DataGrid.Style>
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Binding="{Binding Stream}">
+                            <DataGridTextColumn.Header>
+                                <TextBlock x:Name="DgtcStreamsName" />
+                            </DataGridTextColumn.Header>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn TextBlock.TextAlignment="Right"
+                                            Binding="{Binding DataSize}">
+                            <DataGridTextColumn.Header>
+                                <TextBlock x:Name="DgtcStreamsDataSize" />
+                            </DataGridTextColumn.Header>
+                        </DataGridTextColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+                <Button x:Name="BtnCloseStreamsList">
+                    <Button.Style>
+                        <Style TargetType="Button"
+                               BasedOn="{StaticResource BtnBaseStyle}">
+                            <Setter Property="Grid.Row"
+                                    Value="3" />
+                            <Setter Property="HorizontalAlignment"
+                                    Value="Right" />
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </Grid>
+        </Window>
     </Window.Resources>
     <Grid x:Name="GridMain">
         <Grid.RowDefinitions>
@@ -638,7 +711,7 @@
                             <Setter Property="Grid.Row"
                                     Value="1" />
                             <Setter Property="HeadersVisibility"
-                                    Value="Column" />
+                                    Value="None" />
                             <Setter Property="IsReadOnly"
                                     Value="True" />
                             <Setter Property="ScrollViewer.VerticalScrollBarVisibility"
@@ -812,6 +885,7 @@
                     <ColumnDefinition />
                     <ColumnDefinition />
                     <ColumnDefinition />
+                    <ColumnDefinition />
                 </Grid.ColumnDefinitions>
                 <Button x:Name="BtnOpenFolder">
                     <Button.Style>
@@ -843,6 +917,24 @@
                                BasedOn="{StaticResource BtnBaseStyle}">
                             <Setter Property="Grid.Column"
                                     Value="3" />
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <Button x:Name="BtnShowFileStreams">
+                    <Button.Style>
+                        <Style TargetType="Button"
+                               BasedOn="{StaticResource BtnBaseStyle}">
+                            <Setter Property="Grid.Column"
+                                    Value="4" />
+                            <Setter Property="IsEnabled"
+                                    Value="True" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ElementName=LvAllFiles, Path=SelectedItems.Count}"
+                                             Value="0">
+                                    <Setter Property="IsEnabled"
+                                            Value="False" />
+                                </DataTrigger>
+                            </Style.Triggers>
                         </Style>
                     </Button.Style>
                 </Button>
@@ -896,8 +988,54 @@
                                     <GridViewColumnHeader x:Name="LvAU" />
                                 </GridViewColumn>
                                 <GridViewColumn DisplayMemberBinding="{Binding Owner}"
-                                                Width="500">
+                                                Width="420">
                                     <GridViewColumnHeader x:Name="LvAO" />
+                                </GridViewColumn>
+                                <GridViewColumn Width="100">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border>
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="BorderBrush"
+                                                                Value="Red" />
+                                                        <Setter Property="BorderThickness"
+                                                                Value="1.5" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Path=Streams.Count}"
+                                                                         Value="1">
+                                                                <Setter Property="BorderThickness"
+                                                                        Value="0" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Path=Streams.Count}"
+                                                                         Value="{x:Null}">
+                                                                <Setter Property="BorderThickness"
+                                                                        Value="0" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <TextBlock>
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="FontWeight"
+                                                                    Value="Bold" />
+                                                            <Setter Property="Text"
+                                                                    Value="{Binding Path=Streams.Count}" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Path=Streams.Count}"
+                                                                             Value="{x:Null}">
+                                                                    <Setter Property="Text"
+                                                                            Value="1" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Border>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                    <GridViewColumnHeader x:Name="LvAStr" />
                                 </GridViewColumn>
                             </GridView>
                         </ListView.View>

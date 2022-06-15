@@ -275,24 +275,36 @@ function PrepGetFiles
 						"CreationTime", `
 						"LastWriteTime", `
 						@{ Name = "FileType"; Expression = {
-								if ( [string]::IsNullOrEmpty( $_.Extension ) ) { $syncHash.Data.msgTable.StrNoExtension }
-								else { $_.Extension.ToLower() } } }, `
+							if ( [string]::IsNullOrEmpty( $_.Extension ) ) { $syncHash.Data.msgTable.StrNoExtension }
+							else { $_.Extension.ToLower() }
+						} }, `
 						@{ Name = "FilterMatch"; Expression = {
 							$n = $_.Name
 							if ( $syncHash.fileFilter.ForEach( { $n -match $_ } ) -eq $true ) { $true }
-							else { $false } } }, `
+							else { $false }
+						} }, `
 						@{ Name = "TT"; Expression = {
 							if ( $_.FullName.StartsWith( $syncHash.User.HomeDirectory ) ) { $_.FullName.Replace( $syncHash.User.HomeDirectory , "H:" ) }
-							else { $_.FullName } } }, `
+							else { $_.FullName }
+						} }, `
 						@{ Name = "Size" ; Expression = {
 							if ( $_.Length -lt 1kB ) { "$( $_.Length ) B" }
 							elseif ( $_.Length -gt 1kB -and $_.Length -lt 1MB ) { "$( [math]::Round( ( $_.Length / 1kB ), 2 ) ) kB" }
 							elseif ( $_.Length -gt 1MB -and $_.Length -lt 1GB ) { "$( [math]::Round( ( $_.Length / 1MB ), 2 ) ) MB" }
-							elseif ( $_.Length -gt 1GB -and $_.Length -lt 1TB ) { "$( [math]::Round( ( $_.Length / 1GB ), 2 ) ) GB" } } }, `
+							elseif ( $_.Length -gt 1GB -and $_.Length -lt 1TB ) { "$( [math]::Round( ( $_.Length / 1GB ), 2 ) ) GB" }
+						} }, `
 						@{ Name = "Owner" ; Expression = {
 							$o = Get-ADUser ( ( ( Get-Acl $_.FullName ).Owner ) -split "\\" )[1]
 							if ( $o.SamAccountName -eq $syncHash.User.SamAccountName ) { $syncHash.Data.msgTable.StrFileOwner }
 							else { $o.Name }
+						} }, `
+						@{ Name = "Streams"; Expression = {
+							Get-Item $_.FullName -Stream * | Select-Object Stream, @{ Name = "DataSize" ; Expression = {
+								if ( $_.Length -lt 1kB ) { "$( $_.Length ) B" }
+								elseif ( $_.Length -gt 1kB -and $_.Length -lt 1MB ) { "$( [math]::Round( ( $_.Length / 1kB ), 2 ) ) kB" }
+								elseif ( $_.Length -gt 1MB -and $_.Length -lt 1GB ) { "$( [math]::Round( ( $_.Length / 1MB ), 2 ) ) MB" }
+								elseif ( $_.Length -gt 1GB -and $_.Length -lt 1TB ) { "$( [math]::Round( ( $_.Length / 1GB ), 2 ) ) GB" }
+							} }
 						} } `
 					| ForEach-Object { $syncHash.Data.FullFileList.Add( $_ ) }
 
@@ -421,12 +433,14 @@ Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -ArgumentList $args[1]
 
 $controls = New-Object Collections.ArrayList
 [void]$controls.Add( @{ CName = "BtnAbort"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentBtnAbort } ) } )
+[void]$controls.Add( @{ CName = "BtnCloseStreamsList"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentBtnCloseStreamsList } ) } )
 [void]$controls.Add( @{ CName = "BtnCreateQuestion"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentBtnCreateQuestion } ) } )
 [void]$controls.Add( @{ CName = "BtnOpenFolder"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentBtnOpenFolder } ; @{ PropName = "ToolTip"; PropVal = $msgTable.ContentBtnOpenFolderTT } ) } )
 [void]$controls.Add( @{ CName = "BtnOpenSummary"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentBtnOpenSummary } ) } )
 [void]$controls.Add( @{ CName = "BtnPrep"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentBtnPrep } ) } )
 [void]$controls.Add( @{ CName = "BtnReset"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentBtnReset } ; @{ PropName = "Visibility"; PropVal = [System.Windows.Visibility]::Visible } ) } )
 [void]$controls.Add( @{ CName = "BtnRunVirusScan"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentBtnRunVirusScan } ) } )
+[void]$controls.Add( @{ CName = "BtnShowFileStreams"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentBtnShowFileStreams } ) } )
 [void]$controls.Add( @{ CName = "BtnStartSearch"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentBtnStartSearch } ; @{ PropName = "Visibility"; PropVal = [System.Windows.Visibility]::Collapsed } ; @{ PropName = "IsEnabled"; PropVal = $false } ) } )
 [void]$controls.Add( @{ CName = "BtnSearchExt"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentBtnSearchExt } ; @{ PropName = "ToolTip"; PropVal = $msgTable.ContentBtnSearchExtTT } ) } )
 [void]$controls.Add( @{ CName = "BtnSearchFileName"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentBtnSearchFileName } ; @{ PropName = "ToolTip"; PropVal = $msgTable.ContentBtnSearchFileNameTT } ) } )
@@ -434,6 +448,8 @@ $controls = New-Object Collections.ArrayList
 [void]$controls.Add( @{ CName = "CbSetAccountDisabled"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentCbSetAccountDisabled } ) } )
 [void]$controls.Add( @{ CName = "DatePickerStart"; Props = @( @{ PropName = "SelectedDate"; PropVal = ( Get-Date ).AddDays( -14 ) } ) } )
 [void]$controls.Add( @{ CName = "DgFolderList"; Props = @( @{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new() } ) } )
+[void]$controls.Add( @{ CName = "DgtcStreamsDataSize"; Props = @( @{ PropName = "Text"; PropVal = $msgTable.ContentDgtcStreamsDataSize } ) } )
+[void]$controls.Add( @{ CName = "DgtcStreamsName"; Props = @( @{ PropName = "Text"; PropVal = $msgTable.ContentDgtcStreamsName } ) } )
 [void]$controls.Add( @{ CName = "GridInput"; Props = @( @{ PropName = "IsEnabled"; PropVal = $true } ; @{ PropName = "Tag"; PropVal = "" } ) } )
 [void]$controls.Add( @{ CName = "GridWaitProgress"; Props = @( @{ PropName = "Visibility"; PropVal = [System.Windows.Visibility]::Hidden } ) } )
 [void]$controls.Add( @{ CName = "LvAllFiles"; Props = @( @{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new() } ) } )
@@ -443,6 +459,7 @@ $controls = New-Object Collections.ArrayList
 [void]$controls.Add( @{ CName = "LvAS"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentLvColumnSize } ) } )
 [void]$controls.Add( @{ CName = "LvAU"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentLvColumnUpdated } ) } )
 [void]$controls.Add( @{ CName = "LvAO"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentLvColumnOwner } ) } )
+[void]$controls.Add( @{ CName = "LvAStr"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentLvColumnStreams } ) } )
 [void]$controls.Add( @{ CName = "LvMultiDotsG"; Props = @( @{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new() } ) } )
 [void]$controls.Add( @{ CName = "LvMultiDotsH"; Props = @( @{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new() } ) } )
 [void]$controls.Add( @{ CName = "RbAll"; Props = @( @{ PropName = "IsChecked"; PropVal = $false } ; @{ PropName = "ToolTip"; PropVal = $msgTable.ContentRbAllToolTip } ; @{ PropName = "Visibility"; PropVal = [System.Windows.Visibility]::Collapsed } ) } )
@@ -468,6 +485,7 @@ $controls = New-Object Collections.ArrayList
 [void]$controls.Add( @{ CName = "TblPrevDateText"; Props = @( @{ PropName = "Text"; PropVal = $msgTable.ContentTblPrevDateText } ) } )
 [void]$controls.Add( @{ CName = "TblRbAllText"; Props = @( @{ PropName = "Text"; PropVal = $msgTable.ContentTblRbAllText } ) } )
 [void]$controls.Add( @{ CName = "TblRbLatestText"; Props = @( @{ PropName = "Text"; PropVal = $msgTable.ContentTblRbLatest } ) } )
+[void]$controls.Add( @{ CName = "TblStreamsListInfo"; Props = @( @{ PropName = "Text"; PropVal = $msgTable.ContentStreamsListInfo } ) } )
 [void]$controls.Add( @{ CName = "TblSummary"; Props = @( @{ PropName = "Text"; PropVal = "" } ) } )
 [void]$controls.Add( @{ CName = "TblSummaryTitle"; Props = @( @{ PropName = "Text"; PropVal = $msgTable.ContentTblSummaryTitle } ) } )
 [void]$controls.Add( @{ CName = "TblUser"; Props = @( @{ PropName = "Text"; PropVal = "" } ) } )
@@ -494,7 +512,6 @@ $syncHash.Data.ScannedForVirus = [System.Collections.ArrayList]::new()
 $syncHash.fileFilter = @( ".MYD", ".MYI", "encrypted", "vvv", ".mp3", ".exe", "Anydesk", "FileSendsuite", "Recipesearch", "FromDocToPDF", ".dll", "easy2lock" )
 $syncHash.Jobs = [System.Collections.ArrayList]::new()
 $syncHash.ScriptVar = New-Object -ComObject WScript.Shell
-
 WriteLogTest -Text $syncHash.Data.msgTable.StrLogScriptStart -UserInput "-" -Success $true | Out-Null
 
 # Create an observable collection for a list of folders the scriptuser does not have permission to, that will respond to being updated
@@ -540,6 +557,12 @@ $syncHash.BtnAbort.Add_Click( {
 	WriteLogTest -Text $syncHash.Data.msgTable.StrLogMsgFileSearchAborted -UserInput $syncHash.DC.GridInput[1] -Success $true | Out-Null
 } )
 
+#
+$syncHash.BtnCloseStreamsList.Add_Click( {
+	#$syncHash.StreamsList.DataContext = $null
+	$syncHash.StreamsList.Visibility = [System.Windows.Visibility]::Hidden
+} )
+
 # Copy text for question to clipboard
 $syncHash.BtnCreateQuestion.Add_Click( {
 	$OutputEncoding = ( New-Object System.Text.UnicodeEncoding $false, $false ).psobject.BaseObject
@@ -573,13 +596,6 @@ $syncHash.BtnPrep.Add_Click( {
 
 # Reset arrays, values and controls to default values
 $syncHash.BtnReset.Add_Click( {
-	Reset
-	$syncHash.DC.GridInput[0] = $true
-	$syncHash.DC.BtnStartSearch[1] = [System.Windows.Visibility]::Collapsed
-	$syncHash.BtnPrep.Visibility = [System.Windows.Visibility]::Visible
-	$syncHash.TbCaseNr.Focus()
-	$syncHash.GridActionButtons.IsEnabled = $false
-
 	if ( -not $syncHash.User.Enabled )
 	{
 		if ( ( ShowMessageBox -Text $syncHash.Data.msgTable.StrEnableUser -Button ( [System.Windows.MessageBoxButton]::YesNo ) ) -eq "Yes" )
@@ -587,6 +603,13 @@ $syncHash.BtnReset.Add_Click( {
 			Set-ADUser -Identity $syncHash.User.SamAccountName -Enabled $true
 		}
 	}
+
+	Reset
+	$syncHash.DC.GridInput[0] = $true
+	$syncHash.DC.BtnStartSearch[1] = [System.Windows.Visibility]::Collapsed
+	$syncHash.BtnPrep.Visibility = [System.Windows.Visibility]::Visible
+	$syncHash.TbCaseNr.Focus()
+	$syncHash.GridActionButtons.IsEnabled = $false
 } )
 
 # Start a virus scan of selected file
@@ -648,13 +671,23 @@ $syncHash.BtnSearchFileName.Add_Click( {
 	WriteLogTest -Text $syncHash.Data.msgTable.StrLogMsgSearchFileName -UserInput "$( $syncHash.DC.GridInput[1] )`n$SelectedNames" -Success $true
 } )
 
+# List filestreams
+$syncHash.BtnShowFileStreams.Add_Click( {
+	$syncHash.TblStreamsListFileName.Text = $syncHash.LvAllFiles.SelectedItem.TT -replace "H:", $syncHash.User.HomeDirectory
+	$syncHash.DgStreamsList.ItemsSource = , $syncHash.LvAllFiles.SelectedItem.Streams
+	$syncHash.StreamsList.Visibility = [System.Windows.Visibility]::Visible
+} )
+
 # Starts the search
 $syncHash.BtnStartSearch.Add_Click( {
 	$this.IsEnabled = $false
 	$syncHash.DC.TblFileCount[0] = ""
 	$syncHash.Start = Get-Date
 	if ( $syncHash.CbSetAccountDisabled.IsChecked )
-	{ Set-ADUser -Identity $syncHash.User.SamAccountName -Enabled $false }
+	{
+		Set-ADUser -Identity $syncHash.User.SamAccountName -Enabled $false
+		$syncHash.User.Enabled = $false
+	}
 
 	GetFiles
 } )
@@ -702,8 +735,10 @@ $syncHash.TotalProgress.Add_ValueChanged( {
 
 # Text for quest changed set tabitemheader to include number of folders not reachable
 $syncHash.TbQuestion.Add_TextChanged( {
-	if ( $this.LineCount -gt 4 ) { $syncHash.DC.TiO[0] = "$( $syncHash.Data.msgTable.ContenttiOHeader ) ($( $this.LineCount - 4 ))" }
-	else { $syncHash.DC.tTO[0] = $syncHash.Data.msgTable.ContenttiOHeader }
+	$syncHash.Window.Dispatcher.Invoke( [action] {
+		if ( $this.LineCount -gt 4 ) { $syncHash.DC.TiO[0] = "$( $syncHash.Data.msgTable.ContenttiOHeader ) ($( $this.LineCount - 4 ))" }
+		else { $syncHash.DC.TiO[0] = $syncHash.Data.msgTable.ContenttiOHeader }
+	} )
  } )
 
 # Activate window and set focus when the window is loaded
