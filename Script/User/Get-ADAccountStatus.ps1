@@ -14,10 +14,12 @@ function LookUpUser
 
 	try
 	{
-		$syncHash.LookedUpUser = Get-ADUser $syncHash.tbID.Text –Properties pwdlastset, enabled, lockedout, description, accountExpires, msDS-UserPasswordExpiryTimeComputed -ErrorAction Stop | Select-Object Name, pwdlastset, enabled, lockedout, description, accountExpires, @{ Name = "ExpiryDate"; Expression = { [datetime]::FromFileTime( $_."msDS-UserPasswordExpiryTimeComputed" ) } }, DistinguishedName
+		$syncHash.LookedUpUser = Get-ADUser $syncHash.tbID.Text -Properties pwdlastset, enabled, lockedout, description, accountExpires, msDS-UserPasswordExpiryTimeComputed, LogonWorkstations -ErrorAction Stop | `
+			Select-Object Name, pwdlastset, enabled, lockedout, description, accountExpires, @{ Name = "ExpiryDate"; Expression = { [datetime]::FromFileTime( $_."msDS-UserPasswordExpiryTimeComputed" ) } }, DistinguishedName, LogonWorkstations
 
 		$syncHash.spOutput.Children.Clear()
 		Print -Text "$( $syncHash.msgTable.StrReadUser ) $( $syncHash.LookedUpUser.Name )"
+		$syncHash.GridListLocked.IsEnabled = $true
 
 		if ( ( $syncHash.LookedUpUser.Description -match "$( $syncHash.msgTable.StrDoNotActivate )" ) )
 		{
@@ -35,7 +37,7 @@ function LookUpUser
 
 			if ( $syncHash.LookedUpUser.LockedOut -eq $true )
 			{
-				Print -Text $syncHash.msgTable.StrLocked -Color "Red"
+				Print -Text $syncHash.msgTable.StrLocked -Color "Red" -LockedInfo
 				$status = $syncHash.msgTable.LogLocked
 				$syncHash.btnUnlock.IsEnabled = $true
 			}
@@ -50,6 +52,31 @@ function LookUpUser
 			{
 				Print -Text $syncHash.msgTable.StrPasswordChange -Color "Red"
 				$status = $syncHash.msgTable.LogPasswordChange
+			}
+			elseif ( $null -ne $syncHash.LookedUpUser.ExpiryDate )
+			{
+				if ( $syncHash.LookedUpUser.ExpiryDate -lt ( Get-Date ) )
+				{
+					Print -Text "$( $syncHash.msgTable.StrExpiredPassword ) $( ( $syncHash.LookedUpUser.ExpiryDate ).ToString( "yyyy-MM-dd" ) )"  -Color "Red"
+					$status = $syncHash.msgTable.LogExpiredPassword
+					$syncHash.btnExtend.IsEnabled = $true
+				}
+				else
+				{
+					Print -Text "$( $syncHash.msgTable.StrFutureExpiry ) $( ( $syncHash.LookedUpUser.ExpiryDate ).ToString( "yyyy-MM-dd" ) )."
+					$syncHash.btnExtend.IsEnabled = $true
+					$status = $syncHash.msgTable.LogFutureExpiry
+				}
+			}
+			else
+			{
+				Print -Text $syncHash.msgTable.StrNeverEndingPassword
+				$status = $syncHash.msgTable.LogNeverEndingPassword
+			}
+
+			if ( $syncHash.LookedUpUser.Name -match $syncHash.msgTable.CodeShareAccMatch )
+			{
+				Print -Text "$( $syncHash.msgTable.StrSharedAccWorkstation ) $( $OFS = ", "; $syncHash.LookedUpUser.LogonWorkstations.ToUpper() -split "," )"
 			}
 
 			if ( -not ( ( $syncHash.LookedUpUser.accountExpires -eq 0 ) -or ( $syncHash.LookedUpUser.accountExpires -eq 9223372036854775807 ) ) )
@@ -77,6 +104,34 @@ function LookUpUser
 	{
 		WriteErrorlogTest -LogText $_.Exception.Message -UserInput $syncHash.tbID.Text -Severity "OtherFail"
 	}
+}
+
+################################
+# Extends password validity date
+function Extend
+{
+	try
+	{
+		Set-ADUser -Identity $syncHash.tbID.Text -Replace @{ pwdLastSet = 0 }
+		Set-ADUser -Identity $syncHash.tbID.Text -Replace @{ pwdLastSet = -1 }
+		WriteLogTest -Text $syncHash.msgTable.LogPasswordExtended -UserInput $syncHash.tbID.Text -Success $true | Out-Null
+		Print -Text $syncHash.msgTable.StrPasswordExtended
+	}
+	catch
+	{
+		if ( $_.Exception.Message -eq "Insufficient access rights to perform the operation" ) { $severity = "PermissionFail" }
+		else { $severity = "OtherFail" }
+
+		$errorlog = WriteErrorLogTest -LogText "$( $syncHash.msgTable.ErrLogExtendPassword )`n`n$_" -UserInput $syncHash.tbID.Text -Severity $severity
+		WriteLogTest -Text $syncHash.msgTable.LogErrExtendPassword -UserInput $syncHash.tbID.Text -Success $false -ErrorLogPath $errorlog | Out-Null
+		Print -Text "$( $syncHash.msgTable.ErrMsgExtendPassword )`n`n$( $_.Exception.Message )`n`n" -Color "Red"
+		if ( $syncHash.LookedUpUser.DistinguishedName -match $syncHash.msgTable.CodeOuSpecDep )
+		{ ShowMessageBox -Text $syncHash.msgTable.ErrMsgExtendPasswordPermissionSpecDep -Title "Error!" -Button "OK" -Icon "Error" }
+		else
+		{ ShowMessageBox -Text $syncHash.msgTable.ErrMsgExtendPasswordPermission -Title "Error!" -Button "OK" -Icon "Error" }
+	}
+
+	LookUpUser
 }
 
 ###########################
@@ -137,9 +192,21 @@ function Enable
 # Prints information to a new label
 function Print
 {
-	param ( $Text, $Color = "Green" )
+	param (
+		$Text,
+		$Color = "Green",
+		[switch] $LockedInfo
+	)
 
-	$tbOutput = [System.Windows.Controls.TextBlock]@{ Foreground = $Color; Margin = "10,5,0,5"; Text = "$( Get-Date -Format 'HH:mm:ss' ) $Text"; TextWrapping = "WrapWithOverflow" }
+	$Text = "$( Get-Date -Format 'HH:mm:ss' ) $Text"
+	$tbOutput = [System.Windows.Controls.TextBlock]@{ Foreground = $Color; Margin = "10,5,0,5"; Text = $Text; TextWrapping = "Wrap" }
+	if ( $LockedInfo )
+	{
+		$OutputText = $tbOutput
+		$tbOutput = [System.Windows.Controls.StackPanel]@{}
+		$tbOutput.AddChild( $OutputText )
+	}
+
 	$syncHash.spOutput.AddChild( $tbOutput )
 	$syncHash.spOutput.UpdateLayout()
 }
@@ -151,22 +218,52 @@ Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -ArgumentList $args[1]
 $controls = New-Object System.Collections.ArrayList
 [void]$controls.Add( @{ CName = "btnActivate" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnActivate } ) } )
 [void]$controls.Add( @{ CName = "btnCancel" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnCancel } ) } )
+[void]$controls.Add( @{ CName = "BtnListLocked" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentBtnListLocked } ) } )
 [void]$controls.Add( @{ CName = "btnUnlock" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnUnlock } ) } )
+[void]$controls.Add( @{ CName = "DgLockedList" ; Props = @( @{ PropName = "ItemsSource"; PropVal = ( [System.Collections.ObjectModel.ObservableCollection[object]]::new() ) } ) } )
 [void]$controls.Add( @{ CName = "lblID" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblID } ) } )
+[void]$controls.Add( @{ CName = "LblLockedList" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentLblLockedList } ) } )
 [void]$controls.Add( @{ CName = "Window" ; Props = @( @{ PropName = "Title"; PropVal = $msgTable.ContentWindow } ) } )
 
 $syncHash = CreateWindowExt $controls
 $syncHash.msgTable = $msgTable
 
 $syncHash.tbID.Add_TextChanged( {
-	if ( ( ( $syncHash.tbID.Text.Length -eq 4 ) -or ( $syncHash.tbID.Text -match "^gai(kat|sys)\w{4}" ) ) -and ( $syncHash.tbID.Text -ne $syncHash.msgTable.CodeIdMatch ) ) { LookUpUser }
+	$syncHash.DC.DgLockedList[0].Clear()
+	$syncHash.GridListLocked.IsEnabled = $false
+
+	if ( ( ( $syncHash.tbID.Text.Length -eq 4 ) -or ( $syncHash.tbID.Text -match "^(op|sys)\w{4}" ) -or ( $syncHash.tbID.Text -match $syncHash.msgTable.CodeShareAccMatch ) ) -and ( $syncHash.tbID.Text -ne $syncHash.msgTable.CodeIdMatch ) ) { LookUpUser }
 	else { $syncHash.spOutput.Children.Clear() }
 } )
+
 $syncHash.btnUnlock.Add_Click( { Unlock } )
+
 $syncHash.btnActivate.Add_Click( { Enable } )
+
 $syncHash.btnCancel.Add_Click( { $syncHash.spOutput.Children.Clear() ; $syncHash.tbID.Text = "" } )
-$syncHash.Window.Add_ContentRendered( { $syncHash.Window.Top = 20; $syncHash.Window.Activate() ; $syncHash.tbID.Focus() } )
+
+$syncHash.BtnListLocked.Add_Click( {
+	( Get-ChildItem $syncHash.msgTable.CodeLockedLogsLocation -Filter '*LogLockedOut.txt' | Where-Object { $_.LastWriteTime -gt ( Get-Date ).AddDays( -30 ) } | Select-String -Pattern $syncHash.tbID.Text ).Line | ForEach-Object {
+		$date, $time, $user, $computer, $domain = $_ -split '\s+'
+		[PSCustomObject]@{
+			Date = ( Get-Date "$date $time" )
+			Computer = $computer
+			Domain = $domain
+		} } | Sort-Object -Descending -Property Date | ForEach-Object { $syncHash.DC.DgLockedList[0].Add( $_ ) }
+	WriteLogTest -Text $syncHash.msgTable.LogLockedLookUp -UserInput $syncHash.tbID.Text -Success $true | Out-Null
+} )
+
+$syncHash.Window.Add_ContentRendered( {
+	$syncHash.GridListLocked.IsEnabled = $false
+	$syncHash.DgLockedList.Columns[0].Header = $syncHash.msgTable.ContentDgLockedListHeader0
+	$syncHash.DgLockedList.Columns[1].Header = $syncHash.msgTable.ContentDgLockedListHeader1
+	$syncHash.DgLockedList.Columns[2].Header = $syncHash.msgTable.ContentDgLockedListHeader2
+
+	$syncHash.Window.Top = 80
+	$syncHash.Window.Activate()
+	$syncHash.tbID.Focus()
+} )
 
 [void] $syncHash.Window.ShowDialog()
 $syncHash.Window.Close()
-#$global:syncHash = $syncHash
+$global:syncHash = $syncHash
