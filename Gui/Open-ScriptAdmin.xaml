@@ -1170,20 +1170,20 @@
                                            BasedOn="{StaticResource DgBaseStyle}" />
                                 </DataGrid.Style>
                                 <DataGrid.Resources>
-                                    <DataGridLength x:Key="colListWidth">1*</DataGridLength>
-                                    <sys:String x:Key="dgOFColHeaderFunctionName">1</sys:String>
-                                    <sys:String x:Key="dgOFColHeaderHelpMessage">2</sys:String>
-                                    <sys:String x:Key="dgOFColHeaderLineNumbers">3</sys:String>
-                                    <sys:String x:Key="dgIVColHeaderTextLN">1</sys:String>
-                                    <sys:String x:Key="dgIVColHeaderTextSV">2</sys:String>
-                                    <sys:String x:Key="dgIVColHeaderTextSL">3</sys:String>
-                                    <sys:String x:Key="dgOLColHeaderTextLVar">1</sys:String>
-                                    <sys:String x:Key="dgOLColHeaderTextLVal">2</sys:String>
+                                    <DataGridLength x:Key="ColListWidth">1*</DataGridLength>
+                                    <sys:String x:Key="DgOFColHeaderFunctionName">1</sys:String>
+                                    <sys:String x:Key="DgOFColHeaderHelpMessage">2</sys:String>
+                                    <sys:String x:Key="DgOFColHeaderLineNumbers">3</sys:String>
+                                    <sys:String x:Key="DgIVColHeaderTextLN">1</sys:String>
+                                    <sys:String x:Key="DgIVColHeaderTextSL">3</sys:String>
+                                    <sys:String x:Key="DgIVColHeaderTextSV">2</sys:String>
+                                    <sys:String x:Key="DgOLColHeaderTextLVal">2</sys:String>
+                                    <sys:String x:Key="DgOLColHeaderTextLVar">1</sys:String>
+                                    <sys:String x:Key="DgSIColHeaderInfoDesc">2</sys:String>
+                                    <sys:String x:Key="DgSIColHeaderTitle">1</sys:String>
+                                    <sys:String x:Key="DgTDColHeaderTextL">1</sys:String>
+                                    <sys:String x:Key="DgTDColHeaderTextLN">2</sys:String>
                                     <sys:String x:Key="NoAcceptedVerb">E</sys:String>
-                                    <sys:String x:Key="dgSIColHeaderTitle">1</sys:String>
-                                    <sys:String x:Key="dgSIColHeaderInfoDesc">2</sys:String>
-                                    <sys:String x:Key="dgTDColHeaderTextL">1</sys:String>
-                                    <sys:String x:Key="dgTDColHeaderTextLN">2</sys:String>
                                 </DataGrid.Resources>
                                 <DataGrid.Columns>
                                     <!-- Column for Name -->
@@ -1380,7 +1380,7 @@
                                                                                                 <Style TargetType="TextBlock"
                                                                                                        BasedOn="{StaticResource ColumnElementStyle}">
                                                                                                     <Setter Property="Text"
-                                                                                                            Value="{DynamicResource dgSIColHeaderTitle}" />
+                                                                                                            Value="{DynamicResource DgSIColHeaderTitle}" />
                                                                                                 </Style>
                                                                                             </TextBlock.Style>
                                                                                         </TextBlock>
@@ -1397,7 +1397,7 @@
                                                                                                 <Style TargetType="TextBlock"
                                                                                                        BasedOn="{StaticResource ColumnElementStyle}">
                                                                                                     <Setter Property="Text"
-                                                                                                            Value="{DynamicResource dgSIColHeaderInfoDesc}" />
+                                                                                                            Value="{DynamicResource DgSIColHeaderInfoDesc}" />
                                                                                                 </Style>
                                                                                             </TextBlock.Style>
                                                                                         </TextBlock>
@@ -1453,28 +1453,23 @@
                                                                                 <Style TargetType="DataGridCell">
                                                                                     <Setter Property="ToolTip">
                                                                                         <Setter.Value>
-                                                                                            <Border Background="White">
-                                                                                                <StackPanel Background="White">
-                                                                                                    <StackPanel Margin="0"
-                                                                                                                Orientation="Horizontal">
-                                                                                                        <TextBlock FontWeight="Bold"
-                                                                                                                   Text="{DynamicResource dgOFColHeaderFunctionName}" />
-                                                                                                        <TextBlock Text="{Binding FunctionName}" />
-                                                                                                    </StackPanel>
-                                                                                                    <StackPanel Margin="0"
-                                                                                                                Orientation="Horizontal">
-                                                                                                        <TextBlock FontWeight="Bold"
-                                                                                                                   Text="{DynamicResource dgOFColHeaderHelpMessage}" />
-                                                                                                        <TextBlock Text="{Binding HelpMessage}" />
-                                                                                                    </StackPanel>
-                                                                                                    <StackPanel Margin="0"
-                                                                                                                Orientation="Horizontal">
-                                                                                                        <TextBlock FontWeight="Bold"
-                                                                                                                   Text="{DynamicResource dgOFColHeaderLineNumbers}" />
-                                                                                                        <TextBlock Text="{Binding LineNumbers}" />
-                                                                                                    </StackPanel>
-                                                                                                </StackPanel>
-                                                                                            </Border>
+                                                                                            <StackPanel Background="White">
+                                                                                                <TextBlock>
+                                                                                                    <Run FontWeight="Bold"
+                                                                                                         Text="{DynamicResource DgOFColHeaderFunctionName}" />
+                                                                                                    <Run Text="{Binding FunctionName}" />
+                                                                                                </TextBlock>
+                                                                                                <TextBlock>
+                                                                                                    <Run FontWeight="Bold"
+                                                                                                         Text="{DynamicResource DgOFColHeaderHelpMessage}" />
+                                                                                                    <Run Text="{Binding HelpMessage}" />
+                                                                                                </TextBlock>
+                                                                                                <TextBlock>
+                                                                                                    <Run FontWeight="Bold"
+                                                                                                         Text="{DynamicResource DgOFColHeaderLineNumbers}" />
+                                                                                                    <Run Text="{Binding LineNumbers}" />
+                                                                                                </TextBlock>
+                                                                                            </StackPanel>
                                                                                         </Setter.Value>
                                                                                     </Setter>
                                                                                 </Style>
@@ -1486,7 +1481,7 @@
                                                                                                BasedOn="{StaticResource DgchBaseStyle}" />
                                                                                     </DataGridTextColumn.HeaderStyle>
                                                                                     <DataGridTextColumn.Header>
-                                                                                        <TextBlock Text="{DynamicResource dgOFColHeaderFunctionName}" />
+                                                                                        <TextBlock Text="{DynamicResource DgOFColHeaderFunctionName}" />
                                                                                     </DataGridTextColumn.Header>
                                                                                 </DataGridTextColumn>
                                                                                 <DataGridTextColumn Binding="{Binding HelpMessage}">
@@ -1495,7 +1490,7 @@
                                                                                                BasedOn="{StaticResource DgchBaseStyle}" />
                                                                                     </DataGridTextColumn.HeaderStyle>
                                                                                     <DataGridTextColumn.Header>
-                                                                                        <TextBlock Text="{DynamicResource dgOFColHeaderHelpMessage}" />
+                                                                                        <TextBlock Text="{DynamicResource DgOFColHeaderHelpMessage}" />
                                                                                     </DataGridTextColumn.Header>
                                                                                 </DataGridTextColumn>
                                                                                 <DataGridTextColumn Binding="{Binding LineNumbers}">
@@ -1504,7 +1499,7 @@
                                                                                                BasedOn="{StaticResource DgchBaseStyle}" />
                                                                                     </DataGridTextColumn.HeaderStyle>
                                                                                     <DataGridTextColumn.Header>
-                                                                                        <TextBlock Text="{DynamicResource dgOFColHeaderLineNumbers}" />
+                                                                                        <TextBlock Text="{DynamicResource DgOFColHeaderLineNumbers}" />
                                                                                     </DataGridTextColumn.Header>
                                                                                 </DataGridTextColumn>
                                                                             </DataGrid.Columns>
@@ -1550,28 +1545,23 @@
                                                                                 <Style TargetType="DataGridCell">
                                                                                     <Setter Property="ToolTip">
                                                                                         <Setter.Value>
-                                                                                            <Border Background="White">
-                                                                                                <StackPanel Background="White">
-                                                                                                    <StackPanel Margin="0"
-                                                                                                                Orientation="Horizontal">
-                                                                                                        <TextBlock FontWeight="Bold"
-                                                                                                                   Text="{DynamicResource dgIVColHeaderTextLN}" />
-                                                                                                        <TextBlock Text="{Binding ScLineNr}" />
-                                                                                                    </StackPanel>
-                                                                                                    <StackPanel Margin="0"
-                                                                                                                Orientation="Horizontal">
-                                                                                                        <TextBlock FontWeight="Bold"
-                                                                                                                   Text="{DynamicResource dgIVColHeaderTextSV}" />
-                                                                                                        <TextBlock Text="{Binding ScVar}" />
-                                                                                                    </StackPanel>
-                                                                                                    <StackPanel Margin="0"
-                                                                                                                Orientation="Horizontal">
-                                                                                                        <TextBlock FontWeight="Bold"
-                                                                                                                   Text="{DynamicResource dgIVColHeaderTextSL}" />
-                                                                                                        <TextBlock Text="{Binding ScLine}" />
-                                                                                                    </StackPanel>
-                                                                                                </StackPanel>
-                                                                                            </Border>
+                                                                                            <StackPanel Background="White">
+                                                                                                <TextBlock>
+                                                                                                    <Run FontWeight="Bold"
+                                                                                                         Text="{DynamicResource DgIVColHeaderTextLN}" />
+                                                                                                    <Run Text="{Binding ScLineNr}" />
+                                                                                                </TextBlock>
+                                                                                                <TextBlock>
+                                                                                                    <Run FontWeight="Bold"
+                                                                                                         Text="{DynamicResource DgIVColHeaderTextSV}" />
+                                                                                                    <Run Text="{Binding ScVar}" />
+                                                                                                </TextBlock>
+                                                                                                <TextBlock>
+                                                                                                    <Run FontWeight="Bold"
+                                                                                                         Text="{DynamicResource DgIVColHeaderTextSL}" />
+                                                                                                    <Run Text="{Binding ScLine}" />
+                                                                                                </TextBlock>
+                                                                                            </StackPanel>
                                                                                         </Setter.Value>
                                                                                     </Setter>
                                                                                 </Style>
@@ -1590,7 +1580,7 @@
                                                                                                BasedOn="{StaticResource DgchBaseStyle}" />
                                                                                     </DataGridTextColumn.HeaderStyle>
                                                                                     <DataGridTextColumn.Header>
-                                                                                        <TextBlock Text="{DynamicResource dgIVColHeaderTextLN}" />
+                                                                                        <TextBlock Text="{DynamicResource DgIVColHeaderTextLN}" />
                                                                                     </DataGridTextColumn.Header>
                                                                                 </DataGridTextColumn>
                                                                                 <DataGridTextColumn Binding="{Binding ScVar}">
@@ -1599,7 +1589,7 @@
                                                                                                BasedOn="{StaticResource DgchBaseStyle}" />
                                                                                     </DataGridTextColumn.HeaderStyle>
                                                                                     <DataGridTextColumn.Header>
-                                                                                        <TextBlock Text="{DynamicResource dgIVColHeaderTextSV}" />
+                                                                                        <TextBlock Text="{DynamicResource DgIVColHeaderTextSV}" />
                                                                                     </DataGridTextColumn.Header>
                                                                                 </DataGridTextColumn>
                                                                                 <DataGridTextColumn Binding="{Binding ScLine}">
@@ -1608,7 +1598,7 @@
                                                                                                BasedOn="{StaticResource DgchBaseStyle}" />
                                                                                     </DataGridTextColumn.HeaderStyle>
                                                                                     <DataGridTextColumn.Header>
-                                                                                        <TextBlock Text="{DynamicResource dgIVColHeaderTextSL}" />
+                                                                                        <TextBlock Text="{DynamicResource DgIVColHeaderTextSL}" />
                                                                                     </DataGridTextColumn.Header>
                                                                                 </DataGridTextColumn>
                                                                             </DataGrid.Columns>
@@ -1648,28 +1638,26 @@
                                                             <Setter Property="ContentTemplate">
                                                                 <Setter.Value>
                                                                     <DataTemplate>
-                                                                        <!-- Datagrid for listing OrphandLocalizations used -->
+                                                                        <!-- Datagrid for listing OrphandLocalizations -->
                                                                         <DataGrid>
                                                                             <DataGrid.CellStyle>
                                                                                 <Style TargetType="DataGridCell">
                                                                                     <Setter Property="ToolTip">
                                                                                         <Setter.Value>
-                                                                                            <Border Background="White">
-                                                                                                <StackPanel Background="White">
-                                                                                                    <StackPanel Margin="0"
-                                                                                                                Orientation="Horizontal">
-                                                                                                        <TextBlock FontWeight="Bold"
-                                                                                                                   Text="{DynamicResource dgOLColHeaderTextLVar}" />
-                                                                                                        <TextBlock Text="{Binding LocVar}" />
-                                                                                                    </StackPanel>
-                                                                                                    <StackPanel Margin="0"
-                                                                                                                Orientation="Horizontal">
-                                                                                                        <TextBlock FontWeight="Bold"
-                                                                                                                   Text="{DynamicResource dgOLColHeaderTextLVal}" />
-                                                                                                        <TextBlock Text="{Binding LocVal}" />
-                                                                                                    </StackPanel>
-                                                                                                </StackPanel>
-                                                                                            </Border>
+                                                                                            <StackPanel Background="White">
+                                                                                                <TextBlock>
+                                                                                                    <Run Text="{DynamicResource DgOLColHeaderTextLVar}"
+                                                                                                         FontWeight="Bold" />
+                                                                                                    <Run Text=": " />
+                                                                                                    <Run Text="{Binding LocVar}" />
+                                                                                                </TextBlock>
+                                                                                                <TextBlock>
+                                                                                                    <Run Text="{DynamicResource DgOLColHeaderTextLVal}"
+                                                                                                         FontWeight="Bold" />
+                                                                                                    <Run Text=":&#x0a;" />
+                                                                                                    <Run Text="{Binding LocVal}" />
+                                                                                                </TextBlock>
+                                                                                            </StackPanel>
                                                                                         </Setter.Value>
                                                                                     </Setter>
                                                                                 </Style>
@@ -1688,7 +1676,7 @@
                                                                                                BasedOn="{StaticResource DgchBaseStyle}" />
                                                                                     </DataGridTextColumn.HeaderStyle>
                                                                                     <DataGridTextColumn.Header>
-                                                                                        <TextBlock Text="{DynamicResource dgOLColHeaderTextLVar}" />
+                                                                                        <TextBlock Text="{DynamicResource DgOLColHeaderTextLVar}" />
                                                                                     </DataGridTextColumn.Header>
                                                                                 </DataGridTextColumn>
                                                                                 <DataGridTextColumn Binding="{Binding LocVal}">
@@ -1697,7 +1685,7 @@
                                                                                                BasedOn="{StaticResource DgchBaseStyle}" />
                                                                                     </DataGridTextColumn.HeaderStyle>
                                                                                     <DataGridTextColumn.Header>
-                                                                                        <TextBlock Text="{DynamicResource dgOLColHeaderTextLVal}" />
+                                                                                        <TextBlock Text="{DynamicResource DgOLColHeaderTextLVal}" />
                                                                                     </DataGridTextColumn.Header>
                                                                                 </DataGridTextColumn>
                                                                             </DataGrid.Columns>
@@ -1759,7 +1747,7 @@
                                                                                                BasedOn="{StaticResource DgchBaseStyle}" />
                                                                                     </DataGridTextColumn.HeaderStyle>
                                                                                     <DataGridTextColumn.Header>
-                                                                                        <TextBlock Text="{DynamicResource dgTDColHeaderTextL}" />
+                                                                                        <TextBlock Text="{DynamicResource DgTDColHeaderTextL}" />
                                                                                     </DataGridTextColumn.Header>
                                                                                 </DataGridTextColumn>
                                                                                 <DataGridTextColumn Binding="{Binding LineNumber}">
@@ -1768,7 +1756,7 @@
                                                                                                BasedOn="{StaticResource DgchBaseStyle}" />
                                                                                     </DataGridTextColumn.HeaderStyle>
                                                                                     <DataGridTextColumn.Header>
-                                                                                        <TextBlock Text="{DynamicResource dgTDColHeaderTextLN}" />
+                                                                                        <TextBlock Text="{DynamicResource DgTDColHeaderTextLN}" />
                                                                                     </DataGridTextColumn.Header>
                                                                                 </DataGridTextColumn>
                                                                             </DataGrid.Columns>

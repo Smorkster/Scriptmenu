@@ -528,26 +528,23 @@ function SetLocalizations
 	$syncHash.DgFailedUpdates.Columns[7].Header = $syncHash.Data.msgTable.ContentdgFailedUpdatesColOrphandLocalizations
 	$syncHash.DgFailedUpdates.Columns[8].Header = $syncHash.Data.msgTable.ContentdgFailedUpdatesColTODOs
 
-	# Text for style trigger in list for survey answers
-	$syncHash.DgSurveyAnswers.Columns[0].CellTemplate.Triggers.Setters[1].Value = $syncHash.Data.msgTable.ContentdgSurveyNoComment
-
 	# DatagridTextColumn headers for datagrids in dgFailedUpdates-cells
-	$syncHash.DgFailedUpdates.Resources['dgOFColHeaderFunctionName'] = $syncHash.Data.msgTable.ContentdgObsoleteFunctionsColFunctionName
-	$syncHash.DgFailedUpdates.Resources['dgOFColHeaderHelpMessage'] = $syncHash.Data.msgTable.ContentdgObsoleteFunctionsColHelpMessage
-	$syncHash.DgFailedUpdates.Resources['dgOFColHeaderLineNumbers'] = $syncHash.Data.msgTable.ContentdgObsoleteFunctionsColLineNumbers
+	$syncHash.DgFailedUpdates.Resources['DgOFColHeaderFunctionName'] = $syncHash.Data.msgTable.ContentdgObsoleteFunctionsColFunctionName
+	$syncHash.DgFailedUpdates.Resources['DgOFColHeaderHelpMessage'] = $syncHash.Data.msgTable.ContentdgObsoleteFunctionsColHelpMessage
+	$syncHash.DgFailedUpdates.Resources['DgOFColHeaderLineNumbers'] = $syncHash.Data.msgTable.ContentdgObsoleteFunctionsColLineNumbers
 
-	$syncHash.DgFailedUpdates.Resources['dgIVColHeaderTextLN'] = $syncHash.Data.msgTable.ContentdgInvalidLocalizationsColLineNumber
-	$syncHash.DgFailedUpdates.Resources['dgIVColHeaderTextSV'] = $syncHash.Data.msgTable.ContentdgInvalidLocalizationsColScriptVar
-	$syncHash.DgFailedUpdates.Resources['dgIVColHeaderTextSL'] = $syncHash.Data.msgTable.ContentdgInvalidLocalizationsColScriptLine
+	$syncHash.DgFailedUpdates.Resources['DgIVColHeaderTextLN'] = $syncHash.Data.msgTable.ContentdgInvalidLocalizationsColLineNumber
+	$syncHash.DgFailedUpdates.Resources['DgIVColHeaderTextSV'] = $syncHash.Data.msgTable.ContentdgInvalidLocalizationsColScriptVar
+	$syncHash.DgFailedUpdates.Resources['DgIVColHeaderTextSL'] = $syncHash.Data.msgTable.ContentdgInvalidLocalizationsColScriptLine
 
-	$syncHash.DgFailedUpdates.Resources['dgOLColHeaderTextLVar'] = $syncHash.Data.msgTable.ContentdgOrphandLocalizationsColVariable
-	$syncHash.DgFailedUpdates.Resources['dgOLColHeaderTextLVal'] = $syncHash.Data.msgTable.ContentdgOrphandLocalizationsColValue
+	$syncHash.DgFailedUpdates.Resources['DgOLColHeaderTextLVar'] = $syncHash.Data.msgTable.ContentdgOrphandLocalizationsColVariable
+	$syncHash.DgFailedUpdates.Resources['DgOLColHeaderTextLVal'] = $syncHash.Data.msgTable.ContentdgOrphandLocalizationsColValue
 
-	$syncHash.DgFailedUpdates.Resources['dgSIColHeaderTitle'] = $syncHash.Data.msgTable.ContentdgSIColHeaderTitle
-	$syncHash.DgFailedUpdates.Resources['dgSIColHeaderInfoDesc'] = $syncHash.Data.msgTable.ContentdgSIColHeaderInfoDesc
+	$syncHash.DgFailedUpdates.Resources['DgSIColHeaderTitle'] = $syncHash.Data.msgTable.ContentdgSIColHeaderTitle
+	$syncHash.DgFailedUpdates.Resources['DgSIColHeaderInfoDesc'] = $syncHash.Data.msgTable.ContentdgSIColHeaderInfoDesc
 
-	$syncHash.DgFailedUpdates.Resources['dgTDColHeaderTextL'] = $syncHash.Data.msgTable.ContentdgTDColHeaderTextL
-	$syncHash.DgFailedUpdates.Resources['dgTDColHeaderTextLN'] = $syncHash.Data.msgTable.ContentdgTDColHeaderTextLN
+	$syncHash.DgFailedUpdates.Resources['DgTDColHeaderTextL'] = $syncHash.Data.msgTable.ContentdgTDColHeaderTextL
+	$syncHash.DgFailedUpdates.Resources['DgTDColHeaderTextLN'] = $syncHash.Data.msgTable.ContentdgTDColHeaderTextLN
 
 	$syncHash.DgFailedUpdates.Resources['NoAcceptedVerb'] = $syncHash.Data.msgTable.ContentNoAcceptedVerb
 
