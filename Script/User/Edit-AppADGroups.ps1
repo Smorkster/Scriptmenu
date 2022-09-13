@@ -130,29 +130,33 @@ function CreateLogText
 		Create text for the log in the GUI
 	#>
 
-	$LogText = ""
-	$LogText += "$( Get-Date -Format "yyyy-MM-dd HH:mm:ss" )"
-	$syncHash.DC.lbGroupsChosen[1].Name | ForEach-Object { $LogText += "`n$_" }
+	$LogText = [pscustomobject]@{
+		DateTime = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+		Groups = [System.Collections.ArrayList]::new()
+		AddedUsers = [System.Collections.ArrayList]::new()
+		RemovedUsers = [System.Collections.ArrayList]::new()
+		ErrorUsers = [System.Collections.ArrayList]::new()
+	}
+
+	$syncHash.DC.lbGroupsChosen[1].Name | ForEach-Object { $LogText.Groups.Add( $_ ) }
+
 	if ( $syncHash.AddUsers )
 	{
-		$LogText += "`n$( $syncHash.Data.msgTable.LogNew )"
-		$syncHash.AddUsers.AD | ForEach-Object { $LogText += "`n`t$( $_.Name )" }
+		$syncHash.AddUsers.AD | ForEach-Object { $LogText.AddedUsers.Add( $_.Name ) }
 	}
 
 	if ( $syncHash.RemoveUsers )
 	{
-		$LogText += "`n$( $syncHash.Data.msgTable.LogRemove )"
-		$syncHash.RemoveUsers.AD | ForEach-Object { $LogText += "`n`t$( $_.Name )" }
+		$syncHash.RemoveUsers.AD | ForEach-Object { $LogText.RemovedUsers.Add( $_.Name ) }
 	}
 
 	if ( $syncHash.ErrorUsers )
 	{
-		$LogText += "`n$( $syncHash.Data.msgTable.LogNoAccount ):"
-		$syncHash.ErrorUsers.Id | ForEach-Object { $LogText += "`n`t$_" }
+		$syncHash.ErrorUsers.Id | ForEach-Object { $LogText.ErrorUsers.Add( $_ ) }
 	}
 
-	$LogText += "`n------------------------------"
-	$syncHash.lbLog.Items.Insert( 0, $LogText )
+	$syncHash.Data.Test = $LogText
+	$syncHash.IcLog.ItemsSource.Insert( 0, $LogText )
 }
 
 function CreateMessage
@@ -180,6 +184,7 @@ function CreateMessage
 		$Message += "`n$( $syncHash.Data.msgTable.MsgNoAccount ):"
 		$syncHash.ErrorUsers.Id | ForEach-Object { $Message += "`t$_" }
 	}
+	$Message += $syncHash.Data.msgTable.StrLogOut
 	$Message += $syncHash.Signatur
 	$OutputEncoding = [System.Text.UnicodeEncoding]::new( $False, $False ).psobject.BaseObject
 	$Message | clip
@@ -486,12 +491,13 @@ Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -ArgumentList $args[1]
 
 $controls = [System.Collections.ArrayList]::new()
-[void] $controls.Add( @{ CName = "btnPerform" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnPerform } ) } )
-[void] $controls.Add( @{ CName = "btnUndo" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnUndo } ) } )
-[void] $controls.Add( @{ CName = "cbApp" ; Props = @( @{ PropName = "SelectedItem"; PropVal = "" } ; @{ PropName = "ItemsSource" ; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new() } ) } )
-[void] $controls.Add( @{ CName = "lbAppGroupList" ; Props = @( @{ PropName = "SelectedItem"; PropVal = "" } ; @{ PropName = "ItemsSource" ; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new() } ) } )
-[void] $controls.Add( @{ CName = "lbGroupsChosen" ; Props = @( @{ PropName = "SelectedItem"; PropVal = "" } ; @{ PropName = "ItemsSource" ; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new() } ) } )
-[void] $controls.Add( @{ CName = "lblApp" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblApp } ) } )
+[void] $controls.Add( @{ CName = "BtnPerform" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnPerform } ) } )
+[void] $controls.Add( @{ CName = "BtnUndo" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnUndo } ) } )
+[void] $controls.Add( @{ CName = "CbApp" ; Props = @( @{ PropName = "SelectedItem"; PropVal = "" } ; @{ PropName = "ItemsSource" ; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new() } ) } )
+[void] $controls.Add( @{ CName = "IcLog" ; Props = @( @{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new() } ) } )
+[void] $controls.Add( @{ CName = "LbAppGroupList" ; Props = @( @{ PropName = "SelectedItem"; PropVal = "" } ; @{ PropName = "ItemsSource" ; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new() } ) } )
+[void] $controls.Add( @{ CName = "LbGroupsChosen" ; Props = @( @{ PropName = "SelectedItem"; PropVal = "" } ; @{ PropName = "ItemsSource" ; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new() } ) } )
+[void] $controls.Add( @{ CName = "LblApp" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblApp } ) } )
 [void] $controls.Add( @{ CName = "lblAppGroupList" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblAppGroupList } ) } )
 [void] $controls.Add( @{ CName = "lblGroupsChosen" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblGroupsChosen } ) } )
 [void] $controls.Add( @{ CName = "lblLog" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblLog } ) } )
@@ -517,6 +523,10 @@ $syncHash.Window.Add_ContentRendered( {
 	UpdateAppList
 	if ( $syncHash.DC.cbApp[1].Count -eq 1 ) { UpdateAppGroupList }
 	$syncHash.Window.Title = $syncHash.Data.msgTable.ContentWindowTitle
+	$syncHash.Window.Resources['StrAddedUsersTitle'] = $syncHash.Data.msgTable.StrAddedUsersTitle
+	$syncHash.Window.Resources['StrErrorUsersTitle'] = $syncHash.Data.msgTable.StrErrorUsersTitle
+	$syncHash.Window.Resources['StrGroupsTitle'] = $syncHash.Data.msgTable.StrGroupsTitle
+	$syncHash.Window.Resources['StrRemovedUsersTitle'] = $syncHash.Data.msgTable.StrRemovedUsersTitle
 } )
 
 $syncHash.ErrorLogFilePath = ""
@@ -525,4 +535,4 @@ $syncHash.LogFilePath = ""
 ResetVariables
 
 [void] $syncHash.Window.ShowDialog()
-#$global:syncHash = $syncHash
+$global:syncHash = $syncHash
