@@ -12,13 +12,13 @@ function CheckReady
 		Verify if operations is ready to perform
 	#>
 
-	if ( ( $syncHash.DC.lbGroupsChosen[1].Count -gt 0 ) -and ( ( $syncHash.txtUsersAddPermission.Text.Length -ge 4 ) -or ( $syncHash.txtUsersRemovePermission.Text.Length -ge 4 ) ) )
+	if ( ( $syncHash.DC.LbGroupsChosen[1].Count -gt 0 ) -and ( ( $syncHash.TxtUsersAddPermission.Text.Length -ge 4 ) -or ( $syncHash.TxtUsersRemovePermission.Text.Length -ge 4 ) ) )
 	{
-		$syncHash.btnPerform.IsEnabled = $true
+		$syncHash.BtnPerform.IsEnabled = $true
 	}
 	else
 	{
-		$syncHash.btnPerform.IsEnabled = $false
+		$syncHash.BtnPerform.IsEnabled = $false
 	}
 }
 
@@ -54,16 +54,14 @@ function CollectEntries
 		Collect input from textboxes
 	#>
 
-	if ( ( $LineCount = $syncHash.txtUsersAddPermission.LineCount ) -gt 0 )
+	if ( ( $LineCount = $syncHash.TxtUsersAddPermission.LineCount ) -gt 0 )
 	{
-		$lines = @()
-		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $syncHash.txtUsersAddPermission.GetLineText( $i ) ).Split( ";""," ) | ForEach-Object { $lines += ( $_ ).Trim() } }
+		$entries = $syncHash.TxtUsersAddPermission.Text -split "\W" | Where-Object { $_ }
 		CollectUsers -Entries ( $lines | Where-Object { $_ -ne "" } ) -PermissionType "Add"
 	}
-	if ( ( $LineCount = $syncHash.txtUsersRemovePermission.LineCount ) -gt 0 )
+	if ( ( $LineCount = $syncHash.TxtUsersRemovePermission.LineCount ) -gt 0 )
 	{
-		$lines = @()
-		for ( $i = 0; $i -lt $LineCount; $i++ ) { ( $syncHash.txtUsersRemovePermission.GetLineText( $i ) ).Split( ";""," ) | ForEach-Object { $lines += ( $_ ).Trim() } }
+		$lines = $syncHash.TxtUsersRemovePermission.text -split "\W" | Where-Object { $_ }
 		CollectUsers -Entries ( $lines | Where-Object { $_ -ne "" } ) -PermissionType "Remove"
 	}
 }
@@ -138,7 +136,7 @@ function CreateLogText
 		ErrorUsers = [System.Collections.ArrayList]::new()
 	}
 
-	$syncHash.DC.lbGroupsChosen[1].Name | ForEach-Object { $LogText.Groups.Add( $_ ) }
+	$syncHash.DC.LbGroupsChosen[1].Name | ForEach-Object { $LogText.Groups.Add( $_ ) }
 
 	if ( $syncHash.AddUsers )
 	{
@@ -167,8 +165,8 @@ function CreateMessage
 	#>
 
 	$Message = @()
-	$Message += "$( $syncHash.Data.msgTable.MsgMessageIntro ) $( $syncHash.GroupType )"
-	$syncHash.DC.lbGroupsChosen[1].Name | ForEach-Object { $Message += "`t$_" }
+	$Message += "$( $syncHash.Data.msgTable.MsgMessageIntro ) $( $syncHash.CbApp.SelectedItem.Tag.GroupType )"
+	$syncHash.DC.LbGroupsChosen[1].Name | ForEach-Object { $Message += "`t$_" }
 	if ( $syncHash.AddUsers )
 	{
 		$Message += "`n$( $syncHash.Data.msgTable.MsgNew ):"
@@ -236,10 +234,10 @@ function GroupDeselected
 		A group in the list of selected groups was doubleclicked. Remove it from selected list, add to grouplist.
 	#>
 
-	if ( $null -ne $syncHash.DC.lbGroupsChosen[0] )
+	if ( $null -ne $syncHash.DC.LbGroupsChosen[0] )
 	{
-		$syncHash.DC.lbAppGroupList[1].Add( $syncHash.DC.lbGroupsChosen[0] )
-		$syncHash.DC.lbGroupsChosen[1].Remove( $syncHash.DC.lbGroupsChosen[0] )
+		$syncHash.DC.LbAppGroupList[1].Add( $syncHash.DC.LbGroupsChosen[0] )
+		$syncHash.DC.LbGroupsChosen[1].Remove( $syncHash.DC.LbGroupsChosen[0] )
 		CheckReady
 		UpdateAppGroupListItems
 	}
@@ -254,10 +252,10 @@ function GroupSelected
 		A group was selected. Add it to list of selected groups.
 	#>
 
-	if ( $null -ne $syncHash.lbAppGroupList.SelectedItem )
+	if ( $null -ne $syncHash.LbAppGroupList.SelectedItem )
 	{
-		$syncHash.DC.lbGroupsChosen[1].Add( $syncHash.lbAppGroupList.SelectedItem )
-		$syncHash.DC.lbAppGroupList[1].Remove( $syncHash.lbAppGroupList.SelectedItem )
+		$syncHash.DC.LbGroupsChosen[1].Add( $syncHash.LbAppGroupList.SelectedItem )
+		$syncHash.DC.LbAppGroupList[1].Remove( $syncHash.LbAppGroupList.SelectedItem )
 		CheckReady
 		UpdateAppGroupListItems
 	}
@@ -278,13 +276,13 @@ function PerformPermissions
 	}
 	else
 	{
-		$Continue = ShowMessageBox -Text "$( $syncHash.Data.msgTable.QCont1 ) $( $syncHash.DC.lbGroupsChosen[1].Count ) $( $syncHash.GroupType ) $( $syncHash.Data.msgTable.QCont2 ) $( @( $syncHash.AddUsers ).Count + @( $syncHash.RemoveUsers ).Count ) $( $syncHash.Data.msgTable.QCont3 ) ?$( if ( $syncHash.ErrorUsers ) { "`n$( $syncHash.Data.msgTable.QContErr )." } )" -Title "$( $syncHash.Data.msgTable.QContTitle )?" -Button "OKCancel"
+		$Continue = ShowMessageBox -Text "$( $syncHash.Data.msgTable.QCont1 ) $( $syncHash.DC.LbGroupsChosen[1].Count ) $( $syncHash.CbApp.SelectedItem.Tag.GroupType ) $( $syncHash.Data.msgTable.QCont2 ) $( @( $syncHash.AddUsers ).Count + @( $syncHash.RemoveUsers ).Count ) $( $syncHash.Data.msgTable.QCont3 ) ?$( if ( $syncHash.ErrorUsers ) { "`n$( $syncHash.Data.msgTable.QContErr )." } )" -Title "$( $syncHash.Data.msgTable.QContTitle )?" -Button "OKCancel"
 		if ( $Continue -eq "OK" )
 		{
 			$loopCounter = 0
 			foreach ( $Group in $syncHash.DC.lbGroupsChosen[1] )
 			{
-				$syncHash.Window.Title = "$( $syncHash.Data.msgTable.StrProgressTitle ) $( [Math]::Floor( $loopCounter / $syncHash.DC.lbGroupsChosen[1].Count * 100 ) )%"
+				$syncHash.Window.Title = "$( $syncHash.Data.msgTable.StrProgressTitle ) $( [Math]::Floor( $loopCounter / $syncHash.DC.LbGroupsChosen[1].Count * 100 ) )%"
 				if ( $syncHash.AddUsers )
 				{
 					try { Add-ADGroupMember -Identity $Group -Members $syncHash.AddUsers.Id -Confirm:$false }
@@ -313,7 +311,7 @@ function PerformPermissions
 			CreateLogText
 			CreateMessage
 			WriteToLogFile
-			ShowMessageBox -Text "$( $syncHash.DC.lbGroupsChosen[1].Count * ( @( $syncHash.AddUsers ).Count + @( $syncHash.RemoveUsers ).Count ) ) $( $syncHash.Data.msgTable.StrFinishMessage )" -Title "$( $syncHash.Data.msgTable.StrFinishMessageTitle )"
+			ShowMessageBox -Text "$( $syncHash.DC.LbGroupsChosen[1].Count * ( @( $syncHash.AddUsers ).Count + @( $syncHash.RemoveUsers ).Count ) ) $( $syncHash.Data.msgTable.StrFinishMessage )" -Title "$( $syncHash.Data.msgTable.StrFinishMessageTitle )"
 
 			UndoInput
 			ResetVariables
@@ -419,23 +417,23 @@ function UpdateAppGroupList
 		Item in combobox has changed, get that applications groups and list them
 	#>
 
-	$syncHash.DC.lbGroupsChosen[1].Clear()
-	$syncHash.DC.lbAppGroupList[1].Clear()
+	$syncHash.DC.LbGroupsChosen[1].Clear()
+	$syncHash.DC.LbAppGroupList[1].Clear()
 	$syncHash.Window.Title = $syncHash.Data.msgTable.StrGetADGroups
-	$syncHash.GroupList = @()
-	$item = $syncHash.DC.cbApp[0]
 
-	$syncHash.GroupType = $item.Tag.GroupType
-	try
+	if ( $syncHash.CbApp.SelectedItem.Tag.GroupList.Count -eq 0 )
 	{
-		if ( $null -eq $item.Tag.Exclude )
-		{ $syncHash.GroupList = Get-ADGroup -LDAPFilter "$( $item.Tag.AppFilter )" | Sort-Object Name }
-		else
-		{ $syncHash.GroupList = Get-ADGroup -LDAPFilter "$( $item.Tag.AppFilter )" | Where-Object { $item.Tag.Exclude -notcontains $_.Name.Split( $item.Tag.split )[$item.Tag.index] } }
-	}
-	catch
-	{
-		$syncHash.Data.ErrorHashes += WriteErrorLogTest -LogText $_ -UserInput $syncHash.Data.msgTable.ErrMessageGetAppGroups -Severity "ConnectionFail"
+		try
+		{
+			if ( $null -eq $syncHash.CbApp.SelectedItem.Tag.Exclude )
+			{ $syncHash.CbApp.SelectedItem.Tag.GroupList = Get-ADGroup -LDAPFilter "$( $syncHash.CbApp.SelectedItem.Tag.AppFilter )" | Sort-Object Name }
+			else
+			{ $syncHash.CbApp.SelectedItem.Tag.GroupList = Get-ADGroup -LDAPFilter "$( $syncHash.CbApp.SelectedItem.Tag.AppFilter )" | Where-Object { $syncHash.CbApp.SelectedItem.Tag.Exclude -notcontains $_.Name.Split( $syncHash.CbApp.SelectedItem.Tag.split )[$syncHash.CbApp.SelectedItem.Tag.index] } | Sort-Object Name }
+		}
+		catch
+		{
+			$syncHash.Data.ErrorHashes += WriteErrorLogTest -LogText $_ -UserInput $syncHash.Data.msgTable.ErrMessageGetAppGroups -Severity "ConnectionFail"
+		}
 	}
 
 	UpdateAppGroupListItems
@@ -449,8 +447,8 @@ function UpdateAppGroupListItems
 		Update the list of groups, excluding any selected group
 	#>
 
-	$syncHash.DC.lbAppGroupList[1].Clear()
-	$syncHash.GroupList | Where-Object { $syncHash.DC.lbGroupsChosen[1] -notcontains $_ } | ForEach-Object { [void] $syncHash.DC.lbAppGroupList[1].Add( $_ ) }
+	$syncHash.DC.LbAppGroupList[1].Clear()
+	$syncHash.CbApp.SelectedItem.Tag.GroupList | Where-Object { $syncHash.DC.LbGroupsChosen[1] -notcontains $_ } | ForEach-Object { [void] $syncHash.DC.LbAppGroupList[1].Add( $_ ) }
 }
 
 function UndoInput
@@ -460,8 +458,8 @@ function UndoInput
 		Deletes all userinput and resets lists
 	#>
 
-	$syncHash.txtUsersAddPermission.Text = ""
-	$syncHash.txtUsersRemovePermission.Text = ""
+	$syncHash.TxtUsersAddPermission.Text = ""
+	$syncHash.TxtUsersRemovePermission.Text = ""
 	UpdateAppGroupList
 }
 
@@ -474,14 +472,14 @@ function WriteToLogFile
 
 	$OFS = ", "
 
-	$LogText = "$( $syncHash.Data.msgTable.StrLogMessage ): $( $syncHash.cbApp.Text )`n"
+	$LogText = "$( $syncHash.Data.msgTable.StrLogMessage ): $( $syncHash.CbApp.Text )`n"
 	if ( $syncHash.AddUsers.Count -gt 0 ) { $LogText += "$( $syncHash.Data.msgTable.LogMessageAdd ) $( $syncHash.AddUsers.Id )" }
 	if ( $syncHash.RemoveUsers.Count -gt 0 ) { $LogText += "$( $syncHash.Data.msgTable.LogMessageRemove ) $( $syncHash.RemoveUsers.Id )" }
 
 	$UserInput = ""
-	if ( $syncHash.txtUsersAddPermission.Text.Length -gt 0 ) { $UserInput += "$( $syncHash.Data.msgTable.LogInputAdd ) $( $syncHash.txtUsersAddPermission.Text -split "\W" )`n" }
-	if ( $syncHash.txtUsersRemovePermission.Text.Length -gt 0 ) { $UserInput += "$( $syncHash.Data.msgTable.LogInputRemove ) $( $syncHash.txtUsersRemovePermission.Text -split "\W" )`n" }
-	$UserInput += $syncHash.DC.lbGroupsChosen[1]
+	if ( $syncHash.TxtUsersAddPermission.Text.Length -gt 0 ) { $UserInput += "$( $syncHash.Data.msgTable.LogInputAdd ) $( $syncHash.TxtUsersAddPermission.Text -split "\W" )`n" }
+	if ( $syncHash.TxtUsersRemovePermission.Text.Length -gt 0 ) { $UserInput += "$( $syncHash.Data.msgTable.LogInputRemove ) $( $syncHash.TxtUsersRemovePermission.Text -split "\W" )`n" }
+	$UserInput += $syncHash.DC.LbGroupsChosen[1]
 
 	WriteLogTest -Text $LogText -UserInput $UserInput -Success ( $syncHash.Data.ErrorHashes.Count -lt 1 ) -ErrorLogHash $syncHash.Data.ErrorHashes
 }
@@ -491,42 +489,49 @@ Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
 Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -ArgumentList $args[1]
 
 $controls = [System.Collections.ArrayList]::new()
-[void] $controls.Add( @{ CName = "BtnPerform" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnPerform } ) } )
-[void] $controls.Add( @{ CName = "BtnUndo" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnUndo } ) } )
+[void] $controls.Add( @{ CName = "BtnPerform" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentBtnPerform } ; @{ PropName = "ToolTip" ; PropValue = $msgTable.ContentBtnRefetchGroupsTT } ) } )
+[void] $controls.Add( @{ CName = "BtnRefetchGroups" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentBtnRefetchGroups } ) } )
+[void] $controls.Add( @{ CName = "BtnUndo" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentBtnUndo } ) } )
 [void] $controls.Add( @{ CName = "CbApp" ; Props = @( @{ PropName = "SelectedItem"; PropVal = "" } ; @{ PropName = "ItemsSource" ; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new() } ) } )
 [void] $controls.Add( @{ CName = "IcLog" ; Props = @( @{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new() } ) } )
 [void] $controls.Add( @{ CName = "LbAppGroupList" ; Props = @( @{ PropName = "SelectedItem"; PropVal = "" } ; @{ PropName = "ItemsSource" ; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new() } ) } )
 [void] $controls.Add( @{ CName = "LbGroupsChosen" ; Props = @( @{ PropName = "SelectedItem"; PropVal = "" } ; @{ PropName = "ItemsSource" ; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new() } ) } )
-[void] $controls.Add( @{ CName = "LblApp" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblApp } ) } )
-[void] $controls.Add( @{ CName = "lblAppGroupList" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblAppGroupList } ) } )
-[void] $controls.Add( @{ CName = "lblGroupsChosen" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblGroupsChosen } ) } )
-[void] $controls.Add( @{ CName = "lblLog" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblLog } ) } )
-[void] $controls.Add( @{ CName = "lblUsersAddPermission" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblUsersAddPermission } ) } )
-[void] $controls.Add( @{ CName = "lblUsersRemovePermission" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentlblUsersRemovePermission } ) } )
+[void] $controls.Add( @{ CName = "TblApp" ; Props = @( @{ PropName = "Text"; PropVal = $msgTable.ContentTblApp } ) } )
+[void] $controls.Add( @{ CName = "TblAppGroupList" ; Props = @( @{ PropName = "Text"; PropVal = $msgTable.ContentTblAppGroupList } ) } )
+[void] $controls.Add( @{ CName = "TblGroupsChosen" ; Props = @( @{ PropName = "Text"; PropVal = $msgTable.ContentTblGroupsChosen } ) } )
+[void] $controls.Add( @{ CName = "TblLog" ; Props = @( @{ PropName = "Text"; PropVal = $msgTable.ContentTblLog } ) } )
+[void] $controls.Add( @{ CName = "TblUsersAddPermission" ; Props = @( @{ PropName = "Text"; PropVal = $msgTable.ContentTblUsersAddPermission } ) } )
+[void] $controls.Add( @{ CName = "TblUsersRemovePermission" ; Props = @( @{ PropName = "Text"; PropVal = $msgTable.ContentTblUsersRemovePermission } ) } )
 
 $syncHash = CreateWindowExt $controls
 $syncHash.Data.msgTable = $msgTable
 $syncHash.Data.ErrorHashes = @()
 SetUserSettings
 
-$syncHash.btnPerform.Add_Click( { PerformPermissions } )
-$syncHash.btnUndo.Add_Click( { UndoInput } )
-$syncHash.cbApp.Add_DropDownClosed( { if ( $syncHash.DC.cbApp[0] -ne $null ) { UpdateAppGroupList } } )
-$syncHash.lbAppGroupList.Add_MouseDoubleClick( { GroupSelected } )
-$syncHash.lbGroupsChosen.Add_MouseDoubleClick( { GroupDeselected } )
-$syncHash.txtUsersAddPermission.Add_TextChanged( { CheckReady } )
-$syncHash.txtUsersRemovePermission.Add_TextChanged( { CheckReady } )
+$syncHash.BtnRefetchGroups.Add_Click( {
+	if ( $null -eq $syncHash.CbApp.SelectedItem.Tag.Exclude )
+	{ $syncHash.CbApp.SelectedItem.Tag.GroupList = Get-ADGroup -LDAPFilter "$( $syncHash.CbApp.SelectedItem.Tag.AppFilter )" | Sort-Object Name }
+	else
+	{ $syncHash.CbApp.SelectedItem.Tag.GroupList = Get-ADGroup -LDAPFilter "$( $syncHash.CbApp.SelectedItem.Tag.AppFilter )" | Where-Object { $syncHash.CbApp.SelectedItem.Tag.Exclude -notcontains $_.Name.Split( $syncHash.CbApp.SelectedItem.Tag.split )[$syncHash.CbApp.SelectedItem.Tag.index] } | Sort-Object Name }
+} )
+$syncHash.BtnPerform.Add_Click( { PerformPermissions } )
+$syncHash.BtnUndo.Add_Click( { UndoInput } )
+$syncHash.LbAppGroupList.Add_MouseDoubleClick( { GroupSelected } )
+$syncHash.LbGroupsChosen.Add_MouseDoubleClick( { GroupDeselected } )
+$syncHash.TxtUsersAddPermission.Add_TextChanged( { CheckReady } )
+$syncHash.TxtUsersRemovePermission.Add_TextChanged( { CheckReady } )
 $syncHash.Window.Add_ContentRendered( {
 	$syncHash.Window.Title = $syncHash.Data.msgTable.StrPreparing
 	$syncHash.Window.Top = 20
 	$syncHash.Window.Activate()
 	UpdateAppList
-	if ( $syncHash.DC.cbApp[1].Count -eq 1 ) { UpdateAppGroupList }
+	if ( $syncHash.DC.CbApp[1].Count -eq 1 ) { UpdateAppGroupList }
 	$syncHash.Window.Title = $syncHash.Data.msgTable.ContentWindowTitle
 	$syncHash.Window.Resources['StrAddedUsersTitle'] = $syncHash.Data.msgTable.StrAddedUsersTitle
 	$syncHash.Window.Resources['StrErrorUsersTitle'] = $syncHash.Data.msgTable.StrErrorUsersTitle
 	$syncHash.Window.Resources['StrGroupsTitle'] = $syncHash.Data.msgTable.StrGroupsTitle
 	$syncHash.Window.Resources['StrRemovedUsersTitle'] = $syncHash.Data.msgTable.StrRemovedUsersTitle
+	$syncHash.CbApp.Add_SelectionChanged( { if ( $syncHash.DC.CbApp[0] -ne $null ) { UpdateAppGroupList } } )
 } )
 
 $syncHash.ErrorLogFilePath = ""

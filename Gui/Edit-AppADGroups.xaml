@@ -1,23 +1,33 @@
-<Window
+<Window x:Name="Window"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:componentmodel="clr-namespace:System.ComponentModel;assembly=WindowsBase"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Height="640"
-        MinHeight="640"
+        Height="800"
+        MinHeight="800"
         Width="1040"
         MaxWidth="1040"
         MinWidth="1040"
         Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
-        WindowStartupLocation="CenterScreen"
-        x:Name="Window">
+        WindowStartupLocation="CenterScreen">
     <Window.Resources>
+        <GridLength x:Key="LabelHeight">40</GridLength>
         <sys:String x:Key="StrAddedUsersTitle">x</sys:String>
         <sys:String x:Key="StrErrorUsersTitle">x</sys:String>
         <sys:String x:Key="StrGroupsTitle">x</sys:String>
         <sys:String x:Key="StrRemovedUsersTitle">x</sys:String>
-        <Style TargetType="Button">
+        <Thickness x:Key="StdMargin">5</Thickness>
+        <Style TargetType="Button"
+               x:Key="BtnBaseStyle">
             <Setter Property="Margin"
-                    Value="5" />
+                    Value="0,5,0,0" />
+            <Setter Property="Padding"
+                    Value="10" />
+        </Style>
+        <Style TargetType="Grid"
+               x:Key="GridBaseStyle">
+            <Setter Property="Margin"
+                    Value="{StaticResource StdMargin}" />
         </Style>
         <Style TargetType="ItemsControl"
                x:Key="IcBaseStyle">
@@ -33,69 +43,120 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
-        <Style TargetType="ListBox">
+        <Style TargetType="ListBox"
+               x:Key="LbBaseStyle">
             <Setter Property="Margin"
-                    Value="5" />
+                    Value="0" />
         </Style>
         <Style TargetType="ListBoxItem">
             <Setter Property="Margin"
                     Value="0,0,0,2" />
         </Style>
         <Style TargetType="TextBlock"
-               x:Key="TblLogStyle">
+               x:Key="TblBaseStyle">
             <Setter Property="Margin"
-                    Value="5" />
+                    Value="{StaticResource StdMargin}" />
         </Style>
-        <Style TargetType="TextBox">
+        <Style TargetType="TextBlock"
+               x:Key="TblLogStyle"
+               BasedOn="{StaticResource TblBaseStyle}">
+        </Style>
+        <Style TargetType="TextBlock"
+               x:Key="TblTitleStyle"
+               BasedOn="{StaticResource TblBaseStyle}">
+            <Setter Property="FontSize"
+                    Value="14" />
+            <Setter Property="FontWeight"
+                    Value="Bold" />
+            <Setter Property="VerticalAlignment"
+                    Value="Center" />
+        </Style>
+        <Style TargetType="TextBox"
+               x:Key="TbBaseStyle">
             <Setter Property="AcceptsReturn"
                     Value="True" />
             <Setter Property="Margin"
-                    Value="5" />
+                    Value="0" />
         </Style>
     </Window.Resources>
-    <Grid Grid.IsSharedSizeScope="True">
+    <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition />
             <ColumnDefinition />
             <ColumnDefinition />
         </Grid.ColumnDefinitions>
+        <Grid.Style>
+            <Style TargetType="Grid"
+                   BasedOn="{StaticResource GridBaseStyle}"></Style>
+        </Grid.Style>
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="40"
-                               SharedSizeGroup="Label" />
-                <RowDefinition SharedSizeGroup="Label" />
-                <RowDefinition SharedSizeGroup="Label" />
-                <RowDefinition Height="*" />
-                <RowDefinition SharedSizeGroup="Label" />
+                <RowDefinition Height="{StaticResource LabelHeight}" />
+                <RowDefinition Height="{StaticResource LabelHeight}" />
+                <RowDefinition Height="{StaticResource LabelHeight}" />
+                <RowDefinition />
+                <RowDefinition Height="{StaticResource LabelHeight}" />
                 <RowDefinition Height="120" />
             </Grid.RowDefinitions>
-            <TextBlock x:Name="TblApp" />
-            <ComboBox x:Name="CbApp">
-                <ComboBox.Style>
-                    <Style TargetType="ComboBox">
-                        <Setter Property="DisplayMemberPath"
-                                Value="Text" />
+            <Grid.Style>
+                <Style TargetType="Grid"
+                       BasedOn="{StaticResource GridBaseStyle}"></Style>
+            </Grid.Style>
+            <TextBlock x:Name="TblApp">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock"
+                           BasedOn="{StaticResource TblTitleStyle}">
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Grid.Style>
+                    <Style TargetType="Grid">
                         <Setter Property="Grid.Row"
                                 Value="1" />
-                        <Setter Property="Margin"
-                                Value="5" />
-                        <Setter Property="SelectedIndex"
-                                Value="-1" />
-                        <Setter Property="VerticalContentAlignment"
-                                Value="Center" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=ItemsSource.Count}"
-                                         Value="1">
-                                <Setter Property="SelectedIndex"
-                                        Value="0" />
-                            </DataTrigger>
-                        </Style.Triggers>
                     </Style>
-                </ComboBox.Style>
-            </ComboBox>
+                </Grid.Style>
+                <ComboBox x:Name="CbApp">
+                    <ComboBox.Style>
+                        <Style TargetType="ComboBox">
+                            <Setter Property="DisplayMemberPath"
+                                    Value="Text" />
+                            <Setter Property="Margin"
+                                    Value="0" />
+                            <Setter Property="SelectedIndex"
+                                    Value="-1" />
+                            <Setter Property="VerticalContentAlignment"
+                                    Value="Center" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=ItemsSource.Count}"
+                                             Value="1">
+                                    <Setter Property="SelectedIndex"
+                                            Value="0" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ComboBox.Style>
+                </ComboBox>
+                <Button x:Name="BtnRefetchGroups">
+                    <Button.Style>
+                        <Style TargetType="Button"
+                               BasedOn="{StaticResource BtnBaseStyle}">
+                            <Setter Property="Grid.Column"
+                                    Value="1" />
+                            <Setter Property="Margin"
+                                    Value="5,0,0,0" />
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </Grid>
             <TextBlock x:Name="TblAppGroupList">
                 <TextBlock.Style>
-                    <Style TargetType="TextBlock">
+                    <Style TargetType="TextBlock"
+                           BasedOn="{StaticResource TblTitleStyle}">
                         <Setter Property="Grid.Row"
                                 Value="2" />
                     </Style>
@@ -103,7 +164,8 @@
             </TextBlock>
             <ListBox x:Name="LbAppGroupList">
                 <ListBox.Style>
-                    <Style TargetType="ListBox">
+                    <Style TargetType="ListBox"
+                           BasedOn="{StaticResource LbBaseStyle}">
                         <Setter Property="DisplayMemberPath"
                                 Value="Name" />
                         <Setter Property="Grid.Row"
@@ -114,10 +176,12 @@
                                 Value="0.5" />
                     </Style>
                 </ListBox.Style>
+                
             </ListBox>
             <TextBlock x:Name="TblGroupsChosen">
                 <TextBlock.Style>
-                    <Style TargetType="TextBlock">
+                    <Style TargetType="TextBlock"
+                           BasedOn="{StaticResource TblTitleStyle}">
                         <Setter Property="Grid.Row"
                                 Value="4" />
                     </Style>
@@ -125,7 +189,8 @@
             </TextBlock>
             <ListBox x:Name="LbGroupsChosen">
                 <ListBox.Style>
-                    <Style TargetType="ListBox">
+                    <Style TargetType="ListBox"
+                           BasedOn="{StaticResource LbBaseStyle}">
                         <Setter Property="DisplayMemberPath"
                                 Value="Name" />
                         <Setter Property="Grid.Row"
@@ -136,86 +201,94 @@
         </Grid>
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition SharedSizeGroup="Label" />
-                <RowDefinition Height="*" />
-                <RowDefinition SharedSizeGroup="Label" />
-                <RowDefinition Height="*" />
-                <RowDefinition Height="65" />
+                <RowDefinition Height="{StaticResource LabelHeight}" />
+                <RowDefinition />
+                <RowDefinition Height="{StaticResource LabelHeight}" />
+                <RowDefinition />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <Grid.Style>
-                <Style TargetType="Grid">
+                <Style TargetType="Grid"
+                       BasedOn="{StaticResource GridBaseStyle}">
                     <Setter Property="Grid.Column"
                             Value="1" />
                 </Style>
             </Grid.Style>
-            <TextBlock x:Name="TblUsersAddPermission" />
+            <TextBlock x:Name="TblUsersAddPermission">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock"
+                           BasedOn="{StaticResource TblTitleStyle}">
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
             <TextBox x:Name="TxtUsersAddPermission">
                 <TextBox.Style>
-                    <Style TargetType="TextBox">
+                    <Style TargetType="TextBox"
+                           BasedOn="{StaticResource TbBaseStyle}">
                         <Setter Property="Grid.Row"
                                 Value="1" />
                     </Style>
                 </TextBox.Style>
             </TextBox>
-            <TextBlock x:Name="TblUsersRemovePermission"
-                   Grid.Row="2">
+            <TextBlock x:Name="TblUsersRemovePermission">
                 <TextBlock.Style>
-                    <Style TargetType="TextBlock">
+                    <Style TargetType="TextBlock"
+                           BasedOn="{StaticResource TblTitleStyle}">
                         <Setter Property="Grid.Row"
                                 Value="2" />
                     </Style>
                 </TextBlock.Style>
             </TextBlock>
-            <TextBox x:Name="TxtUsersRemovePermission"
-                     Grid.Row="3">
+            <TextBox x:Name="TxtUsersRemovePermission">
                 <TextBox.Style>
-                    <Style TargetType="TextBox">
+                    <Style TargetType="TextBox"
+                           BasedOn="{StaticResource TbBaseStyle}">
                         <Setter Property="Grid.Row"
                                 Value="3" />
                     </Style>
                 </TextBox.Style>
             </TextBox>
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition />
-                    <RowDefinition />
-                </Grid.RowDefinitions>
-                <Grid.Style>
-                    <Style TargetType="Grid">
+            <Button x:Name="BtnPerform">
+                <Button.Style>
+                    <Style TargetType="Button"
+                           BasedOn="{StaticResource BtnBaseStyle}">
                         <Setter Property="Grid.Row"
                                 Value="4" />
+                        <Setter Property="IsEnabled"
+                                Value="False" />
                     </Style>
-                </Grid.Style>
-                <Button x:Name="BtnPerform">
-                    <Button.Style>
-                        <Style TargetType="Button">
-                            <Setter Property="IsEnabled"
-                                    Value="False" />
-                        </Style>
-                    </Button.Style>
-                </Button>
-                <Button x:Name="BtnUndo">
-                    <Button.Style>
-                        <Style TargetType="Button">
-                            <Setter Property="Grid.Row"
-                                    Value="1" />
-                        </Style>
-                    </Button.Style>
-                </Button>
-            </Grid>
+                </Button.Style>
+            </Button>
+            <Button x:Name="BtnUndo">
+                <Button.Style>
+                    <Style TargetType="Button"
+                           BasedOn="{StaticResource BtnBaseStyle}">
+                        <Setter Property="Grid.Row"
+                                Value="5" />
+                    </Style>
+                </Button.Style>
+            </Button>
         </Grid>
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition SharedSizeGroup="Label" />
+                <RowDefinition Height="{StaticResource LabelHeight}" />
                 <RowDefinition />
             </Grid.RowDefinitions>
             <Grid.Style>
-                <Style TargetType="Grid">
+                <Style TargetType="Grid"
+                       BasedOn="{StaticResource GridBaseStyle}">
                     <Setter Property="Grid.Column"
                             Value="2" />
                 </Style>
             </Grid.Style>
-            <TextBlock x:Name="TblLog" />
+            <TextBlock x:Name="TblLog">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock"
+                           BasedOn="{StaticResource TblTitleStyle}">
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
             <ScrollViewer>
                 <ScrollViewer.Style>
                     <Style TargetType="ScrollViewer">
@@ -260,6 +333,10 @@
                                         <RowDefinition />
                                         <RowDefinition />
                                     </Grid.RowDefinitions>
+                                    <Grid.Style>
+                                        <Style TargetType="Grid"
+                                               BasedOn="{StaticResource GridBaseStyle}"></Style>
+                                    </Grid.Style>
                                     <TextBlock>
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock"
@@ -307,7 +384,7 @@
                                             </TextBlock.Style>
                                         </TextBlock>
                                     </Border>
-                                    <ItemsControl ItemsSource="{Binding RelativeSource={RelativeSource AncestorType=Border}, Path=DataContext.Groups}">
+                                    <ItemsControl>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding}" />
@@ -318,6 +395,8 @@
                                                    BasedOn="{StaticResource IcBaseStyle}">
                                                 <Setter Property="Grid.Row"
                                                         Value="2" />
+                                                <Setter Property="ItemsSource"
+                                                        Value="{Binding RelativeSource={RelativeSource AncestorType=Border}, Path=DataContext.Groups}" />
                                             </Style>
                                         </ItemsControl.Style>
                                     </ItemsControl>
@@ -369,7 +448,7 @@
                                             </TextBlock.Style>
                                         </TextBlock>
                                     </Border>
-                                    <ItemsControl ItemsSource="{Binding RelativeSource={RelativeSource AncestorType=Border}, Path=DataContext.AddedUsers}">
+                                    <ItemsControl>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding}" />
@@ -380,6 +459,8 @@
                                                    BasedOn="{StaticResource IcBaseStyle}">
                                                 <Setter Property="Grid.Row"
                                                         Value="4" />
+                                                <Setter Property="ItemsSource"
+                                                        Value="{Binding RelativeSource={RelativeSource AncestorType=Border}, Path=DataContext.AddedUsers}" />
                                             </Style>
                                         </ItemsControl.Style>
                                     </ItemsControl>
@@ -431,7 +512,7 @@
                                             </TextBlock.Style>
                                         </TextBlock>
                                     </Border>
-                                    <ItemsControl ItemsSource="{Binding RelativeSource={RelativeSource AncestorType=Border}, Path=DataContext.RemovedUsers}">
+                                    <ItemsControl>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding}" />
@@ -442,6 +523,8 @@
                                                    BasedOn="{StaticResource IcBaseStyle}">
                                                 <Setter Property="Grid.Row"
                                                         Value="6" />
+                                                <Setter Property="ItemsSource"
+                                                        Value="{Binding RelativeSource={RelativeSource AncestorType=Border}, Path=DataContext.RemovedUsers}" />
                                             </Style>
                                         </ItemsControl.Style>
                                     </ItemsControl>
@@ -488,7 +571,7 @@
                                                     </Style>
                                                 </TextBlock.Style>
                                             </TextBlock>
-                                            <ItemsControl ItemsSource="{Binding RelativeSource={RelativeSource AncestorType=Border}, Path=DataContext.ErrorUsers}">
+                                            <ItemsControl>
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
                                                         <TextBlock Text="{Binding}" />
@@ -497,6 +580,8 @@
                                                 <ItemsControl.Style>
                                                     <Style TargetType="ItemsControl"
                                                            BasedOn="{StaticResource IcBaseStyle}">
+                                                        <Setter Property="ItemsSource"
+                                                                Value="{Binding RelativeSource={RelativeSource AncestorType=Border}, Path=DataContext.ErrorUsers}" />
                                                     </Style>
                                                 </ItemsControl.Style>
                                             </ItemsControl>
@@ -506,6 +591,16 @@
                             </Border>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
+                    <ItemsControl.Style>
+                        <Style TargetType="ItemsControl">
+                            <Setter Property="Background"
+                                    Value="White" />
+                            <Setter Property="BorderBrush"
+                                    Value="#FFABADB3" />
+                            <Setter Property="BorderThickness"
+                                    Value="1" />
+                        </Style>
+                    </ItemsControl.Style>
                 </ItemsControl>
             </ScrollViewer>
         </Grid>

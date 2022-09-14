@@ -1,5 +1,7 @@
 ﻿ConvertFrom-StringData @'
 ContentBtnPerform = Perform
+ContentBtnRefetchGroups = Hämta
+ContentBtnRefetchGroupsTT = Läs in grupperna igen
 ContentBtnUndo = Cancel
 ContentTblApp = Select application
 ContentTblAppGroupList = Select the app group by double-clicking
