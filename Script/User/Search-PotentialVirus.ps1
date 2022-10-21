@@ -87,7 +87,7 @@ $( [string]( $syncHash.DC.LvMultiDotsG[0].TT ) )
 ***********************
 $( $syncHash.Data.msgTable.StrOutputTitleAllFiles )
 
-$( [string]( $syncHash.DC.LvAllFiles[0].TT | Sort-Object ) )
+$( [string]( $syncHash.LvAllFiles.ItemsSource.TT | Sort-Object ) )
 "@
 }
 
@@ -126,64 +126,14 @@ function ListFiles
 
 	if ( $syncHash.Data.FullFileList.Count -gt 0 )
 	{
-		$syncHash.Data.ListAllFiles = [System.Windows.Data.ListCollectionView]@( $syncHash.Data.FullFileList.ForEach( { $_ } ) )
-		$ListFilterMatched = [System.Windows.Data.ListCollectionView]@( $syncHash.Data.FullFileList | Where-Object { $_.FilterMatch -eq $true } )
-		$ListMultiDotH = [System.Windows.Data.ListCollectionView]@( $syncHash.Data.FullFileList | Where-Object { $_.TT -match "^H:\\" } | Where-Object { ( ( $_.Name.Split( "\" ) | Select-Object -Last 1 ).Split( "." ) ).Count -gt 2 } )
-		$ListMultiDotG = [System.Windows.Data.ListCollectionView]@( $syncHash.Data.FullFileList | Where-Object { $_.TT -match "^G:\\" } | Where-Object { ( ( $_.Name.Split( "\" ) | Select-Object -Last 1 ).Split( "." ) ).Count -gt 2 } )
-
-		# Set how items in listviews are to be grouped and sorted
-		if ( $syncHash.DC.CbGroupExtensions[0] ) {
-			$groupBy = [System.Windows.Data.PropertyGroupDescription]::new( "FileType" )
-			$sort1 = [System.ComponentModel.SortDescription]@{ Direction = "Ascending"; PropertyName = "FileType" }
-			$sort2 = [System.ComponentModel.SortDescription]@{ Direction = "Ascending"; PropertyName = "Name" }
-
-			$syncHash.Data.ListAllFiles.GroupDescriptions.Add( $groupBy )
-			$ListFilterMatched.GroupDescriptions.Add( $groupBy )
-			$ListMultiDotH.GroupDescriptions.Add( $groupBy )
-			$ListMultiDotG.GroupDescriptions.Add( $groupBy )
-		}
-		else
-		{
-			$sort1 = [System.ComponentModel.SortDescription]@{ Direction = "Ascending"; PropertyName = "Name" }
-			$sort2 = [System.ComponentModel.SortDescription]@{ Direction = "Ascending"; PropertyName = "Name" }
-		}
-
-		$syncHash.Data.ListAllFiles.SortDescriptions.Add( $sort1 )
-		$syncHash.Data.ListAllFiles.SortDescriptions.Add( $sort2 )
-		$syncHash.DC.LvAllFiles[0] = $syncHash.Data.ListAllFiles
-
-		if ( $ListFilterMatched.Count -gt 0 )
-		{
-			$syncHash.TiFilterMatch.Visibility = [System.Windows.Visibility]::Visible
-			$ListFilterMatched.SortDescriptions.Add( $sort1 )
-			$ListFilterMatched.SortDescriptions.Add( $sort2 )
-			$syncHash.DC.LvFilterMatch[0] = $ListFilterMatched
-		}
-		else { $syncHash.TiFilterMatch.Visibility = [System.Windows.Visibility]::Collapsed }
-
-		if ( $ListMultiDotH.Count -gt 0 )
-		{
-			$syncHash.TiMDH.Visibility = [System.Windows.Visibility]::Visible
-			$ListMultiDotH.SortDescriptions.Add( $sort1 )
-			$ListMultiDotH.SortDescriptions.Add( $sort2 )
-			$syncHash.DC.LvMultiDotsH[0] = $ListMultiDotH
-		}
-		else { $syncHash.TiMDH.Visibility = [System.Windows.Visibility]::Collapsed }
-
-		if ( $ListMultiDotG.Count -gt 0 )
-		{
-			$syncHash.TiMDG.Visibility = [System.Windows.Visibility]::Visible
-			$ListMultiDotG.SortDescriptions.Add( $sort1 )
-			$ListMultiDotG.SortDescriptions.Add( $sort2 )
-			$syncHash.DC.LvMultiDotsG[0] = $ListMultiDotG
-		}
-		else { $syncHash.TiMDG.Visibility = [System.Windows.Visibility]::Collapsed }
+		$syncHash.Data.FullFileList | ForEach-Object { $syncHash.Window.Resources['CvsAllFiles'].Source.Add( $_ ) }
 		$syncHash.GridActionButtons.IsEnabled = $true
 	}
 	else
 	{
-		$syncHash.DC.LvAllFiles[0].Add( ( [PSCustomObject]@{ Name = $syncHash.Data.msgTable.StrNoFilesFound; CreationTime = $syncHash.Start; LastWriteTime = $syncHash.End } ) )
+		$syncHash.Window.Resources['CvsAllFiles'].Source.Add( ( [PSCustomObject]@{ Name = $syncHash.Data.msgTable.StrNoFilesFound; CreationTime = $syncHash.Start; LastWriteTime = $syncHash.End } ) )
 	}
+	$syncHash.LvAllFiles.ItemsSource = $syncHash.Window.Resources['CvsAllFiles'].View
 
 	GenerateOutput
 	GenerateLog
@@ -198,55 +148,80 @@ function PrepGetFolders
 
 	$syncHash.GridInfo.Visibility = [System.Windows.Visibility]::Visible
 	$syncHash.FolderJob = [pscustomobject]@{ PS = [powershell]::Create().AddScript( { param ( $syncHash )
+		$syncHash.Data.Groups = [System.Collections.ArrayList]::new()
+
+		$syncHash.Data.Folders = [System.Collections.ArrayList]::new()
+		$syncHash.Data.Other = [System.Collections.ArrayList]::new()
+
 		$syncHash.DC.Window[0] = $syncHash.Data.msgTable.StrOPGettingFolders
+		$syncHash.Data.Folders.Add( [pscustomobject]@{ Path = $syncHash.User.HomeDirectory; Name = "H:" ; Description = $syncHash.Data.msgTable.StrHomeFolder } )
+		Get-ADPrincipalGroupMembership $syncHash.User.SamAccountName | Get-ADGroup -Properties Description | ForEach-Object { [void] $syncHash.Data.Groups.Add( $_ ) }
 
-		$syncHash.Data.Folders.Add( [pscustomobject]@{ "Path" = $syncHash.User.HomeDirectory; "Name" = "H:" } )
-		$syncHash.Data.GGroups = @()
-		$syncHash.Data.pGroups = Get-ADPrincipalGroupMembership $syncHash.User.SamAccountName | Where-Object { $_.SamAccountName -notmatch "_R$" }
-
-		if ( $ADGroups = $syncHash.Data.pGroups | Where-Object { $_.SamAccountName -notlike "*_org_*" -and $_.SamAccountName -ne "Domain Users" -and $_.SamAccountName -notmatch "_R$" } | Select-Object -ExpandProperty SamAccountName | Sort-Object )
+		foreach ( $g in ( $syncHash.Data.Groups | Where-Object { $_.Name -match "_(Org)|(Mig)_" } ) )
 		{
-			$ADGroups | Sort-Object | ForEach-Object { $syncHash.Data.GGroups += ( Get-ADGroup $_ -Properties Description | Select-Object Name, Description ) }
-		}
-		if ( $OrgGroups = $syncHash.Data.pGroups | Where-Object { $_.SamAccountName -like "*_org_*" } | Select-Object -ExpandProperty SamAccountName | Sort-Object )
-		{
-			$OrgGroups | Get-ADPrincipalGroupMembership | Where-Object { $_.Name -notmatch "_R$" } | Sort-Object | ForEach-Object { $syncHash.Data.GGroups += ( Get-ADGroup $_ -Properties Description | Select-Object Name, Description ) }
+			Get-ADPrincipalGroupMembership $g | Where-Object { $_.name -match ".*_Fil_.*(C|F)$" } | Get-ADGroup -Properties Description | ForEach-Object { [void] $syncHash.Data.Groups.Add( $_ ) }
 		}
 
-		# Filter folders
+		$ticker = 0
+		$max = ( $syncHash.Data.Groups | Where-Object { $_.Name -notmatch "_R$" } ).Count
 		$syncHash.DC.Window[0] = $syncHash.Data.msgTable.StrOPFilteringFolders
-
-		for ( $ticker = 0; $ticker -lt ( $syncHash.Data.GGroups | Where-Object { $_.Name -notmatch "_R$" } ).Count; $ticker += 1 )
+		foreach ( $g in ( $syncHash.Data.Groups | Where-Object { $_.Name -notmatch "_R$" } ) )
 		{
-			$i = $syncHash.Data.GGroups[$ticker]
-			if ( $i.Description -match "\\\\dfs\\gem" )
+			$p = $null
+			if ( $g.Description -match $syncHash.Data.msgTable.CodeGrpDescriptionMatch )
 			{
-				$p = ( ( $i.Description -split " $( $syncHash.Data.msgTable.StrDescSplit ) " )[1] -split "\." )[0].Replace( "\\dfs\gem$", "G:" )
-				try
+				$p = ( ( $g.Description -split "$( $syncHash.Data.msgTable.StrGrpDescriptionSplit ) " )[1] -split "\." )[0] -replace " $( $syncHash.Data.msgTable.StrGrpDescriptionReplace )"
+			}
+			elseif ( $g.Description -match $syncHash.Data.msgTable.StrSepServer )
+			{
+				if ( $g.Name -match "ClientSoftware" )
 				{
-					Get-ChildItem $p -ErrorAction Stop | Out-Null
-					if ( -not ( $syncHash.Data.Folders.Name -match $i.Name ) )
-					{ [void] $syncHash.Data.Folders.Add( [pscustomobject]@{ "Path" = $p; "Name" = $i.Name } ) }
+					$p = "\\$( $syncHash.Data.msgTable.StrSepServer )\ClientSoftware$\"
 				}
-				catch
+				elseif ( $g.Description -match "Kar\\" )
 				{
-					# No permission for scriptuser
-					[void] $syncHash.OtherFolderPermissions.Add( $i.Name )
+					$p = "\\$( $syncHash.Data.msgTable.StrSepServer )\$( $syncHash.Data.msgTable.StrSepServerFolder1 )\$( ( $g.Name -replace "_C" -split "$( $syncHash.Data.msgTable.StrSepServer )_" )[1] )"
+				}
+				elseif ( $g.Name -match "^LSF" )
+				{
+					$p = "\\$( $syncHash.Data.msgTable.StrSepServer )\$( $syncHash.Data.msgTable.StrSepServerFolder2 )\$( ( $g.Name -replace "_C" -split "$( $syncHash.Data.msgTable.StrSepServer )_" )[1] )"
+				}
+				elseif ( $g.Name -match "^Hsf" )
+				{
+					$p = "\\$( $syncHash.Data.msgTable.StrSepServer )\$( $syncHash.Data.msgTable.StrSepServerFolder3 )\$( ( $g.Name -replace "_C" -split "$( $syncHash.Data.msgTable.StrSepServer )_" )[1] )"
 				}
 			}
-			elseif ( $i.Description -match "\\\\dfs\\app" )
+			else
 			{
-				[void] $syncHash.OtherFolderPermissions.Add( $i.Name )
+				$p = "Other"
 			}
-			$syncHash.DC.TotalProgress[0] = [double]( ( ( $ticker + 1 ) / ( $syncHash.Data.GGroups | Where-Object { $_.Name -notmatch "_R$" } ).Count ) * 100 )
+
+			if ( $p -eq "Other" )
+			{
+				[void] $syncHash.Data.Other.Add( ( [pscustomobject]@{ Path = $g.Name ; Name = $g.Name } ) )
+			}
+			else
+			{
+				if ( Test-Path $p )
+				{
+					if ( -not ( $syncHash.Data.Folders | Where-Object { $_.Path -eq $p } ) )
+					{
+						[void] $syncHash.Data.Folders.Add( ( [pscustomobject]@{ Path = $p ; Name = $g.Name ; Description = $g.Description } ) )
+					}
+				}
+				else
+				{
+					[void] $syncHash.OtherFolderPermissions.Add( $g.Name )
+				}
+			}
+			$ticker += 1
+			$syncHash.DC.TotalProgress[0] = [double]( ( ( $ticker + 1 ) / $max ) * 100 )
 		}
 
 		$syncHash.Data.Folders | Sort-Object Path | ForEach-Object {
-			if ( $_.Name -eq "^H:" )
-			{ $syncHash.DC.DgFolderList[0].Add( ( [pscustomobject]@{ "Path" = $_.Name ; "Name" = $_.Name } ) ) }
-			else
-			{ $syncHash.DC.DgFolderList[0].Add( ( [pscustomobject]@{ "Path" = $_.Path ; "Name" = $_.Name } ) ) }
+			$syncHash.DC.DgFolderList[0].Add( $_ )
 		}
+
 		$syncHash.DC.TblFolderCount[0] = $syncHash.Data.Folders.Count
 		$syncHash.DC.TblFileCount[0] = $syncHash.Data.msgTable.StrWaitingFileSearch
 		$syncHash.DC.TotalProgress[0] = 0.0
@@ -276,7 +251,19 @@ function PrepGetFiles
 						"LastWriteTime", `
 						@{ Name = "FileType"; Expression = {
 							if ( [string]::IsNullOrEmpty( $_.Extension ) ) { $syncHash.Data.msgTable.StrNoExtension }
-							else { $_.Extension.ToLower() }
+							else
+							{
+								try
+								{
+									$e = $_.Extension.ToLower()
+									if ( $Desc = ( Get-ItemProperty "Registry::HKEY_Classes_root\$( ( Get-ItemProperty "Registry::HKEY_Classes_root\$e" -ErrorAction Stop )."(default)" )" )."(default)" )
+									{ "$e :: $Desc" }
+									else
+									{ throw }
+								}
+								catch
+								{ $e }
+							}
 						} }, `
 						@{ Name = "FilterMatch"; Expression = {
 							$n = $_.Name
@@ -308,9 +295,16 @@ function PrepGetFiles
 						} } `
 					| ForEach-Object { $syncHash.Data.FullFileList.Add( $_ ) }
 
+				$Error | ForEach-Object {
+					if ( $_.CategoryInfo.Activity -eq "Get-ChildItem2" )
+					{ $syncHash.OtherFolderPermissions.Add( ( $_.Exception.Message -replace "\]" -split "\[" )[1] ) }
+				}
 				$syncHash.DC.TblFileCount[0] = $syncHash.Data.FullFileList.Count
-				$syncHash.DC.DgFolderList[0] = @( $syncHash.DC.DgFolderList[0] | Where-Object { $Folder.Name -ne $_.Name } )
-				$syncHash.Window.Dispatcher.Invoke( [action] { $syncHash.DC.TotalProgress[0] += 1 } )
+				$syncHash.Window.Dispatcher.Invoke( [action] {
+					$syncHash.DC.DgFolderList[0].Remove( $Folder )
+					$syncHash.DC.TotalProgress[0] += 1
+					( $syncHash.DgFolderList.GetBindingExpression( [System.Windows.Controls.DataGrid]::ItemsSourceProperty ) ).UpdateTarget()
+				} )
 			} ).AddArgument( $syncHash ).AddArgument( $Folder )
 			[void] $syncHash.Jobs.Add( [pscustomobject]@{ PS = $p; Handle = $p.BeginInvoke() } )
 		}
@@ -327,11 +321,11 @@ function Reset
 	#>
 
 	$syncHash.Window.Dispatcher.Invoke( [action] {
-		$syncHash.DC.LvAllFiles[0] = [System.Collections.ObjectModel.ObservableCollection[Object]]::new()
-		$syncHash.DC.DgFolderList[0] = [System.Collections.ObjectModel.ObservableCollection[Object]]::new()
-		$syncHash.DC.LvFilterMatch[0] = [System.Windows.Data.ListCollectionView]@()
-		$syncHash.DC.LvMultiDotsH[0] = [System.Windows.Data.ListCollectionView]@()
-		$syncHash.DC.LvMultiDotsG[0] = [System.Windows.Data.ListCollectionView]@()
+		$syncHash.Window.Resources['CvsAllFiles'].Source.Clear()
+		$syncHash.DC.DgFolderList[0].Clear()
+		$syncHash.DC.LvFilterMatch[0].Clear()
+		$syncHash.DC.LvMultiDotsH[0].Clear()
+		$syncHash.DC.LvMultiDotsG[0].Clear()
 		$syncHash.CbSetAccountDisabled.IsChecked = $false
 		$syncHash.RbLatest.IsChecked = $true
 		$syncHash.DC.GridInput[0] = $true
@@ -452,7 +446,6 @@ $controls = New-Object Collections.ArrayList
 [void]$controls.Add( @{ CName = "DgtcStreamsName"; Props = @( @{ PropName = "Text"; PropVal = $msgTable.ContentDgtcStreamsName } ) } )
 [void]$controls.Add( @{ CName = "GridInput"; Props = @( @{ PropName = "IsEnabled"; PropVal = $true } ; @{ PropName = "Tag"; PropVal = "" } ) } )
 [void]$controls.Add( @{ CName = "GridWaitProgress"; Props = @( @{ PropName = "Visibility"; PropVal = [System.Windows.Visibility]::Hidden } ) } )
-[void]$controls.Add( @{ CName = "LvAllFiles"; Props = @( @{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new() } ) } )
 [void]$controls.Add( @{ CName = "LvFilterMatch"; Props = @( @{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new() } ) } )
 [void]$controls.Add( @{ CName = "LvAC"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentLvColumnCreated } ) } )
 [void]$controls.Add( @{ CName = "LvAN"; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentLvColumnName } ) } )
@@ -506,7 +499,8 @@ $syncHash = CreateWindowExt $controls
 
 $syncHash.Data.ErrorHashes = @()
 $syncHash.Data.Folders = [System.Collections.ArrayList]::new()
-$syncHash.Data.FullFileList = [System.Collections.ArrayList]::new()
+$syncHash.Data.FullFileList = [System.Collections.ObjectModel.ObservableCollection[object]]::new()
+$syncHash.Window.Resources['CvsAllFiles'].Source = [System.Collections.ObjectModel.ObservableCollection[object]]::new()
 $syncHash.Data.msgTable = $msgTable
 $syncHash.Data.ScannedForVirus = [System.Collections.ArrayList]::new()
 $syncHash.fileFilter = @( ".MYD", ".MYI", "encrypted", "vvv", ".mp3", ".exe", "Anydesk", "FileSendsuite", "Recipesearch", "FromDocToPDF", ".dll", "easy2lock" )
@@ -543,14 +537,13 @@ $syncHash.OutputContent.Add_CollectionChanged( {
 
 # Abort current filesearch
 $syncHash.BtnAbort.Add_Click( {
-	ShowMessageBox -Text $syncHash.Jobs.Count
 	$syncHash.Jobs, $syncHash.FilesJob | ForEach-Object { $_.PS.Stop(); $_.PS.Dispose() }
 	$syncHash.Jobs.Clear()
 
-	$syncHash.DC.DgFolderList[0] = [System.Collections.ObjectModel.ObservableCollection[Object]]::new()
+	$syncHash.DC.DgFolderList[0].Clear()
 	$syncHash.DC.GridWaitProgress[0] = [System.Windows.Visibility]::Hidden
 	$syncHash.DC.TotalProgress[1] = [System.Windows.Visibility]::Hidden
-	$syncHash.DC.btnStartSearch[2] = $true
+	$syncHash.DC.BtnPrep[2] = $true
 	$syncHash.DC.GridInput[0] = $true
 	$syncHash.DC.Window[0] = ""
 	$syncHash.DC.TotalProgress[0] = 0.0
@@ -744,6 +737,7 @@ $syncHash.TbQuestion.Add_TextChanged( {
 # Activate window and set focus when the window is loaded
 $syncHash.Window.Add_Loaded( {
 	$syncHash.Window.Activate()
+
 	$syncHash.TbCaseNr.Focus()
 	$syncHash.CbExpandGroups.IsChecked = $syncHash.Window.Resources.ExpandGroups
 	$syncHash.ActiveListView = $syncHash.lvAllFiles

@@ -1,4 +1,5 @@
 ﻿ConvertFrom-StringData @'
+CodeGrpDescriptionMatch = \\\\(((gem)|(org)|(app))\\$)|(org.test.com)\\\\
 ContentBtnAbort = Avbryt
 ContentBtnCloseStreamsList = Stäng
 ContentBtnCreateQuestion = Kopiera fråga om hjälp, till Katalog
@@ -60,6 +61,9 @@ StrEnableUser = Ska användarkontot aktiveras?
 StrErrUserNotFound = ingen användare med det id:t
 StrFileOwner = Användaren
 StrFileSearchFinished = Finished searching for files
+StrGrpDescriptionReplace = för externa användare
+StrGrpDescriptionSplit = Ger Modify på
+StrHomeFolder = Hemkatalog
 StrLogMsgCaseNr = Ärendenummer
 StrLogMsgFileSearchAborted = Avbröt filsökning
 StrLogMsgFilesMatchingFilterCount = Antal filer som matchar angivet filter:
@@ -101,6 +105,10 @@ StrQuestion1 = har anmält eventuellt virus i ärende
 StrQuestion2 = Mappar under H:\\ samt G:\\ har undersökts, men det saknas behörighet för mapparna nedan.
 StrQuestion3 = Kan ni hjälpa till att titta på dessa?
 StrQuestionCopied = Text har kopierats till clipboard
+StrSepServer = sepserver
+StrSepServerFolder1 = Org1_APP1$\\Org1
+StrSepServerFolder2 = Org2_APP1\`$\\Org2
+StrSepServerFolder3 = Org3_APP1$\\Org3
 StrUserAccountAlreadyLocked = Kontot redan inaktiverat
 StrWaitingFileSearch = <Väntar att filsökning ska startas>
 StrVerbVirusScan = Sök efter hot

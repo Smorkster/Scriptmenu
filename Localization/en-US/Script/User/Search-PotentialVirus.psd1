@@ -1,4 +1,5 @@
 ﻿ConvertFrom-StringData @'
+CodeGrpDescriptionMatch = \\\\(((gem)|(org)|(app))\\$)|(org.test.com)\\\\
 ContentBtnAbort = Abort
 ContentBtnCloseStreamsList = Close
 ContentBtnCreateQuestion = Copy question to Operations
@@ -60,6 +61,9 @@ StrEnableUser = Should the user account be activated?
 StrErrUserNotFound = No user with that id
 StrFileOwner = User
 StrFileSearchFinished = Finished searching for files
+StrGrpDescriptionReplace = for users
+StrGrpDescriptionSplit = Gives Modify on
+StrHomeFolder = Home-folder
 StrLogMsgCaseNr = Casenumber
 StrLogMsgFileSearchAborted = Abort filesearch
 StrLogMsgFilesMatchingFilterCount = Number of files that match the specified filter:
@@ -101,6 +105,10 @@ StrQuestion1 = has reported any virus in the case
 StrQuestion2 = Folders under H:\\ and G:\\ have been examined, but there is no permission for the folders below.
 StrQuestion3 = Can you help look at these?
 StrQuestionCopied = Text has been copied to the clipboard
+StrSepServer = sepserver
+StrSepServerFolder1 = Org1_APP1$\\Org1
+StrSepServerFolder2 = Org2_APP1\`$\\Org2
+StrSepServerFolder3 = Org3_APP1$\\Org3
 StrUserAccountAlreadyLocked = Account already disabled
 StrWaitingFileSearch = <Waiting for file search to start>
 StrVerbVirusScan = Search for threats

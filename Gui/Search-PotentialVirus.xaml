@@ -1,11 +1,11 @@
-<Window
+<Window x:Name="Window"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        xmlns:componentmodel="clr-namespace:System.ComponentModel;assembly=WindowsBase"
         WindowState="Maximized"
         Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
-        Width="992"
-        x:Name="Window">
+        Width="992">
     <Window.Resources>
         <sys:Double x:Key="CW">130</sys:Double>
         <sys:Double x:Key="MCW">1000</sys:Double>
@@ -13,13 +13,22 @@
         <sys:String x:Key="DoneText">X</sys:String>
         <sys:String x:Key="WaitingText">X</sys:String>
         <Visibility x:Key="V">Hidden</Visibility>
+        <CollectionViewSource x:Key="CvsAllFiles">
+            <CollectionViewSource.GroupDescriptions>
+                <PropertyGroupDescription PropertyName="FileType" />
+            </CollectionViewSource.GroupDescriptions>
+            <CollectionViewSource.SortDescriptions>
+                <componentmodel:SortDescription PropertyName="FileType" />
+                <componentmodel:SortDescription PropertyName="Name" />
+            </CollectionViewSource.SortDescriptions>
+        </CollectionViewSource>
         <GroupStyle x:Key="Gs">
             <GroupStyle.ContainerStyle>
                 <Style TargetType="GroupItem">
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate>
-                                <Expander IsExpanded="{Binding ElementName=cbExpandGroups, Path=IsChecked, Mode=OneWay}"
+                                <Expander IsExpanded="{Binding ElementName=CbExpandGroups, Path=IsChecked, Mode=OneWay}"
                                           Width="Auto"
                                           HorizontalAlignment="Stretch"
                                           HorizontalContentAlignment="Stretch">
@@ -720,6 +729,8 @@
                     </DataGrid.Style>
                     <DataGrid.Columns>
                         <DataGridTextColumn Binding="{Binding Path}" />
+                        <DataGridTextColumn Binding="{Binding Name}" />
+                        <DataGridTextColumn Binding="{Binding Description}" />
                     </DataGrid.Columns>
                 </DataGrid>
             </Grid>
@@ -1001,6 +1012,8 @@
                                                                 Value="Red" />
                                                         <Setter Property="BorderThickness"
                                                                 Value="1.5" />
+                                                        <Setter Property="Padding"
+                                                                Value="2" />
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding Path=Streams.Count}"
                                                                          Value="1">
