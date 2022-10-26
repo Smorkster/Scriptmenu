@@ -4,237 +4,157 @@
 .Author Smorkster (smorkster)
 #>
 
-###############################
-# Collect scripts and usagedata
 function CollectData
 {
+	<#
+	.Synopsis
+		Collect scripts and usagedata
+	#>
+
 	$syncHash.DC.Window[0] = $syncHash.msgTable.StrOpReadingLogs
-	$syncHash.DC.rbUsers[1] = $syncHash.DC.rbScript[1] = $true
-	$logs = Get-ChildItem "$( ( Get-Item $PSCommandPath ).Directory.Parent.Parent.FullName )\Logs" -Exclude "DummyQuitting.txt" -File -Recurse
+	$syncHash.DC.BtnReadLogs[1] = $false
 
-	foreach ( $log in $logs )
-	{
-		$logName = $log.BaseName -replace " - log"
-		if ( $syncHash.ScriptList -notcontains $logName )
-		{
-			$syncHash.ScriptList += $logName
-		}
-		Get-Content $log | ForEach-Object `
-		{
-			if ( $_ -match "^\d{4}-\d{2}-\d{2}" )
-			{
-				$user = ( $_ -split " " )[2].ToLower()
+	$syncHash.P = [powershell]::Create().AddScript( { param ( $syncHash )
+		$syncHash.LogData = [System.Collections.ArrayList]::new()
+		$syncHash.TotalUserList = [System.Collections.ArrayList]::new()
 
-				if ( $syncHash.Users.Keys -match $user )
+		$syncHash.Jobs = [System.Collections.ArrayList]::new()
+		$syncHash.Logs = Get-ChildItem "$( $syncHash.Root )\Logs" -file -Recurse -Filter "*log.json"
+		$syncHash.Scripts = Get-ChildItem "$( $syncHash.Root )\Script" -Filter "*.ps1" -Recurse -File
+
+		$pool = [RunspaceFactory]::CreateRunspacePool( 1, [int]$env:NUMBER_OF_PROCESSORS )
+		$pool.ApartmentState = "MTA"
+		$pool.Open()
+
+		foreach ( $script in $syncHash.Scripts )
+		{
+			$p = [powershell]::Create()
+			[void] $p.AddScript( {
+				param ( $script, $loglist, $syncHash )
+
+				Add-Member -InputObject $script -MemberType NoteProperty -Name "FileContent" -Value ( Get-Content $script.FullName )
+				Add-Member -InputObject $script -MemberType NoteProperty -Name "UserList" -Value ( [System.Collections.ArrayList]::new() )
+				Add-Member -InputObject $script -MemberType NoteProperty -Name "UseCount" -Value 0
+				Add-Member -InputObject $script -MemberType NoteProperty -Name "Synopsis" -Value ( [string]( ( $Script.FileContent | Select-String -Pattern "^\.Synopsis" ).Line -split " " | Select-Object -Skip 1 ) )
+				Add-Member -InputObject $script -MemberType NoteProperty -Name "Author" -Value ( [string]( ( $Script.FileContent | Select-String -Pattern "^\.Author" ).Line -split " " | Select-Object -Skip 1 ) )
+
+				foreach ( $log in $loglist )
 				{
-					if ( $syncHash.Users.$user.Scripts.$logName )
+					foreach ( $json in ( Get-Content $log.FullName | ConvertFrom-Json ) )
 					{
-						$syncHash.Users.$user.Scripts.$logName++
+						if ( $script.UserList.Name -match $json.Operator )
+						{
+							$script.UserList.Where( { $_.Name -eq $json.Operator } )[0].OperatorUseCount += 1
+						}
+						else
+						{
+							$script.UserList.Add( ( [pscustomobject]@{ Name = $json.Operator ; OperatorUseCount = 1 } ) )
+						}
+						$script.UseCount += 1
 					}
-					else
-					{
-						Add-Member -InputObject $syncHash.Users.$user.Scripts -MemberType NoteProperty -Name $logName -Value 1
+				}
+				if ( $script.UserList.Count -gt 1 ) { $script.UserList = $script.UserList | Sort-Object -Descending OperatorUseCount }
+				[void] $syncHash.LogData.Add( ( $script | Select-Object * ) )
+			} )
+			[void] $p.AddArgument( $script )
+			[void] $p.AddArgument( ( $syncHash.Logs | Where-Object { $_.BaseName -match "^$( $Script.BaseName )" } ) )
+			[void] $p.AddArgument( $syncHash )
+			$p.RunspacePool = $pool
+			[void] $syncHash.Jobs.Add( [pscustomobject]@{ P = $p; H = $p.BeginInvoke() } )
+		}
+
+		do
+		{
+			Start-Sleep -Seconds 1
+		} until ( ( $syncHash.Jobs.H.IsCompleted -match $false ).Count -eq 0 )
+
+		$syncHash.DC.Window[0] = $syncHash.msgTable.StrOpParseUsers
+
+		$syncHash.LogData | `
+			ForEach-Object { $_.UserList.Name } | `
+			Select-Object -Unique | `
+			ForEach-Object {
+				$User = $_
+				$obj = [pscustomobject]@{
+						User = ( Get-ADUser $User ).Name
+						TotalUses = $syncHash.LogData.UserList | `
+							Where-Object { $_.Name -eq $User } | `
+							ForEach-Object -Begin { $s = 0 } `
+								-Process { $s += $_.OperatorUseCount } `
+								-End { $s }
+						ScriptUses = [System.Collections.ArrayList]::new()
 					}
-					$syncHash.Users.$user.TotalUseCount++
-				}
-				else
-				{
-					$syncHash.Users.Add( $user , @{ TotalUseCount = 1; Scripts = [pscustomobject]@{ $logName = 1 }; Name = ( Get-ADUser $user ).Name } )
-				}
+
+				$syncHash.LogData | `
+					Where-Object { ( $_.UserList.GetEnumerator() ).Name -match $User } | `
+					ForEach-Object {
+						$bn = $_.BaseName
+						[pscustomobject]@{
+							N = $_.BaseName
+							C = ( ( $syncHash.LogData | Where-Object { $_.BaseName -eq $bn } ).UserList | Where-Object { $_.Name -eq $User } ).OperatorUseCount
+						}
+					} | `
+					Sort-Object -Descending C | `
+					ForEach-Object { [void] $obj.ScriptUses.Add( $_ ) }
+				[void] $syncHash.TotalUserList.Add( $obj )
 			}
-		}
-	}
-	$syncHash.DC.rbScript[2] = $true
-	$syncHash.DC.Window[0] = ""
-}
-
-##################################################
-# Get scriptList, number of uses, and its topusers
-function ListByScript
-{
-	$syncHash.DC.TopList[0].Clear()
-	$list = @()
-	foreach ( $script in $syncHash.ScriptList )
-	{
-		$scriptTotalUseCount = 0
-
-		$syncHash.Users.Keys | Where-Object { ( $syncHash.Users.$_.Scripts | Get-Member -Name $script ).Count -gt 0 } | ForEach-Object { $scriptTotalUseCount += ( $syncHash.Users.$_.Scripts.$script ) }
-		$list += ,[pscustomobject]@{ Name = $script; Count = $scriptTotalUseCount }
-	}
-	$syncHash.DC.TopList[0] = $list | Sort-Object -Descending Count
-
-	$syncHash.DC.Window[0] = $syncHash.msgTable.StrTitleScripts
-}
-
-#################################
-# Get users, and the scripts used
-function ListByUser
-{
-	( [powershell]::Create().AddScript( { param ( $syncHash )
-		$syncHash.DC.TopList[0].Clear()
-		$list = @()
-		$syncHash.Users.GetEnumerator() | ForEach-Object { $list += ,[pscustomobject]@{ Name = ( $_.Value.Name ); Count = $_.Value.TotalUseCount } }
-		$syncHash.DC.TopList[0] = $list | Sort-Object -Descending Count
-	} ).AddArgument( $syncHash ) ).BeginInvoke()
-}
-
-########################################
-# List scripts that have never been used
-function NeverUsedScripts
-{
-	# List scripts never used
-	if ( $syncHash.DC.btnNeverUsed[0] -eq $syncHash.msgTable.StrNeverUsed )
-	{
-		$syncHash.DC.CountHeader[0] = $syncHash.msgTable.ContentCreatedHeader
-		$syncHash.DC.rbScript[2] = $syncHash.DC.rbScript[1] = $false
-		$syncHash.DC.rbUsers[2] = $syncHash.DC.rbUsers[1] = $false
-		$syncHash.DC.spSortBy[0] = [System.Windows.Visibility]::Hidden
-		$syncHash.DC.TopList[0].Clear()
-		$scripts = Get-ChildItem -Path "$( $syncHash.Root )\Script" -Filter "*ps1" -Exclude "SDGUI.ps1" -Recurse -File | Select-Object @{ N = "Name"; E = { $_.BaseName } }, @{ N = "Count"; E = { $_.CreationTime.ToShortDateString() } }
-		$logs = Get-ChildItem "$( $syncHash.Root )\Logs" -Filter "*txt" -Recurse -File -Exclude "DummyQuitting.txt" | Select-Object -ExpandProperty Name | ForEach-Object { $_ -replace " - log.txt" }
-		$list = @()
-		foreach ( $script in $scripts )
-		{
-			if ( $logs -notcontains $script.Name )
-			{
-				$list += [pscustomobject]@{ Name = ( $script.Name -replace ".ps1" ); Count = ( $script.Count ) }
-			}
-		}
-		$syncHash.DC.TopList[0] = $list | Sort-Object Name
-		$syncHash.DC.btnNeverUsed[0] = $syncHash.msgTable.StrTopList
-		WriteLog -LogText $syncHash.msgTable.StrLogNeverused | Out-Null
-	}
-	# List scripts never used
-	else
-	{
-		$syncHash.DC.rbScript[1] = $true
-		$syncHash.DC.rbUsers[1] = $true
-		$syncHash.DC.rbScript[2] = $true
-		$syncHash.DC.spSortBy[0] = [System.Windows.Visibility]::Visible
-		$syncHash.DC.CountHeader[0] = $syncHash.msgTable.ContentCountHeader
-		$syncHash.DC.btnNeverUsed[0] = $syncHash.msgTable.StrNeverUsed
-	}
-}
-
-#####################################################
-# Item in list is selected, show data for that object
-function TopList_SelectionChanged
-{
-	if ( $syncHash.DC.btnNeverUsed[0] -eq $syncHash.msgTable.StrNeverUsed )
-	{
-		$syncHash.SubjectList.Children.Clear()
-		if ( $null -ne $syncHash.DC.TopList[1] )
-		{
-			$itemClicked = $syncHash.DC.TopList[1]
-			$list = @()
-
-			if ( $syncHash.DC.rbScript[2] )
-			{
-				$syncHash.Users.Keys | Where-Object { ( $syncHash.Users.$_.Scripts | Get-Member -Name $itemClicked.Name ).Count -gt 0 } | ForEach-Object { $list += ,[pscustomobject]@{ Name = ( Get-ADUser $_ ).Name; Count = $syncHash.Users.$_.Scripts.$( $itemClicked.Name ) } }
-				$t = "$( $syncHash.msgTable.StrMostUsedBy ) $( $itemClicked.Name )"
-			}
-			else
-			{
-				$syncHash.Users.$( $itemClicked.Name.Split("(")[1].Trim(")") ).Scripts | Get-Member -MemberType NoteProperty | ForEach-Object { $list += ,[pscustomobject]@{ Name = $_.Name; Count = [int]( ( $_.Definition -split "=" )[1] ) } }
-				$t = "$( $syncHash.msgTable.StrScriptsMostUsedBy ) $( $itemClicked.Name )"
-			}
-
-			$syncHash.DC.ListTitle[0] = $t
-			$list | Sort-Object -Descending Count | ForEach-Object `
-			{
-				$l = New-Object System.Windows.Controls.Label
-				$l.Content = "($( $_.Count ))`t$( $_.Name )"
-				$l.Margin = "20,0,20,0"
-				$syncHash.SubjectList.AddChild( $l )
-			}
-		}
-		else
-		{
-			$syncHash.DC.ListTitle[0] = $syncHash.msgTable.StrTitleScriptUsage
-		}
-	}
-}
-
-function SortByCount
-{
-	if ( $syncHash.DC.TopList[0][0].Count -gt $syncHash.DC.TopList[0][-1].Count )
-	{ $syncHash.DC.TopList[0] = $syncHash.DC.TopList[0] | Sort-Object Count }
-	else
-	{ $syncHash.DC.TopList[0] = $syncHash.DC.TopList[0] | Sort-Object Count -Descending }
-}
-
-function SortByName
-{
-	$syncHash.DC.TopList[0] = $syncHash.DC.TopList[0] | Sort-Object Name
+		$syncHash.NeverUsed = ( $syncHash.LogData | Where-Object { $_.UseCount -eq 0 } )
+		$syncHash.Window.Dispatcher.Invoke( [action] {
+			$syncHash.Window.Title = "..."
+			$syncHash.DgScriptList.ItemsSource = $syncHash.LogData | Sort-Object -Descending UseCount
+			$syncHash.DgUsers.ItemsSource = $syncHash.TotalUserList | Sort-Object -Descending TotalUses
+			$syncHash.DgNeverUsed.ItemsSource = $syncHash.NeverUsed | Sort-Object BaseName
+			$syncHash.Window.Title = ""
+		} )
+	} ).AddArgument( $syncHash )
+	$syncHash.H = $syncHash.P.BeginInvoke()
 }
 
 ################################ Script start
-Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -Argumentlist $args[1]
-Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -Argumentlist $args[1]
+Add-Type -AssemblyName PresentationFramework
+Import-Module "$( $args[0] )\Modules\FileOps.psm1" -Force -ArgumentList $args[1]
+Import-Module "$( $args[0] )\Modules\GUIOps.psm1" -Force -ArgumentList $args[1]
 
 $controls = New-Object System.Collections.ArrayList
-[void]$controls.Add( @{ CName = "rbUsers"
-	Props = @(
-		@{ PropName = "BorderBrush"; PropVal = "Black" }
-		@{ PropName = "IsEnabled"; PropVal = $false }
-		@{ PropName = "IsChecked"; PropVal = $false }
-		@{ PropName = "Content"; PropVal = $msgTable.ContentrbUsers }
-	) } )
-[void]$controls.Add( @{ CName = "rbScript"
-	Props = @(
-		@{ PropName = "BorderBrush"; PropVal = "Black" }
-		@{ PropName = "IsEnabled"; PropVal = $false }
-		@{ PropName = "IsChecked"; PropVal = $false }
-		@{ PropName = "Content"; PropVal = $msgTable.ContentrbScript }
-	) } )
-[void]$controls.Add( @{ CName = "TopList"
-	Props = @(
-		@{ PropName = "ItemsSource"; PropVal = [System.Collections.ObjectModel.ObservableCollection[Object]]::new( ) }
-		@{ PropName = "SelectedItem"; PropVal = @() }
-	) } )
-[void]$controls.Add( @{ CName = "Window"
-	Props = @(
-		@{ PropName = "Title"; PropVal = $msgTable.StrTitleScriptUsage }
-	) } )
-[void]$controls.Add( @{ CName = "btnNeverUsed"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.StrNeverUsed }
-	) } )
-[void]$controls.Add( @{ CName = "lblSortBtns"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentlblSortBtns }
-	) } )
-[void]$controls.Add( @{ CName = "NameHeader"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentNameCol }
-	) } )
-[void]$controls.Add( @{ CName = "CountHeader"
-	Props = @(
-		@{ PropName = "Content"; PropVal = $msgTable.ContentCountCol }
-	) } )
-[void]$controls.Add( @{ CName = "ListTitle"
-	Props = @(
-		@{ PropName = "Content"; PropVal = "" }
-	) } )
-[void]$controls.Add( @{ CName = "spSortBy"
-	Props = @(
-		@{ PropName = "Visibility"; PropVal = [System.Windows.Visibility]::Visible }
-	) } )
+[void]$controls.Add( @{ CName = "BtnReadLogs" ; Props = @( @{ PropName = "Content"; PropVal = $msgTable.ContentbtnReadLogs } ; @{ PropName = "IsEnabled" ; PropVal = $true } ) } )
+[void]$controls.Add( @{ CName = "TiNeverUsed" ; Props = @( @{ PropName = "Header"; PropVal = $msgTable.ContenttiNeverUsed } ) } )
+[void]$controls.Add( @{ CName = "TiScriptList" ; Props = @( @{ PropName = "Header"; PropVal = $msgTable.ContenttiScriptList } ) } )
+[void]$controls.Add( @{ CName = "TiUserList" ; Props = @( @{ PropName = "Header"; PropVal = $msgTable.ContenttiUserList } ) } )
+[void]$controls.Add( @{ CName = "Window" ; Props = @( @{ PropName = "Title"; PropVal = $msgTable.StrTitleScriptUsage } ) } )
 
-$syncHash = CreateWindowExt $controls
+$syncHash = CreateWindowExt -ControlsToBind $controls -IncludeConverters
 $syncHash.msgTable = $msgTable
 
-$syncHash.Users = New-Object System.Collections.Hashtable
-$syncHash.ScriptList = @()
 $syncHash.Root = $args[0]
-$syncHash.btnNeverUsed.Add_Click( { NeverUsedScripts } )
-$syncHash.rbScript.Add_Checked( { $syncHash.DC.rbUsers[0] = "Red" ; $syncHash.DC.rbScript[0] = "Green" ; ListByScript } )
-$syncHash.rbUsers.Add_Checked( { $syncHash.DC.rbUsers[0] = "Green" ; $syncHash.DC.rbScript[0] = "Red" ; ListByUser } )
-$syncHash.TopList.Add_SelectionChanged( { TopList_SelectionChanged } )
-$syncHash.CountHeader.Add_Click( { SortByCount } )
-$syncHash.NameHeader.Add_Click( { SortByName } )
-$syncHash.Window.Add_ContentRendered( { CollectData ; $this.Top = 20 } )
+$syncHash.BtnReadLogs.Add_Click( { CollectData } )
+
+$syncHash.DgScriptList.Add_SelectionChanged( {
+	$syncHash.DgUseList.ItemsSource = $this.UserList
+} )
+
+$syncHash.Window.Add_ContentRendered( {
+	$syncHash.DgScriptList.Columns[0].Header = $syncHash.msgTable.ContentColHeaderScriptName
+	$syncHash.DgScriptList.Columns[1].Header = $syncHash.msgTable.ContentColHeaderScriptUsage
+	$syncHash.DgUsers.Columns[0].Header = $syncHash.msgTable.ContentColHeaderUserName
+	$syncHash.DgUsers.Columns[1].Header = $syncHash.msgTable.ContentColHeaderUserCount
+	$syncHash.DgUseList.Columns[0].Header = $syncHash.msgTable.ContentColHeaderUsageName
+	$syncHash.DgUseList.Columns[1].Header = $syncHash.msgTable.ContentColHeaderUsageCount
+	$syncHash.DgNeverUsed.Columns[0].Header = $syncHash.msgTable.ContentColHeaderNUName
+	$syncHash.DgNeverUsed.Columns[1].Header = $syncHash.msgTable.ContentColHeaderNUCount
+	$syncHash.DgUseListUser.Columns[0].Header = $syncHash.msgTable.ContentDgUseListUserScriptName
+	$syncHash.DgUseListUser.Columns[1].Header = $syncHash.msgTable.ContentDgUseListUserUses
+	$this.Resources['StrAuthor'] = $syncHash.msgTable.StrAuthor
+	$this.Resources['StrLastUpdated'] = $syncHash.msgTable.StrLastUpdated
+	$this.Resources['StrSynopsis'] = $syncHash.msgTable.StrSynopsis
+	$this.Top = 20
+	WriteLogTest -Text Start -Success $true | Out-Null
+} )
+
+$syncHash.Window.Add_Closing( {
+	$syncHash.P.Runspace.Close()
+	$syncHash.P.Runspace.Dispose()
+} )
 
 [void] $syncHash.Window.ShowDialog()
 $syncHash.Window.Close()
-#$global:syncHash = $syncHash
+$global:syncHash = $syncHash

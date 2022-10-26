@@ -1,17 +1,22 @@
 ConvertFrom-StringData @'
+ContentBtnReadLogs = Parse logs
+ContentColHeaderNUCount = Created
+ContentColHeaderNUName = Scriptname
+ContentColHeaderScriptName = Scriptname
+ContentColHeaderScriptUsage = Uses
+ContentColHeaderUsageCount = Count
+ContentColHeaderUsageName = Name
+ContentColHeaderUserCount = Total usecount
+ContentColHeaderUserName = Name
+ContentDgUseListUserScriptName = Script
+ContentDgUseListUserUses = Number of uses
+ContenttiNeverUsed = Never used scripts
+ContenttiScriptList = Script
+ContenttiUserList = User
+StrAuthor = Author
+StrLastUpdated = Updated
+StrOpParseUsers = Extracting users
 StrOpReadingLogs = Reading logs...
-StrTitleScripts = Most used scripts
-StrNeverUsed = Never used
-ContentCreatedHeader = Created
-ContentCountHeader = Count
-StrTopList = Toplist
-StrLogNeverused = Check for never used
-StrMostUsedBy = Mostfrequent user of
-StrScriptsMostUsedBy = Most scripts used by
-StrTitleScriptUsage = Toplist scriptusage
-ContentlblSortBtns = List per...
-ContentrbScript = script
-ContentrbUsers = user
-ContentNameCol = Name
-ContentCountCol = Count
+StrSynopsis = Synopsis
+StrTitleScriptUsage = List who used scripts the most
 '@

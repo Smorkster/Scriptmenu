@@ -1,54 +1,295 @@
-<Window
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Name="Window"
-    Height="500" MinHeight="500"
-    Width="800" MinWidth="800" MaxHeight="700"
-    Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
-    WindowStartupLocation="CenterScreen"
-    SizeToContent="WidthAndHeight">
+<Window Name="Window"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:c="clr-namespace:SDGUIConverters;assembly=SDGUIConverterAssembly"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+        WindowStartupLocation="CenterScreen"
+        SizeToContent="WidthAndHeight"
+        Height="780"
+        MinHeight="780"
+        MaxHeight="800"
+        Width="1220"
+        MinWidth="1220">
     <Window.Resources>
-        <Style TargetType="RadioButton">
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Margin" Value="10,0,0,0"/>
+        <c:ADUserConverter x:Key="Converter" />
+        <sys:String x:Key="StrAuthor">x</sys:String>
+        <sys:String x:Key="StrLastUpdated">x</sys:String>
+        <sys:String x:Key="StrSynopsis">x</sys:String>
+        <Style TargetType="Button">
+            <Setter Property="Padding"
+                    Value="5" />
+        </Style>
+        <Style TargetType="DataGrid"
+               x:Key="DgBaseStyle">
+            <Setter Property="AutoGenerateColumns"
+                    Value="False" />
+            <Setter Property="HeadersVisibility"
+                    Value="Column" />
+            <Setter Property="IsReadOnly"
+                    Value="True" />
+            <Setter Property="SelectionMode"
+                    Value="Single" />
+        </Style>
+        <Style TargetType="Grid"
+               x:Key="GridInfoStyle">
+            <Setter Property="Grid.Row"
+                    Value="1" />
+        </Style>
+        <Style TargetType="TextBlock"
+               x:Key="TblInfoStyle">
+            <Setter Property="Margin"
+                    Value="5" />
+        </Style>
+        <Style TargetType="ContentControl"
+               x:Key="CcBaseStyle">
+            <Setter Property="Grid.ColumnSpan"
+                    Value="2" />
+            <Setter Property="Grid.Row"
+                    Value="1" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate>
+                        <Grid>
+                            <Grid.Style>
+                                <Style TargetType="Grid">
+                                    <Setter Property="Margin"
+                                            Value="3" />
+                                </Style>
+                            </Grid.Style>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="2*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition />
+                                <RowDefinition />
+                            </Grid.RowDefinitions>
+                            <!-- Titles -->
+                            <TextBlock>
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock"
+                                           BasedOn="{StaticResource TblInfoStyle}">
+                                        <Setter Property="FontWeight"
+                                                Value="Bold" />
+                                        <Setter Property="Text"
+                                                Value="{DynamicResource StrAuthor}" />
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock>
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock"
+                                           BasedOn="{StaticResource TblInfoStyle}">
+                                        <Setter Property="FontWeight"
+                                                Value="Bold" />
+                                        <Setter Property="Grid.Row"
+                                                Value="1" />
+                                        <Setter Property="Text"
+                                                Value="{DynamicResource StrSynopsis}" />
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock>
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock"
+                                           BasedOn="{StaticResource TblInfoStyle}">
+                                        <Setter Property="FontWeight"
+                                                Value="Bold" />
+                                        <Setter Property="Grid.Column"
+                                                Value="2" />
+                                        <Setter Property="Text"
+                                                Value="{DynamicResource StrLastUpdated}" />
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <!-- Data -->
+                            <TextBlock>
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock"
+                                           BasedOn="{StaticResource TblInfoStyle}">
+                                        <Setter Property="Grid.Column"
+                                                Value="1" />
+                                        <Setter Property="Text"
+                                                Value="{Binding Path=Author, Converter={StaticResource Converter}}" />
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock>
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock"
+                                           BasedOn="{StaticResource TblInfoStyle}">
+                                        <Setter Property="Grid.Column"
+                                                Value="1" />
+                                        <Setter Property="Grid.Row"
+                                                Value="1" />
+                                        <Setter Property="Text"
+                                                Value="{Binding Path=Synopsis}" />
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock>
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock"
+                                           BasedOn="{StaticResource TblInfoStyle}">
+                                        <Setter Property="Grid.Column"
+                                                Value="3" />
+                                        <Setter Property="Text"
+                                                Value="{Binding Path=LastWriteTime, StringFormat='yyyy-MM-dd HH:mm:ss'}" />
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Visibility"
+                    Value="Visible" />
         </Style>
     </Window.Resources>
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition/>
-            <ColumnDefinition/>
-        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="30"/>
-            <RowDefinition/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition />
         </Grid.RowDefinitions>
-        <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal">
-            <Button Name="btnNeverUsed" Padding="10,0,10,0" Margin="0,0,10,0"/>
-            <StackPanel Name="spSortBy" Orientation="Horizontal">
-                <Label Name="lblSortBtns"/>
-                <RadioButton Name="rbScript" GroupName="sortBy" IsEnabled="False"/>
-                <RadioButton Name="rbUsers" GroupName="sortBy" IsEnabled="False"/>
-            </StackPanel>
-        </StackPanel>
-        <ListView Grid.Column="0" Grid.Row="1" Name="TopList" AlternationCount="2">
-            <ListView.View>
-                <GridView>
-                    <GridViewColumn DisplayMemberBinding="{Binding Name}" Width="220">
-                        <GridViewColumn.Header>
-                            <GridViewColumnHeader Name="NameHeader"/>
-                        </GridViewColumn.Header>
-                    </GridViewColumn>
-                    <GridViewColumn DisplayMemberBinding="{Binding Count}" Width="80">
-                        <GridViewColumn.Header>
-                            <GridViewColumnHeader Name="CountHeader"/>
-                        </GridViewColumn.Header>
-                    </GridViewColumn>
-                </GridView>
-            </ListView.View>
-        </ListView>
-        <Label Grid.Column="1" Grid.Row="0" Name="ListTitle"/>
-        <ScrollViewer Grid.Column="1" Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel Grid.Column="1" Grid.Row="1" Orientation="Vertical" Name="SubjectList"/>
-        </ScrollViewer>
+        <Button Name="BtnReadLogs">
+            <Button.Style>
+                <Style TargetType="Button">
+                    <Setter Property="Margin"
+                            Value="5" />
+                    <Setter Property="Padding"
+                            Value="5" />
+                </Style>
+            </Button.Style>
+        </Button>
+        <TabControl Grid.Row="1">
+            <TabItem Name="TiScriptList">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <DataGrid Name="DgScriptList">
+                        <DataGrid.Resources>
+                            <Style TargetType="{x:Type DataGridRow}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding UseCount}"
+                                                 Value="0">
+                                        <Setter Property="Visibility"
+                                                Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.Resources>
+                        <DataGrid.Style>
+                            <Style TargetType="DataGrid"
+                                   BasedOn="{StaticResource DgBaseStyle}">
+                            </Style>
+                        </DataGrid.Style>
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Binding="{Binding Path=BaseName}"
+                                                Width="300" />
+                            <DataGridTextColumn Binding="{Binding Path=UseCount}"
+                                                Width="Auto" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <ContentControl Name="CcScriptInfo">
+                        <ContentControl.Style>
+                            <Style TargetType="ContentControl"
+                                   BasedOn="{StaticResource CcBaseStyle}">
+                                <Setter Property="DataContext"
+                                        Value="{Binding ElementName=DgScriptList, Path=SelectedItem}" />
+                            </Style>
+                        </ContentControl.Style>
+                    </ContentControl>
+                    <DataGrid Name="DgUseList">
+                        <DataGrid.Style>
+                            <Style TargetType="DataGrid"
+                                   BasedOn="{StaticResource DgBaseStyle}">
+                                <Setter Property="Grid.Column"
+                                        Value="1" />
+                                <Setter Property="ItemsSource"
+                                        Value="{Binding ElementName=DgScriptList, Path=SelectedItem.UserList}" />
+                            </Style>
+                        </DataGrid.Style>
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Binding="{Binding Path=Name, Converter={StaticResource Converter}}" />
+                            <DataGridTextColumn Binding="{Binding Path=OperatorUseCount}" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+            <TabItem Name="TiUserList">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <DataGrid Name="DgUsers">
+                        <DataGrid.Style>
+                            <Style TargetType="DataGrid"
+                                   BasedOn="{StaticResource DgBaseStyle}">
+                            </Style>
+                        </DataGrid.Style>
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Binding="{Binding Path=User}"
+                                                Width="300"/>
+                            <DataGridTextColumn Binding="{Binding Path=TotalUses}"
+                                                Width="Auto" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <DataGrid Name="DgUseListUser">
+                        <DataGrid.Style>
+                            <Style TargetType="DataGrid"
+                                   BasedOn="{StaticResource DgBaseStyle}">
+                                <Setter Property="Grid.Column"
+                                        Value="1" />
+                                <Setter Property="ItemsSource"
+                                        Value="{Binding ElementName=DgUsers, Path=SelectedItem.ScriptUses}" />
+                            </Style>
+                        </DataGrid.Style>
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Binding="{Binding N}" />
+                            <DataGridTextColumn Binding="{Binding C}" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+            <TabItem Name="TiNeverUsed">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <DataGrid Name="DgNeverUsed">
+                        <DataGrid.Style>
+                            <Style TargetType="DataGrid"
+                                   BasedOn="{StaticResource DgBaseStyle}">
+                            </Style>
+                        </DataGrid.Style>
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Binding="{Binding Name}"
+                                                SortDirection="Ascending" />
+                            <DataGridTextColumn Binding="{Binding LastWriteTime, StringFormat='yyyy-MM-dd'}" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <ContentControl Name="CcNeverUsedScriptInfo">
+                        <ContentControl.Style>
+                            <Style TargetType="ContentControl"
+                                   BasedOn="{StaticResource CcBaseStyle}">
+                                <Setter Property="DataContext"
+                                        Value="{Binding ElementName=DgNeverUsed, Path=SelectedItem}" />
+                            </Style>
+                        </ContentControl.Style>
+                    </ContentControl>
+                </Grid>
+            </TabItem>
+        </TabControl>
     </Grid>
 </Window>

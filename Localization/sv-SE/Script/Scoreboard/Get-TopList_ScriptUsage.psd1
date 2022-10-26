@@ -1,17 +1,22 @@
 ConvertFrom-StringData @'
-StrOpReadingLogs = Reading logs...
-StrTitleScripts = Most used scripts
-StrNeverUsed = Aldrig använda
-ContentCreatedHeader = Skapades
-ContentCountHeader = Antal
-StrTopList = Topplist
-StrLogNeverused = Check for never used
-StrMostUsedBy = Mest frekventa användare av
-StrScriptsMostUsedBy = Flest använda skript av
-StrTitleScriptUsage = Toplista skriptanvändning
-ContentlblSortBtns = Lista per...
-ContentrbScript = skript
-ContentrbUsers = användare
-ContentNameCol = Namn
-ContentCountCol = Antal
+ContentBtnReadLogs = Läs in loggar
+ContentColHeaderNUCount = Skapades
+ContentColHeaderNUName = Skriptnamn
+ContentColHeaderScriptName = Skriptnamn
+ContentColHeaderScriptUsage = Körningar
+ContentColHeaderUsageCount = Antal
+ContentColHeaderUsageName = Namn
+ContentColHeaderUserCount = Totalt antal
+ContentColHeaderUserName = Namn
+ContentDgUseListUserScriptName = Skript
+ContentDgUseListUserUses = Antal användningar
+ContentTiNeverUsed = Aldrig använda skript
+ContentTiScriptList = Skript
+ContentTiUserList = Användare
+StrAuthor = Författare
+StrLastUpdated = Uppdaterades
+StrOpParseUsers = Extraherar användare
+StrOpReadingLogs = Läser loggar...
+StrSynopsis = Synopsis
+StrTitleScriptUsage = Listar vilka som använt skriptet mest
 '@
